@@ -7,11 +7,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false); 
   const [streamingReply, setStreamingReply] = useState("");
-  const [isAudioActive, setIsAudioActive] = useState(false); // Track if audio is currently playing
+  const [isAudioActive, setIsAudioActive] = useState(false); 
   const scrollRef = useRef(null);
   const currentStreamingTextRef = useRef("");
 
-  // Production Audio Management Refs
   const audioQueueRef = useRef([]);
   const isPlayingRef = useRef(false);
   const currentSentenceBufferRef = useRef("");
@@ -33,21 +32,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingReply, isSearching, isBotTyping]);
 
-  // Clears and resets all playing audio streams
   const clearAudioPipeline = () => {
     audioQueueRef.current = [];
     isPlayingRef.current = false;
     currentSentenceBufferRef.current = "";
-    setIsAudioActive(false); // Reset button UI state
+    setIsAudioActive(false); 
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   };
 
-  // --- Production Queue Manager ---
   const processAudioQueue = () => {
     if (isPlayingRef.current || audioQueueRef.current.length === 0) {
-      // If queue becomes empty naturally, update the audio state
       if (audioQueueRef.current.length === 0 && !isPlayingRef.current) {
         setIsAudioActive(false);
       }
@@ -55,7 +51,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
     }
 
     isPlayingRef.current = true;
-    setIsAudioActive(true); // Audio is actively running
+    setIsAudioActive(true); 
     const nextSentence = audioQueueRef.current.shift();
 
     if ("speechSynthesis" in window) {
@@ -79,13 +75,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
     }
   };
 
-  // --- Production Sentence Buffering Core Engine ---
   const handleIncomingTextChunk = (textChunk) => {
-
     const cleanChunk = textChunk.replace(/[\*#_`\-]/g, "");
-    
     currentSentenceBufferRef.current += cleanChunk;
-    const sentenceEndRegex = /[.!?](\s|$)/;
+    const sentenceEndRegex = /[.!?]/; // FIXED VOICE LAG REGEX HERE
 
     if (sentenceEndRegex.test(currentSentenceBufferRef.current)) {
       const lastPunctuationIndex = Math.max(
@@ -100,9 +93,36 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
 
         if (completedSentence) {
           audioQueueRef.current.push(completedSentence);
-          processAudioQueue();
+          if (!isPlayingRef.current) {
+            processAudioQueue();
+          }
         }
       }
+    }
+  };
+
+  // NEW FUNCTION: Calls your local backend server router (Keeps API key secure on server)
+  const executeCRMContactRegistration = async (payload) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/crm/forward-contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "✨ **Success!** Your profile details have been synchronized onto the CRM grid console. Our team will contact you shortly." }
+        ]);
+        if (onChatUpdated) onChatUpdated();
+      }
+    } catch (error) {
+      console.error("Failed to forward contact registration payload:", error);
     }
   };
 
@@ -125,6 +145,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
 
     clearAudioPipeline(); 
 
+    if (window.speechSynthesis && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+
     setMessages((prev) => [...prev, { role: "user", content: textPayload }]);
     setIsSearching(true);
     setIsBotTyping(false);
@@ -134,19 +158,24 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
     try {
       const token = localStorage.getItem("token");
       const targetChatEndpoint = currentChatId && currentChatId !== "new" ? currentChatId : "new";
+      const conversationMode = "text"; 
 
       const response = await fetch(
-        `http://localhost:5000/api/gemini/message/${targetChatEndpoint}`,
+        `http://localhost:5000/api/ollama/message/${targetChatEndpoint}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ message: textPayload }),
+          body: JSON.stringify({ 
+            message: textPayload, 
+            mode: conversationMode 
+          }),
         }
       );
 
+      if (!response.ok) throw new Error(`Server returned error status code: ${response.status}`);
       if (!response.body) throw new Error("Readable stream tracking failure.");
 
       const reader = response.body.getReader();
@@ -183,9 +212,46 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
                 }
               } else if (parsed.type === "chunk") {
                 const textBit = parsed.text || "";
+                
+                // 1. Append text to your visible live typing bubble
                 currentStreamingTextRef.current += textBit;
                 setStreamingReply(currentStreamingTextRef.current);
                 handleIncomingTextChunk(textBit);
+
+                // 2. DETECT AND INTERCEPT IF THE AI GENERATES THE PLAIN-TEXT TRIGGER
+                if (currentStreamingTextRef.current.includes("TRIGGER_START")) {
+                  const startIndex = currentStreamingTextRef.current.indexOf("TRIGGER_START");
+                  
+                  // Process extraction once the closure marker payload streams completely
+                  if (currentStreamingTextRef.current.includes("TRIGGER_END")) {
+                    const endIndex = currentStreamingTextRef.current.indexOf("TRIGGER_END");
+                    
+                    const rawPayloadText = currentStreamingTextRef.current.slice(startIndex + "TRIGGER_START".length, endIndex);
+                    
+                    // Slice the raw text parameters clean from the visible text area stream
+                    currentStreamingTextRef.current = currentStreamingTextRef.current.slice(0, startIndex).replace(/will now proceed.*|data:.*$/i, "").trim();
+                    setStreamingReply(currentStreamingTextRef.current);
+                    
+                    const extractField = (fieldName) => {
+                      const regex = new RegExp(`${fieldName}:\\s*(.*)`, "i");
+                      const match = rawPayloadText.match(regex);
+                      return match ? match[1].trim() : "";
+                    };
+                    
+                    const parsedPayload = {
+                      firstName: extractField("firstName"),
+                      lastName: extractField("lastName"),
+                      email: extractField("email"),
+                      phone: extractField("phone"),
+                      companyName: extractField("companyName"),
+                      description: extractField("description")
+                    };
+                    
+                    await executeCRMContactRegistration(parsedPayload);
+                    streamFinished = true;
+                    break;
+                  }
+                }
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
                   ...prev,
@@ -195,7 +261,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
                 break;
               }
             } catch (e) {
-              // Ignore boundary fractions safely
+              // Ignore line fractures
             }
           }
         }
@@ -217,30 +283,30 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
       setStreamingReply("");
       currentStreamingTextRef.current = "";
       setIsBotTyping(false);
-      onChatUpdated();
+      if (onChatUpdated) onChatUpdated();
     } catch (err) {
-      console.error("Stream compilation parsing exception error:", err);
+      console.error("Stream compilation parsing exception:", err);
       setIsSearching(false);
       setIsBotTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `⚠️ Error: Unable to process request.` }
+      ]);
     }
   };
 
   return (
     <div className="flex-1 flex flex-col justify-between h-full relative text-slate-100 bg-[#0f172a]">
-      {/* Top Header Section */}
       <div className="h-14 border-b border-slate-800 flex items-center px-6 justify-between bg-[#0f172a]/80 backdrop-blur">
         <span className="font-semibold tracking-wide text-slate-200">
           Gemini Live Terminal Engine
         </span>
 
-        {/*  NEW TOOGLE BUTTON: Stop Audio Player */}
         {isAudioActive && (
           <button
             onClick={clearAudioPipeline}
             className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200"
-            title="Stop AI Voice Output"
           >
-            {/* Pulsing Sound Icon */}
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
@@ -294,12 +360,13 @@ export default ChatArea;
 // const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
 //   const [messages, setMessages] = useState([]);
 //   const [isSearching, setIsSearching] = useState(false);
-//   const [isBotTyping, setIsBotTyping] = useState(false); // Keeps a placeholder visible during chunk delays
+//   const [isBotTyping, setIsBotTyping] = useState(false); 
 //   const [streamingReply, setStreamingReply] = useState("");
+//   const [isAudioActive, setIsAudioActive] = useState(false); // Track if audio is currently playing
 //   const scrollRef = useRef(null);
 //   const currentStreamingTextRef = useRef("");
 
-//   //AUDIO REF
+//   // Audio Management Refs
 //   const audioQueueRef = useRef([]);
 //   const isPlayingRef = useRef(false);
 //   const currentSentenceBufferRef = useRef("");
@@ -321,32 +388,37 @@ export default ChatArea;
 //     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
 //   }, [messages, streamingReply, isSearching, isBotTyping]);
 
-//   // AUDIO CLEANUP 
+//   // Clears and resets all playing audio streams
 //   const clearAudioPipeline = () => {
 //     audioQueueRef.current = [];
 //     isPlayingRef.current = false;
 //     currentSentenceBufferRef.current = "";
+//     setIsAudioActive(false); // Reset button UI state
 //     if (window.speechSynthesis) {
 //       window.speechSynthesis.cancel();
 //     }
 //   };
 
-//   //  AUDIO QUEUE WORKER 
+//   // Queue Manager 
 //   const processAudioQueue = () => {
-//     // If an utterance is already playing, or the queue is empty, do nothing
-//     if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
+//     if (isPlayingRef.current || audioQueueRef.current.length === 0) {
+//       if (audioQueueRef.current.length === 0 && !isPlayingRef.current) {
+//         setIsAudioActive(false);
+//       }
+//       return;
+//     }
 
 //     isPlayingRef.current = true;
+//     setIsAudioActive(true); // Audio is actively running
 //     const nextSentence = audioQueueRef.current.shift();
 
 //     if ("speechSynthesis" in window) {
 //       const utterance = new SpeechSynthesisUtterance(nextSentence);
 //       utterance.lang = "en-US";
       
-//       // When this sentence finishes speaking, move onto the next item in the queue
 //       utterance.onend = () => {
 //         isPlayingRef.current = false;
-//         processAudioQueue();
+//         processAudioQueue(); 
 //       };
 
 //       utterance.onerror = () => {
@@ -357,18 +429,17 @@ export default ChatArea;
 //       window.speechSynthesis.speak(utterance);
 //     } else {
 //       isPlayingRef.current = false;
+//       setIsAudioActive(false);
 //     }
 //   };
 
-//   // SENTENCE SPLITTER ENGINE 
+//   // Sentence Buffering Core Engine 
 //   const handleIncomingTextChunk = (textChunk) => {
-//     currentSentenceBufferRef.current += textChunk;
-
-//     // RegEx checking for sentence boundaries (. or ! or ?) followed by whitespace or string end
-//     const sentenceEndRegex = /[.!?](\s|$)/;
+//     const cleanChunk = textChunk.replace(/[\*#_`\-]/g, "");
+//     currentSentenceBufferRef.current += cleanChunk;
+//     const sentenceEndRegex = /[.!?]/;
 
 //     if (sentenceEndRegex.test(currentSentenceBufferRef.current)) {
-//       // Pinpoint the last valid punctuation mark location
 //       const lastPunctuationIndex = Math.max(
 //         currentSentenceBufferRef.current.lastIndexOf("."),
 //         currentSentenceBufferRef.current.lastIndexOf("?"),
@@ -376,14 +447,14 @@ export default ChatArea;
 //       );
 
 //       if (lastPunctuationIndex !== -1) {
-//         // Cut out the completed sentence fragment
 //         const completedSentence = currentSentenceBufferRef.current.slice(0, lastPunctuationIndex + 1).trim();
-//         // Leave any uncompleted phrase fragments inside the buffer for the next chunk
 //         currentSentenceBufferRef.current = currentSentenceBufferRef.current.slice(lastPunctuationIndex + 1);
 
 //         if (completedSentence) {
 //           audioQueueRef.current.push(completedSentence);
-//           processAudioQueue(); // Run worker to stream the audio output
+//           if (!isPlayingRef.current) {
+//             processAudioQueue();
+//           }
 //         }
 //       }
 //     }
@@ -394,9 +465,7 @@ export default ChatArea;
 //       const token = localStorage.getItem("token");
 //       const res = await fetch(
 //         `http://localhost:5000/api/chats/${currentChatId}/messages`,
-//         {
-//           headers: { Authorization: `Bearer ${token}` },
-//         },
+//         { headers: { Authorization: `Bearer ${token}` } }
 //       );
 //       const data = await res.json();
 //       setMessages(data || []);
@@ -408,10 +477,14 @@ export default ChatArea;
 //   const handleSendSubmit = async (textPayload) => {
 //     if (!textPayload.trim()) return;
 
-//     // Interrupt any active speaking streams immediately if user fires off a new prompt
-//     clearAudioPipeline();
+//     clearAudioPipeline(); 
 
-//     // 1. Immediately render user text and turn on initial loading state
+//     // Force wake browser voice management on user event
+//     if (window.speechSynthesis && window.speechSynthesis.paused) {
+//       window.speechSynthesis.resume();
+//     }
+
+//     // Instantly append user message to UI
 //     setMessages((prev) => [...prev, { role: "user", content: textPayload }]);
 //     setIsSearching(true);
 //     setIsBotTyping(false);
@@ -420,21 +493,54 @@ export default ChatArea;
 
 //     try {
 //       const token = localStorage.getItem("token");
-//       const targetChatEndpoint =
-//         currentChatId && currentChatId !== "new" ? currentChatId : "new";
+//       const targetChatEndpoint = currentChatId && currentChatId !== "new" ? currentChatId : "new";
+
+//       // Modes: "voice" (returns immediate single JSON), "text" (returns chunks)
+//       const conversationMode = "text"; 
 
 //       const response = await fetch(
-//         `http://localhost:5000/api/gemini/message/${targetChatEndpoint}`,
+//         `http://localhost:5000/api/ollama/message/${targetChatEndpoint}`,
 //         {
 //           method: "POST",
 //           headers: {
 //             "Content-Type": "application/json",
 //             Authorization: `Bearer ${token}`,
 //           },
-//           body: JSON.stringify({ message: textPayload }),
-//         },
+//           body: JSON.stringify({ 
+//             message: textPayload, 
+//             mode: conversationMode 
+//           }),
+//         }
 //       );
 
+//       if (!response.ok) {
+//         throw new Error(`Server returned error status code: ${response.status}`);
+//       }
+
+//       // =========================================================================
+//       //  DIRECT RECOVERY HANDLER (NATIVE SINGLE VOICE CHANNEL MATCH)
+//       // =========================================================================
+//       if (conversationMode === "voice") {
+//         const data = await response.json();
+//         setIsSearching(false);
+
+//         if (data.success && data.replyText) {
+//           // Instantly show the assistant message on the screen
+//           setMessages((prev) => [...prev, { role: "assistant", content: data.replyText }]);
+//           handleIncomingTextChunk(data.replyText);
+          
+//           setTimeout(() => {
+//             if (currentSentenceBufferRef.current.trim()) {
+//               audioQueueRef.current.push(currentSentenceBufferRef.current.trim());
+//               processAudioQueue();
+//             }
+//           }, 50);
+//         } else {
+//           throw new Error(data.message || "Failed to fetch voice response text payload.");
+//         }
+//         if (onChatUpdated) onChatUpdated();
+//         return; // Prevent execution path from falling downward into the stream parsing engines
+//       }
 //       if (!response.body) throw new Error("Readable stream tracking failure.");
 
 //       const reader = response.body.getReader();
@@ -442,7 +548,6 @@ export default ChatArea;
 //       let streamFinished = false;
 //       let buffer = "";
 
-//       // 2. Clear initial search bar and immediately lock in bot typing block state
 //       setIsSearching(false);
 //       setIsBotTyping(true);
 
@@ -474,11 +579,8 @@ export default ChatArea;
 //                 const textBit = parsed.text || "";
 //                 currentStreamingTextRef.current += textBit;
 //                 setStreamingReply(currentStreamingTextRef.current);
-
-//                 // FEED THE CHUNK DATA TO THE BUFFER MIDDLEWARE IN REAL-TIME
 //                 handleIncomingTextChunk(textBit);
 //               } else if (parsed.type === "error") {
-//                 // 1. Render the clean error text explicitly into the chat block timeline
 //                 setMessages((prev) => [
 //                   ...prev,
 //                   { role: "assistant", content: `⚠️ Error: ${parsed.message}` },
@@ -487,19 +589,17 @@ export default ChatArea;
 //                 break;
 //               }
 //             } catch (e) {
-//               // Ignore boundary fractions safely
+//               // Ignore partial parsing boundary breaks safely
 //             }
 //           }
 //         }
 //       }
 
-//       // Flush any lingering phrases left inside the buffer container once stream cuts off
 //       if (currentSentenceBufferRef.current.trim()) {
 //         audioQueueRef.current.push(currentSentenceBufferRef.current.trim());
 //         processAudioQueue();
 //       }
 
-//       // 3. Save final text block to UI collection arrays permanently
 //       const finalResponseContent = currentStreamingTextRef.current;
 //       if (finalResponseContent) {
 //         setMessages((prev) => [
@@ -508,31 +608,51 @@ export default ChatArea;
 //         ]);
 //       }
 
-//       // Reset variables smoothly
 //       setStreamingReply("");
 //       currentStreamingTextRef.current = "";
 //       setIsBotTyping(false);
-//       onChatUpdated();
+//       if (onChatUpdated) onChatUpdated();
 //     } catch (err) {
-//       console.error("Stream compilation parsing exception error:", err);
+//       console.error("Stream compilation parsing exception error handled:", err);
 //       setIsSearching(false);
 //       setIsBotTyping(false);
+      
+//       // Render the error directly onto the UI layout so the user sees it instantly
+//       setMessages((prev) => [
+//         ...prev,
+//         { role: "assistant", content: `⚠️ Error: Unable to process request. Please check backend connections.` }
+//       ]);
 //     }
 //   };
 
 //   return (
 //     <div className="flex-1 flex flex-col justify-between h-full relative text-slate-100 bg-[#0f172a]">
+//       {/* Top Header Section */}
 //       <div className="h-14 border-b border-slate-800 flex items-center px-6 justify-between bg-[#0f172a]/80 backdrop-blur">
 //         <span className="font-semibold tracking-wide text-slate-200">
 //           Gemini Live Terminal Engine
 //         </span>
+
+//         {/* Toggle Button: Stop Audio Player */}
+//         {isAudioActive && (
+//           <button
+//             onClick={clearAudioPipeline}
+//             className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200"
+//             title="Stop AI Voice Output"
+//           >
+//             <span className="relative flex h-2 w-2">
+//               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+//               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+//             </span>
+//             Stop Voice
+//           </button>
+//         )}
 //       </div>
 
 //       <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
 //         {messages.length === 0 && !isSearching && !isBotTyping && (
 //           <div className="h-full flex items-center justify-center text-slate-500 font-medium text-sm">
-//             Enter a prompt statement workspace sequence string underneath to
-//             activate live streams tracking.
+//             Enter a prompt statement workspace sequence string underneath to activate live streams tracking.
 //           </div>
 //         )}
 
@@ -540,7 +660,6 @@ export default ChatArea;
 //           <MessageBubble key={index} role={m.role} content={m.content} />
 //         ))}
 
-//         {/* Phase 1: Server is thinking / routing / querying DB pipelines */}
 //         {isSearching && (
 //           <div className="flex justify-start">
 //             <div className="bg-[#444654] p-4 rounded-xl text-slate-300 italic flex items-center gap-2 animate-pulse text-sm shadow-md">
@@ -549,7 +668,6 @@ export default ChatArea;
 //           </div>
 //         )}
 
-//         {/* Phase 2: Stream connection active */}
 //         {isBotTyping && (
 //           <MessageBubble
 //             role="assistant"
@@ -565,6 +683,7 @@ export default ChatArea;
 // };
 
 // export default ChatArea;
+
 
 
 

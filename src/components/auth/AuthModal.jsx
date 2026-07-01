@@ -5,7 +5,7 @@ const AuthModal = ({ onAuthSuccess }) => {
   const [isLoginView, setIsLoginView] = useState(true);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
-
+  const [success, setSuccess] = useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -18,7 +18,7 @@ const AuthModal = ({ onAuthSuccess }) => {
       } else {
         await api.post("/auth/register", form);
         setIsLoginView(true);
-        setError("Registration successful! Please sign in.");
+        setSuccess("Registration successful! Please sign in.");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Authentication runtime execution challenge encountered.");
@@ -35,9 +35,17 @@ const AuthModal = ({ onAuthSuccess }) => {
           {isLoginView ? "Sign in to activate chat sessions" : "Create an account to start sessions"}
         </p>
 
+        {/* Error Alert Display Block (Red Theme) */}
         {error && (
           <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm p-3 rounded-lg mb-4 text-center">
             {error}
+          </div>
+        )}
+
+        {/* Success Alert Display Block (Green Theme) */}
+        {success && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm p-3 rounded-lg mb-4 text-center">
+            {success}
           </div>
         )}
 
@@ -84,7 +92,7 @@ const AuthModal = ({ onAuthSuccess }) => {
 
         <div className="text-center mt-6">
           <button 
-            onClick={() => { setIsLoginView(!isLoginView); setError(""); }}
+            onClick={() => { setIsLoginView(!isLoginView); setError("");setSuccess(""); }}
             className="text-sm text-blue-400 hover:underline font-medium bg-transparent border-none outline-none cursor-pointer"
           >
             {isLoginView ? "Don't have an account? Create Account" : "Already have an account? Sign In"}
