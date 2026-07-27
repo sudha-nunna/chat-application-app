@@ -142,7 +142,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
       const conversationMode = "text"; 
 
       const response = await fetch(
-        `http://localhost:5000/api/ollama/message/${targetChatEndpoint}`,
+        `${import.meta.env.VITE_API_URL}/ollama/message/${targetChatEndpoint}`,
         {
           method: "POST",
           headers: {
