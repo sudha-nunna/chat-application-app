@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { FiPlus, FiMessageSquare, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiMessageSquare, FiTrash2, FiX } from "react-icons/fi";
 import api from "../../services/api";
 
-const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdated }) => {
+const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdated, onCloseMobile }) => {
   const [chats, setChats] = useState([]);
 
   useEffect(() => {
@@ -32,22 +32,37 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
     }
   };
 
+  const handleSelectChat = (chatId) => {
+    setCurrentChatId(chatId);
+    if (onCloseMobile) onCloseMobile();
+  };
+
   return (
-    <aside className="w-64 shrink-0 min-w-[256px] max-w-[256px] bg-slate-950 border-r border-slate-800 flex flex-col h-full select-none">
+    <aside className="w-full md:w-64 shrink-0 md:min-w-[256px] md:max-w-[256px] bg-slate-950 border-r border-slate-800 flex flex-col h-full select-none">
       {/* Sub-Header */}
       <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
         <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
           <FiMessageSquare className="text-blue-400" />
           <span>General Threads</span>
         </span>
-        <button
-          onClick={() => setCurrentChatId(null)}
-          className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
-          title="New Chat Thread"
-        >
-          <FiPlus />
-          <span>New</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleSelectChat(null)}
+            className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
+            title="New Chat Thread"
+          >
+            <FiPlus />
+            <span>New</span>
+          </button>
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="md:hidden p-1 text-slate-400 hover:text-white"
+            >
+              <FiX className="text-base" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Threads List */}
@@ -62,7 +77,7 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
             return (
               <div
                 key={chat._id}
-                onClick={() => setCurrentChatId(chat._id)}
+                onClick={() => handleSelectChat(chat._id)}
                 className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
                   isActive
                     ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"

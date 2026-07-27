@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { FiMessageSquare } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 
-const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
+const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
   const [messages, setMessages] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false); 
@@ -106,16 +107,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
   const loadSavedMessages = async () => {
     try {
       const token = localStorage.getItem("token");
-       const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/chats/${currentChatId}/messages`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/chats/${currentChatId}/messages`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await res.json();
-      setMessages(data || []);
+      setMessages(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error reading history collections:", err);
     }
@@ -242,10 +243,22 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
     <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative text-slate-100 bg-slate-900/50">
       
       {/* Fixed Sticky Header Bar */}
-      <div className="px-6 py-3 bg-slate-950/60 backdrop-blur-md border-b border-slate-800/60 flex items-center justify-between shrink-0">
-        <span className="font-semibold text-xs text-slate-200 tracking-wide">
-          General AI Assistant (ChatGPT Mode)
-        </span>
+      <div className="px-4 md:px-6 py-3 bg-slate-950/60 backdrop-blur-md border-b border-slate-800/60 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 truncate">
+          {onToggleMobileSidebar && (
+            <button
+              onClick={onToggleMobileSidebar}
+              className="md:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 flex items-center gap-1 text-xs shrink-0"
+              title="Toggle Threads List"
+            >
+              <FiMessageSquare className="text-sm" />
+              <span className="text-[11px] font-medium">Threads</span>
+            </button>
+          )}
+          <span className="font-semibold text-xs text-slate-200 tracking-wide truncate">
+            General AI Assistant (ChatGPT Mode)
+          </span>
+        </div>
 
         {isAudioActive && (
           <button
