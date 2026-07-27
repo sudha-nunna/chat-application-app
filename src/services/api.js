@@ -4,7 +4,7 @@ import axios from "axios";
 //   baseURL: "http://localhost:5000/api",
 // });
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: import.meta.env.VITE_API_URL,
 });
 console.log("API base URL:", import.meta.env.VITE_API_URL);
 
