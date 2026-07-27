@@ -18,8 +18,7 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#0f172a] w-screen overflow-hidden relative">
-      {/* If unauthorized, obscure layout elements with AuthModal container */}
+    <div className="flex flex-1 h-full w-full overflow-hidden relative">
       {!isAuthenticated && (
         <AuthModal onAuthSuccess={triggerSidebarRefresh} />
       )}

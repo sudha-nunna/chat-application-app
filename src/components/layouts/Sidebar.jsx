@@ -1,100 +1,92 @@
 import { useEffect, useState } from "react";
+import { FiPlus, FiMessageSquare, FiTrash2 } from "react-icons/fi";
 import api from "../../services/api";
 
 const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdated }) => {
   const [chats, setChats] = useState([]);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     fetchHistoryList();
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try { setUser(JSON.parse(savedUser)); } catch(e) {}
-    }
   }, [refreshTrigger]);
 
   const fetchHistoryList = async () => {
     try {
       const res = await api.get("/chats");
-      setChats(res.data);
+      setChats(res.data || []);
     } catch (err) {
       console.error("Failed to load history list", err);
     }
   };
 
   const handleDeleteChat = async (e, chatId) => {
-    e.stopPropagation(); // Stop changing current active chat layout selection
-    if (!window.confirm("Delete this conversation permanent log record?")) return;
+    e.stopPropagation();
+    if (!window.confirm("Delete this conversation thread?")) return;
     try {
       await api.delete(`/chats/${chatId}`);
       if (currentChatId === chatId) {
         setCurrentChatId(null);
       }
-      onChatUpdated();
+      if (onChatUpdated) onChatUpdated();
     } catch (err) {
-      console.error("Error deleting historical entity item:", err);
+      console.error("Error deleting chat:", err);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.reload();
-  };
-
   return (
-    <div className="w-64 bg-[#1e293b] flex flex-col justify-between border-r border-slate-700 p-4 h-full">
-      <div className="flex flex-col h-full overflow-hidden">
-        
-        {/* User Context & Action Row */}
-        <div className="flex flex-col gap-2 mb-6 pb-4 border-b border-slate-700">
-          {user && (
-            <div className="text-slate-200 text-sm font-medium px-1 truncate">
-              User: <span className="text-green-400 font-semibold">{user.name}</span>
-            </div>
-          )}
-          <div className="flex justify-between items-center gap-2">
-            <button
-              onClick={() => setCurrentChatId(null)}
-              className="flex-1 bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
-            >
-              + New Chat
-            </button>
-            <button 
-              onClick={handleLogout}
-              className="bg-slate-700 hover:bg-rose-600 text-white px-3 py-2.5 rounded-lg text-xs transition font-medium"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        {/* History Stream List */}
-        <h3 className="text-slate-400 font-semibold text-xs tracking-wider uppercase mb-3 px-1">Recent History</h3>
-        <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-          {chats.map((chat) => (
-            <div
-              key={chat._id}
-              onClick={() => setCurrentChatId(chat._id)}
-              className={`p-3 rounded-lg text-sm cursor-pointer transition font-normal flex justify-between items-center group relative ${
-                currentChatId === chat._id
-                  ? "bg-slate-700 text-white shadow-md font-medium"
-                  : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              <span className="truncate pr-4 flex-1">{chat.title}</span>
-              <button
-                onClick={(e) => handleDeleteChat(e, chat._id)}
-                className="text-slate-400 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition p-1 text-xs font-bold absolute right-2 bg-inherit rounded"
-                title="Delete Chat"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
+    <aside className="w-64 shrink-0 min-w-[256px] max-w-[256px] bg-slate-950 border-r border-slate-800 flex flex-col h-full select-none">
+      {/* Sub-Header */}
+      <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
+        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+          <FiMessageSquare className="text-blue-400" />
+          <span>General Threads</span>
+        </span>
+        <button
+          onClick={() => setCurrentChatId(null)}
+          className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
+          title="New Chat Thread"
+        >
+          <FiPlus />
+          <span>New</span>
+        </button>
       </div>
-    </div>
+
+      {/* Threads List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        {chats.length === 0 ? (
+          <div className="text-[11px] text-slate-500 text-center py-8">
+            No history threads yet.<br />Start asking questions!
+          </div>
+        ) : (
+          chats.map((chat) => {
+            const isActive = currentChatId === chat._id;
+            return (
+              <div
+                key={chat._id}
+                onClick={() => setCurrentChatId(chat._id)}
+                className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
+                  isActive
+                    ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
+                    : "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <FiMessageSquare className={isActive ? "text-blue-400 shrink-0" : "text-slate-600 shrink-0"} />
+                  <span className="truncate text-[11px]">{chat.title || "General Chat"}</span>
+                </div>
+
+                <button
+                  onClick={(e) => handleDeleteChat(e, chat._id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition"
+                  title="Delete Thread"
+                >
+                  <FiTrash2 className="text-xs" />
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </aside>
   );
 };
 
