@@ -106,10 +106,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated }) => {
   const loadSavedMessages = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(
-        `http://localhost:5000/api/chats/${currentChatId}/messages`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+       const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/chats/${currentChatId}/messages`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
       const data = await res.json();
       setMessages(data || []);
     } catch (err) {
