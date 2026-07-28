@@ -86,7 +86,7 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
               >
                 <div className="flex items-center gap-2 truncate">
                   <FiMessageSquare className={isActive ? "text-blue-400 shrink-0" : "text-slate-600 shrink-0"} />
-                  <span className="truncate text-[11px]">{chat.title || "General Chat"}</span>
+                  <span className="truncate text-[11px]">{chat.title || "New Conversation"}</span>
                 </div>
 
                 <button

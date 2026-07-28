@@ -131,7 +131,7 @@ const BotChatTab = ({ bot }) => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/bots/${bot._id}/chat`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/bots/${bot._id}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -257,7 +257,7 @@ const BotChatTab = ({ bot }) => {
                 >
                   <div className="flex items-center gap-2 truncate">
                     <FiMessageSquare className={isActive ? "text-blue-400 shrink-0" : "text-slate-600 shrink-0"} />
-                    <span className="truncate text-[11px]">{c.title || "Bot Conversation"}</span>
+                    <span className="truncate text-[11px]">{c.title || "New Conversation"}</span>
                   </div>
 
                   <button
@@ -314,7 +314,7 @@ const BotChatTab = ({ bot }) => {
                 >
                   <div className="flex items-center gap-2 truncate">
                     <FiMessageSquare className={isActive ? "text-blue-400 shrink-0" : "text-slate-600 shrink-0"} />
-                    <span className="truncate text-[11px]">{c.title || "Bot Conversation"}</span>
+                    <span className="truncate text-[11px]">{c.title || "New Conversation"}</span>
                   </div>
 
                   <button

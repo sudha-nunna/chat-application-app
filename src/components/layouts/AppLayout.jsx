@@ -12,11 +12,15 @@ import {
   FiChevronRight,
   FiSearch,
   FiMenu,
-  FiX
+  FiX,
+  FiCreditCard
 } from "react-icons/fi";
 import api from "../../services/api";
 import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
+import PlanBadge from "../subscription/PlanBadge";
+import UpgradeButton from "../subscription/UpgradeButton";
+import SubscriptionModal from "../subscription/SubscriptionModal";
 
 const AppLayout = ({ children }) => {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
@@ -129,6 +133,19 @@ const AppLayout = ({ children }) => {
           <FiMessageSquare className="text-base" />
           <span>General Chat</span>
         </Link>
+
+        <Link
+          to="/subscription"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
+            location.pathname === "/subscription"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+              : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+          }`}
+        >
+          <FiCreditCard className="text-base" />
+          <span>Subscription</span>
+        </Link>
       </div>
 
       {/* "+ Create Bot" Button */}
@@ -196,14 +213,22 @@ const AppLayout = ({ children }) => {
         )}
       </div>
 
+      {/* Persistent Upgrade CTA Banner */}
+      <div className="px-3 py-2 border-t border-slate-800/40">
+        <UpgradeButton />
+      </div>
+
       {/* User Footer */}
       <div className={`p-3 border-t ${isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-100"} flex items-center justify-between`}>
         <div className="flex items-center gap-2.5 truncate">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
             {user?.name ? user.name.charAt(0).toUpperCase() : <FiUser />}
           </div>
           <div className="truncate">
-            <p className="text-xs font-semibold truncate">{user?.name || "Member"}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs font-semibold truncate">{user?.name || "Member"}</p>
+              <PlanBadge showPriority={false} />
+            </div>
             <p className="text-[10px] text-slate-400 truncate">{user?.email || "user@allvion.io"}</p>
           </div>
         </div>
@@ -233,6 +258,9 @@ const AppLayout = ({ children }) => {
       {!isAuthenticated && (
         <AuthModal onAuthSuccess={() => setIsAuthenticated(true)} />
       )}
+
+      {/* Global Subscription Welcome / Upgrade Modal */}
+      <SubscriptionModal />
 
       {/* MOBILE TOP NAVBAR (Shown only on small screens) */}
       <div className={`md:hidden flex items-center justify-between p-3 border-b shrink-0 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"}`}>

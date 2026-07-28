@@ -108,7 +108,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/chats/${currentChatId}/messages`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${currentChatId}/messages`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -143,7 +143,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       const conversationMode = "text"; 
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/ollama/message/${targetChatEndpoint}`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/message/${targetChatEndpoint}`,
         {
           method: "POST",
           headers: {

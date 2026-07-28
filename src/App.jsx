@@ -3,19 +3,24 @@ import AppLayout from "./components/layouts/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import BotDetailPage from "./pages/BotDetailPage";
 import ChatPage from "./pages/ChatPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
 
 function App() {
   return (
     <BrowserRouter>
-      <AppLayout>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/bots/:botId" element={<BotDetailPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="*" element={<DashboardPage />} />
-        </Routes>
-      </AppLayout>
+      <SubscriptionProvider>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/bots/:botId" element={<BotDetailPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="*" element={<DashboardPage />} />
+          </Routes>
+        </AppLayout>
+      </SubscriptionProvider>
     </BrowserRouter>
   );
 }
