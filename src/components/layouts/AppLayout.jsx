@@ -84,6 +84,7 @@ const AppLayout = ({ children }) => {
   );
 
   const isDark = theme === "dark";
+  const isGoogleCallbackRoute = location.pathname.startsWith("/auth/google");
 
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full overflow-hidden">
@@ -255,7 +256,7 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className={`flex flex-col md:flex-row h-screen w-screen overflow-hidden ${isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-800"}`}>
-      {!isAuthenticated && (
+      {!isAuthenticated && !isGoogleCallbackRoute && (
         <AuthModal onAuthSuccess={() => setIsAuthenticated(true)} />
       )}
 

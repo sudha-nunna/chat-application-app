@@ -11,13 +11,14 @@ import {
 import api from "../services/api";
 import BotChatTab from "../components/bots/BotChatTab";
 import BotApiTab from "../components/bots/BotApiTab";
+import BotKnowledgeTab from "../components/bots/BotKnowledgeTab";
 
 const BotDetailPage = () => {
   const { botId } = useParams();
   const navigate = useNavigate();
   const [bot, setBot] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("chat"); // "chat" | "apis"
+  const [activeTab, setActiveTab] = useState("chat"); // "chat" | "knowledge" | "apis"
 
   useEffect(() => {
     fetchBotDetails();
@@ -136,6 +137,18 @@ const BotDetailPage = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab("knowledge")}
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${
+            activeTab === "knowledge"
+              ? "border-blue-500 text-blue-400 bg-blue-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <FiFileText />
+          <span>Knowledge ({bot.fileCount || 0})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("apis")}
           className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${
             activeTab === "apis"
@@ -151,6 +164,7 @@ const BotDetailPage = () => {
       {/* TAB BODY */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {activeTab === "chat" && <BotChatTab bot={bot} />}
+        {activeTab === "knowledge" && <BotKnowledgeTab bot={bot} />}
         {activeTab === "apis" && <BotApiTab bot={bot} />}
       </div>
 

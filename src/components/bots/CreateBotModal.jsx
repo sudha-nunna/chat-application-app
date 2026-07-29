@@ -125,6 +125,31 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
     setStagedApis((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const validateStep = (step) => {
+    if (step === 1) {
+      if (!name.trim()) {
+        setError("Bot name is required.");
+        return false;
+      }
+    }
+
+    if (step === 3) {
+      if (stagedFiles.length === 0) {
+        setError("Please upload at least one knowledge file before continuing.");
+        return false;
+      }
+    }
+
+    setError("");
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 5));
+    }
+  };
+
   const handleTestApiExecution = async (apiItem) => {
     setTestLoading(true);
     setTestResult(null);
@@ -164,6 +189,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
       return;
     }
 
+    if (stagedFiles.length === 0) {
+      setError("Please upload at least one knowledge file before creating the bot.");
+      setCurrentStep(3);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -174,7 +205,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
         description: description ? description.trim() : "",
         model: selectedModel,
         systemPrompt: `You are a specialized AI Knowledge & Tool Agent named ${name}.`,
-        initialApis: stagedApis
+        initialApis: stagedApis,
+        stagedFiles
       });
 
       const newBot = botRes.data;
@@ -325,8 +357,11 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Upload Knowledge Base Documents (PDF, TXT, DOCX, Markdown)
+                  Optional Knowledge Base Documents (PDF, TXT, DOCX, Markdown)
                 </label>
+                <p className="text-[11px] text-slate-500 mb-3">
+                  You can create the bot without any documents and add knowledge later from the bot details page.
+                </p>
 
                 <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 hover:border-blue-500/50 bg-slate-950 p-6 rounded-xl cursor-pointer transition text-center group">
                   <FiUpload className="text-3xl text-slate-500 group-hover:text-blue-400 transition mb-2" />
@@ -574,7 +609,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
 
           {currentStep < 5 ? (
             <button
-              onClick={() => setCurrentStep((prev) => prev + 1)}
+              onClick={handleNextStep}
               className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition"
             >
               Next <FiArrowRight />
