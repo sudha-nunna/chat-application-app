@@ -125,6 +125,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const handleSendSubmit = async (textPayload) => {
     if (!textPayload.trim()) return;
 
+    const t0 = performance.now();
+    let firstTokenTime = null;
+
+    console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${textPayload}" at t=0 ms`);
+
     clearAudioPipeline(); 
 
     if (window.speechSynthesis && window.speechSynthesis.paused) {
@@ -194,6 +199,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 }
               } else if (parsed.type === "chunk") {
                 const textBit = parsed.text || "";
+                if (!firstTokenTime) {
+                  firstTokenTime = performance.now();
+                  const ttftMs = (firstTokenTime - t0).toFixed(2);
+                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs/1000).toFixed(2)} s)`);
+                }
                 
                 currentStreamingTextRef.current += textBit;
                 setStreamingReply(currentStreamingTextRef.current);
@@ -223,6 +233,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           { role: "assistant", content: finalResponseContent },
         ]);
       }
+
+      const totalTime = (performance.now() - t0).toFixed(2);
+      const streamDuration = firstTokenTime ? (performance.now() - firstTokenTime).toFixed(2) : "N/A";
+
+      console.log(`
+⏱️  =================== [FRONTEND UI GENERAL CHAT DIAGNOSTICS] ===================
+  ├── 🚀 Time To First Token (TTFT):   ${firstTokenTime ? (firstTokenTime - t0).toFixed(2) + ' ms' : 'N/A'}
+  ├── ⚡ UI Stream Rendering Duration: ${streamDuration} ms
+  └── 🏁 Total UI Round-Trip Time:    ${totalTime} ms (${(totalTime/1000).toFixed(2)} s)
+===========================================================================\n
+`);
 
       setStreamingReply("");
       currentStreamingTextRef.current = "";

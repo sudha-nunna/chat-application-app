@@ -114,6 +114,11 @@ const BotChatTab = ({ bot }) => {
     if (!input.trim() || loading) return;
 
     const userQuery = input.trim();
+    const t0 = performance.now();
+    let firstTokenTime = null;
+
+    console.log(`\n🚀 [FRONTEND BOT CHAT START] User Prompt: "${userQuery}" at t=0 ms`);
+
     setInput("");
     isStreamingRef.current = true;
 
@@ -167,6 +172,11 @@ const BotChatTab = ({ bot }) => {
               } else if (data.type === "sources") {
                 retrievedSources = data.sources || [];
               } else if (data.type === "chunk") {
+                if (!firstTokenTime) {
+                  firstTokenTime = performance.now();
+                  const ttftMs = (firstTokenTime - t0).toFixed(2);
+                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs/1000).toFixed(2)} s)`);
+                }
                 streamText += data.text;
                 setMessages((prev) =>
                   prev.map((msg) =>
@@ -180,6 +190,17 @@ const BotChatTab = ({ bot }) => {
           }
         }
       }
+
+      const totalTime = (performance.now() - t0).toFixed(2);
+      const streamDuration = firstTokenTime ? (performance.now() - firstTokenTime).toFixed(2) : "N/A";
+
+      console.log(`
+⏱️  =================== [FRONTEND UI BOT CHAT DIAGNOSTICS] ===================
+  ├── 🚀 Time To First Token (TTFT):   ${firstTokenTime ? (firstTokenTime - t0).toFixed(2) + ' ms' : 'N/A'}
+  ├── ⚡ UI Stream Rendering Duration: ${streamDuration} ms
+  └── 🏁 Total UI Round-Trip Time:    ${totalTime} ms (${(totalTime/1000).toFixed(2)} s)
+===========================================================================\n
+`);
     } catch (err) {
       console.error("Bot chat streaming error:", err);
       setMessages((prev) =>
