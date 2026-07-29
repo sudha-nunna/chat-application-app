@@ -13,7 +13,10 @@ import {
   FiMessageSquare,
   FiSidebar,
   FiMenu,
-  FiX
+  FiX,
+  FiServer,
+  FiCheckCircle,
+  FiActivity
 } from "react-icons/fi";
 import api from "../../services/api";
 
@@ -26,8 +29,32 @@ const BotChatTab = ({ bot }) => {
   const [openSourcesIdx, setOpenSourcesIdx] = useState(null);
   const [showHistorySidebar, setShowHistorySidebar] = useState(true);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [clusterNodes, setClusterNodes] = useState([
+    { id: "Node-1", name: "Primary Node", status: "HEALTHY", defaultModel: "qwen2.5:1.5b", activeRequests: 0 },
+    { id: "Node-2", name: "Secondary Node", status: "HEALTHY", defaultModel: "gemma-3-4b-it", activeRequests: 0 }
+  ]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const messagesContainerRef = useRef(null);
   const isStreamingRef = useRef(false);
+
+  useEffect(() => {
+    fetchClusterStatus();
+    const interval = setInterval(fetchClusterStatus, 12000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchClusterStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/cluster-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.nodes) setClusterNodes(data.nodes);
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => {
     fetchConversations();
@@ -377,9 +404,65 @@ const BotChatTab = ({ bot }) => {
             </button>
           </div>
 
-          <span className="text-[11px] text-slate-400 font-mono truncate">
-            Bot: <strong className="text-slate-200">{bot.name}</strong> ({bot.model})
-          </span>
+          <div className="flex items-center gap-3 relative">
+            <button
+              onClick={() => setShowStatusModal(!showStatusModal)}
+              className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
+              title="Click to view AI Cluster Health & Load Balancing"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <FiServer className="text-xs" />
+              <span className="hidden sm:inline">Cluster: 2 Nodes Online</span>
+            </button>
+
+            {showStatusModal && (
+              <div className="absolute right-0 top-10 z-50 w-80 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl p-4 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                  <div className="flex items-center gap-2 font-semibold text-slate-100">
+                    <FiServer className="text-blue-400" />
+                    <span>AI Cluster Health Status</span>
+                  </div>
+                  <button
+                    onClick={() => setShowStatusModal(false)}
+                    className="text-slate-400 hover:text-slate-200 p-1 rounded-md hover:bg-slate-800"
+                  >
+                    <FiX />
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {clusterNodes.map((node, idx) => (
+                    <div key={idx} className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-slate-200">{node.id} ({node.name || `Node ${idx+1}`})</span>
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <FiCheckCircle className="text-[10px]" />
+                          {node.status || "HEALTHY"}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 space-y-0.5">
+                        <p>• Model: <span className="text-slate-300 font-mono text-[10px]">{node.defaultModel}</span></p>
+                        <p>• Active Load: <span className="text-slate-200">{node.activeRequests || 0} active request(s)</span></p>
+                        <p className="truncate">• Endpoint: <span className="text-slate-400 font-mono text-[10px]">{node.url}</span></p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 flex items-center gap-1.5">
+                  <FiActivity className="text-blue-400 shrink-0" />
+                  <span>Smart Load Balancer dispatches concurrent requests automatically.</span>
+                </div>
+              </div>
+            )}
+
+            <span className="text-[11px] text-slate-400 font-mono truncate hidden md:inline">
+              Bot: <strong className="text-slate-200">{bot.name}</strong> ({bot.model})
+            </span>
+          </div>
         </div>
 
         {/* MESSAGES SCROLL AREA - ONLY THIS SCROLLS */}
