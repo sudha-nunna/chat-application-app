@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMessageSquare, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity } from "react-icons/fi";
+import { FiMessageSquare, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 
@@ -9,6 +9,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [isBotTyping, setIsBotTyping] = useState(false); 
   const [streamingReply, setStreamingReply] = useState("");
   const [isAudioActive, setIsAudioActive] = useState(false); 
+  const [isVoicePaused, setIsVoicePaused] = useState(false);
+  const isVoicePausedRef = useRef(false);
+  const isAbortedRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
   const [clusterNodes, setClusterNodes] = useState([
     { id: "Node-1", name: "Primary Node", status: "HEALTHY", defaultModel: "qwen2.5:1.5b", activeRequests: 0 },
     { id: "Node-2", name: "Secondary Node", status: "HEALTHY", defaultModel: "gemma-3-4b-it", activeRequests: 0 }
@@ -64,12 +69,51 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     isPlayingRef.current = false;
     currentSentenceBufferRef.current = "";
     setIsAudioActive(false); 
+    setIsVoicePaused(false);
+    isVoicePausedRef.current = false;
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   };
 
+  const toggleVoiceOver = () => {
+    if (!("speechSynthesis" in window)) return;
+
+    if (isVoicePaused) {
+      window.speechSynthesis.resume();
+      setIsVoicePaused(false);
+      isVoicePausedRef.current = false;
+    } else {
+      window.speechSynthesis.pause();
+      setIsVoicePaused(true);
+      isVoicePausedRef.current = true;
+    }
+  };
+
+  const handleStopGeneration = () => {
+    isAbortedRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    const partialText = currentStreamingTextRef.current;
+    if (partialText && partialText.trim()) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: partialText }
+      ]);
+    }
+
+    setStreamingReply("");
+    currentStreamingTextRef.current = "";
+    setIsSearching(false);
+    setIsBotTyping(false);
+    clearAudioPipeline();
+  };
+
   const processAudioQueue = () => {
+    if (isVoicePausedRef.current) return;
     if (isPlayingRef.current || audioQueueRef.current.length === 0) {
       if (audioQueueRef.current.length === 0 && !isPlayingRef.current) {
         setIsAudioActive(false);
@@ -87,12 +131,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       
       utterance.onend = () => {
         isPlayingRef.current = false;
-        processAudioQueue(); 
+        if (!isVoicePausedRef.current) processAudioQueue(); 
       };
 
       utterance.onerror = () => {
         isPlayingRef.current = false;
-        processAudioQueue();
+        if (!isVoicePausedRef.current) processAudioQueue();
       };
 
       window.speechSynthesis.speak(utterance);
@@ -154,6 +198,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${textPayload}" at t=0 ms`);
 
+    isAbortedRef.current = false;
     clearAudioPipeline(); 
 
     if (window.speechSynthesis && window.speechSynthesis.paused) {
@@ -171,6 +216,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       const targetChatEndpoint = currentChatId && currentChatId !== "new" ? currentChatId : "new";
       const conversationMode = "text"; 
 
+      abortControllerRef.current = new AbortController();
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/message/${targetChatEndpoint}`,
         {
@@ -183,6 +230,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             message: textPayload, 
             mode: conversationMode 
           }),
+          signal: abortControllerRef.current.signal
         }
       );
 
@@ -198,14 +246,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsBotTyping(true);
 
       while (!streamFinished) {
+        if (isAbortedRef.current) break;
         const { value, done } = await reader.read();
-        if (done) break;
+        if (done || isAbortedRef.current) break;
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
+          if (isAbortedRef.current) break;
           const cleanedLine = line.trim();
           if (cleanedLine.startsWith("data: ")) {
             const dataStr = cleanedLine.replace("data: ", "").trim();
@@ -245,6 +295,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         }
       }
 
+      if (isAbortedRef.current) return;
+
       if (currentSentenceBufferRef.current.trim()) {
         audioQueueRef.current.push(currentSentenceBufferRef.current.trim());
         processAudioQueue();
@@ -274,13 +326,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsBotTyping(false);
       if (onChatUpdated) onChatUpdated();
     } catch (err) {
-      console.error("Stream parsing exception:", err);
+      if (err.name === "AbortError" || err.message?.includes("aborted")) {
+        console.log("🛑 Stream generation stopped by user.");
+      } else {
+        console.error("Stream parsing exception:", err);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `⚠️ Error: Unable to process request.` }
+        ]);
+      }
       setIsSearching(false);
       setIsBotTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `⚠️ Error: Unable to process request.` }
-      ]);
+      setStreamingReply("");
+      currentStreamingTextRef.current = "";
     }
   };
 
@@ -363,16 +421,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             </div>
           )}
 
+          {/* Real-World Voice Over Control Button (Stop/Pause & Enable/Resume Present Response) */}
           {isAudioActive && (
             <button
-              onClick={clearAudioPipeline}
-              className="flex items-center gap-2 bg-rose-500/20 hover:bg-rose-500/40 text-rose-400 border border-rose-500/30 px-3 py-1 rounded-lg text-xs font-medium transition"
+              onClick={toggleVoiceOver}
+              className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                isVoicePaused
+                  ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
+                  : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/30"
+              }`}
+              title={isVoicePaused ? "Click to Enable & Resume Voice" : "Click to Stop & Pause Voice"}
             >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-              </span>
-              Stop Voice
+              {isVoicePaused ? (
+                <>
+                  <FiVolume2 className="text-sm" />
+                  <span>Enable Voice</span>
+                </>
+              ) : (
+                <>
+                  <FiVolumeX className="text-sm animate-pulse" />
+                  <span>Stop Voice</span>
+                </>
+              )}
             </button>
           )}
         </div>
@@ -409,9 +479,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         )}
       </div>
 
-      {/* Fixed Input Area */}
+      {/* Fixed Input Area with ChatGPT style Stop Button inside */}
       <div className="shrink-0">
-        <ChatInput onSend={handleSendSubmit} />
+        <ChatInput 
+          onSend={handleSendSubmit} 
+          isGenerating={isSearching || isBotTyping}
+          onStop={handleStopGeneration}
+        />
       </div>
     </div>
   );

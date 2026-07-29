@@ -16,7 +16,8 @@ import {
   FiX,
   FiServer,
   FiCheckCircle,
-  FiActivity
+  FiActivity,
+  FiStopCircle
 } from "react-icons/fi";
 import api from "../../services/api";
 
@@ -162,6 +163,7 @@ const BotChatTab = ({ bot }) => {
 
     try {
       const token = localStorage.getItem("token");
+      abortControllerRef.current = new AbortController();
 
       const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/bots/${bot._id}/chat`, {
         method: "POST",
@@ -169,7 +171,8 @@ const BotChatTab = ({ bot }) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ message: userQuery, conversationId: activeConvId })
+        body: JSON.stringify({ message: userQuery, conversationId: activeConvId }),
+        signal: abortControllerRef.current.signal
       });
 
       const reader = response.body.getReader();
@@ -229,14 +232,18 @@ const BotChatTab = ({ bot }) => {
 ===========================================================================\n
 `);
     } catch (err) {
-      console.error("Bot chat streaming error:", err);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === assistantMsgId
-            ? { ...msg, content: "I could not find information related to that question in the uploaded knowledge base." }
-            : msg
-        )
-      );
+      if (err.name === "AbortError" || err.message?.includes("aborted")) {
+        console.log("🛑 Bot stream generation stopped by user.");
+      } else {
+        console.error("Bot chat streaming error:", err);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === assistantMsgId
+              ? { ...msg, content: "I could not find information related to that question in the uploaded knowledge base." }
+              : msg
+          )
+        );
+      }
     } finally {
       setLoading(false);
       isStreamingRef.current = false;
@@ -590,15 +597,26 @@ const BotChatTab = ({ bot }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 text-slate-100 placeholder:text-slate-500 transition"
+              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 text-slate-100 placeholder:text-slate-500 transition disabled:opacity-75"
             />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl transition shadow-lg shadow-blue-500/20 disabled:opacity-50"
-            >
-              <FiSend className="text-sm" />
-            </button>
+            {loading ? (
+              <button
+                type="button"
+                onClick={handleStopBotGeneration}
+                className="w-10 h-10 rounded-full bg-black hover:bg-slate-900 border border-slate-700 flex items-center justify-center transition shrink-0 cursor-pointer shadow-lg active:scale-95"
+                title="Stop Generating"
+              >
+                <div className="w-3.5 h-3.5 bg-white rounded-[2px]" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl transition shadow-lg shadow-blue-500/20 disabled:opacity-50"
+              >
+                <FiSend className="text-sm" />
+              </button>
+            )}
           </form>
         </div>
 
