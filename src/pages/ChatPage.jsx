@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import Sidebar from "../components/layouts/Sidebar";
 import ChatArea from "../components/global/ChatArea";
 import AuthModal from "../components/auth/AuthModal";
+import { useTheme } from "../context/ThemeContext";
 
 const ChatPage = () => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { isDark } = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -19,7 +21,9 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-1 h-full w-full overflow-hidden relative">
+    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${
+      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+    }`}>
       {!isAuthenticated && (
         <AuthModal onAuthSuccess={triggerSidebarRefresh} />
       )}
@@ -38,7 +42,9 @@ const ChatPage = () => {
       {isMobileSidebarOpen && (
         <div className="md:hidden fixed inset-0 z-40 flex">
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+            className={`fixed inset-0 backdrop-blur-sm ${
+              isDark ? "bg-slate-950/70" : "bg-slate-900/40"
+            }`}
             onClick={() => setIsMobileSidebarOpen(false)}
           />
           <div className="relative w-72 max-w-[80vw] h-full z-10">

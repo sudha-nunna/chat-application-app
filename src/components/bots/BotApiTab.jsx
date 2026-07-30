@@ -10,11 +10,13 @@ import {
   FiLock
 } from "react-icons/fi";
 import api from "../../services/api";
+import { useTheme } from "../../context/ThemeContext";
 
 const BotApiTab = ({ bot }) => {
   const [apis, setApis] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { isDark } = useTheme();
 
   // Form State
   const [name, setName] = useState("");
@@ -35,7 +37,7 @@ const BotApiTab = ({ bot }) => {
     try {
       setLoading(true);
       const res = await api.get(`/bots/${bot._id}/apis`);
-      setApis(res.data);
+      setApis(res.data || []);
     } catch (err) {
       console.error("Failed to load bot APIs:", err);
     } finally {
@@ -94,16 +96,18 @@ const BotApiTab = ({ bot }) => {
   };
 
   return (
-    <div className="flex-1 h-full overflow-y-auto p-6 space-y-6 custom-scrollbar">
+    <div className={`flex-1 h-full overflow-y-auto p-6 space-y-6 custom-scrollbar ${
+      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+    }`}>
       
       {/* Header Bar */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold flex items-center gap-2">
-            <FiCode className="text-indigo-400" />
+          <h2 className={`text-base font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+            <FiCode className="text-indigo-500" />
             <span>Integrated HTTP APIs</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
             Configure external REST APIs for {bot.name} to query during chat.
           </p>
         </div>
@@ -119,17 +123,21 @@ const BotApiTab = ({ bot }) => {
 
       {/* APIS LIST */}
       {loading ? (
-        <div className="text-xs text-slate-400 text-center py-12">Loading API Integrations...</div>
+        <div className={`text-xs text-center py-12 ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading API Integrations...</div>
       ) : apis.length === 0 ? (
-        <div className="border border-dashed border-slate-800 rounded-2xl p-8 text-center bg-slate-950/40">
-          <FiCode className="text-3xl text-slate-600 mx-auto mb-2" />
-          <h4 className="text-sm font-bold text-slate-300">No API Integrations Configured</h4>
-          <p className="text-xs text-slate-500 mt-1 mb-4">
+        <div className={`border-2 border-dashed rounded-2xl p-8 text-center ${
+          isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-300 bg-white"
+        }`}>
+          <FiCode className={`text-3xl mx-auto mb-2 ${isDark ? "text-slate-600" : "text-slate-400"}`} />
+          <h4 className={`text-sm font-bold ${isDark ? "text-slate-300" : "text-slate-800"}`}>No API Integrations Configured</h4>
+          <p className={`text-xs mt-1 mb-4 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
             Connect external Webhooks, CRM endpoints, or REST services to expand this bot's capabilities.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg transition"
+            className={`inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg transition ${
+              isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200" : "bg-slate-200 hover:bg-slate-300 text-slate-800"
+            }`}
           >
             <FiPlus />
             <span>Add Integration</span>
@@ -140,15 +148,17 @@ const BotApiTab = ({ bot }) => {
           {apis.map((a) => (
             <div
               key={a._id}
-              className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-4"
+              className={`p-4 border rounded-xl flex items-center justify-between gap-4 ${
+                isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"
+              }`}
             >
               <div className="flex items-center gap-3 truncate">
-                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30">
                   {a.method}
                 </span>
                 <div className="truncate">
-                  <h4 className="text-xs font-bold text-slate-200">{a.name}</h4>
-                  <p className="text-[11px] text-slate-500 truncate font-mono mt-0.5">{a.url}</p>
+                  <h4 className={`text-xs font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{a.name}</h4>
+                  <p className={`text-[11px] truncate font-mono mt-0.5 ${isDark ? "text-slate-500" : "text-slate-500"}`}>{a.url}</p>
                 </div>
               </div>
 
@@ -156,7 +166,7 @@ const BotApiTab = ({ bot }) => {
                 <button
                   onClick={() => handleTestApi(a._id)}
                   disabled={testingApiId === a._id}
-                  className="flex items-center gap-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                  className="flex items-center gap-1.5 bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
                 >
                   <FiPlay />
                   <span>{testingApiId === a._id ? "Testing..." : "Test API"}</span>
@@ -164,7 +174,7 @@ const BotApiTab = ({ bot }) => {
 
                 <button
                   onClick={() => handleDeleteApi(a._id)}
-                  className="p-2 text-slate-500 hover:text-rose-400 transition"
+                  className={`p-2 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
                   title="Delete Integration"
                 >
                   <FiTrash2 />
@@ -177,20 +187,24 @@ const BotApiTab = ({ bot }) => {
 
       {/* TEST RESULT MODAL OVERLAY */}
       {testResult && (
-        <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className={`p-4 border rounded-xl space-y-2 ${
+          isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-md"
+        }`}>
+          <div className={`flex items-center justify-between border-b pb-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
             <h4 className="text-xs font-bold flex items-center gap-2">
               {testResult.ok ? (
-                <span className="text-emerald-400 flex items-center gap-1"><FiCheckCircle /> Success ({testResult.status})</span>
+                <span className="text-emerald-500 flex items-center gap-1"><FiCheckCircle /> Success ({testResult.status})</span>
               ) : (
-                <span className="text-rose-400 flex items-center gap-1"><FiXCircle /> Execution Result</span>
+                <span className="text-rose-500 flex items-center gap-1"><FiXCircle /> Execution Result</span>
               )}
             </h4>
-            <button onClick={() => setTestResult(null)} className="text-slate-400 text-xs hover:text-white">
+            <button onClick={() => setTestResult(null)} className={`text-xs ${isDark ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}>
               Close
             </button>
           </div>
-          <pre className="text-[11px] font-mono bg-slate-900 p-3 rounded-lg text-slate-300 overflow-x-auto max-h-48 custom-scrollbar">
+          <pre className={`text-[11px] font-mono p-3 rounded-lg overflow-x-auto max-h-48 custom-scrollbar ${
+            isDark ? "bg-slate-900 text-slate-300" : "bg-slate-100 text-slate-800"
+          }`}>
             {JSON.stringify(testResult.data || testResult, null, 2)}
           </pre>
         </div>
@@ -198,36 +212,44 @@ const BotApiTab = ({ bot }) => {
 
       {/* CREATE API MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm p-4 ${
+          isDark ? "bg-black/75" : "bg-slate-900/40"
+        }`}>
+          <div className={`border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl ${
+            isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+          }`}>
+            <div className={`flex justify-between items-center border-b pb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
               <h3 className="text-sm font-bold flex items-center gap-2">
-                <FiCode className="text-blue-400" />
+                <FiCode className="text-blue-500" />
                 <span>Add API Integration</span>
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsModalOpen(false)} className={isDark ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}>
                 <FiX />
               </button>
             </div>
 
             <form onSubmit={handleCreateApi} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">API Name</label>
+                <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>API Name</label>
                 <input
                   type="text"
                   placeholder="e.g. CRM Contact Service"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
+                    isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">HTTP Method</label>
+                <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>HTTP Method</label>
                 <select
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
+                    isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+                  }`}
                 >
                   <option value="GET">GET</option>
                   <option value="POST">POST</option>
@@ -238,22 +260,26 @@ const BotApiTab = ({ bot }) => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">API URL</label>
+                <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>API URL</label>
                 <input
                   type="text"
                   placeholder="https://api.codegene.io/v1/contacts"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
+                    isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Auth Type</label>
+                <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>Auth Type</label>
                 <select
                   value={authType}
                   onChange={(e) => setAuthType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
+                    isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+                  }`}
                 >
                   <option value="none">No Auth</option>
                   <option value="apiKey">API Key (x-api-key)</option>
@@ -263,13 +289,15 @@ const BotApiTab = ({ bot }) => {
 
               {authType !== "none" && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Encrypted Secret Token</label>
+                  <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>Encrypted Secret Token</label>
                   <input
                     type="password"
                     placeholder="API Secret Key / Token Value"
                     value={apiKeyVal}
                     onChange={(e) => setApiKeyVal(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                    className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
+                      isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+                    }`}
                   />
                 </div>
               )}
@@ -278,7 +306,9 @@ const BotApiTab = ({ bot }) => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold"
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold ${
+                    isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200" : "bg-slate-200 hover:bg-slate-300 text-slate-800"
+                  }`}
                 >
                   Cancel
                 </button>

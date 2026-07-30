@@ -11,31 +11,30 @@ import {
 } from "react-icons/fi";
 import api from "../services/api";
 import CreateBotModal from "../components/bots/CreateBotModal";
+import { useTheme } from "../context/ThemeContext";
 
 const DashboardPage = () => {
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
-   
+  const { isDark } = useTheme();
+
   useEffect(() => {
     fetchBots();
   }, []);
-
 
   const fetchBots = async () => {
     try {
       setLoading(true);
       const res = await api.get("/bots");
-      console.log("Fetched bots:", res.data);
-      setBots(res.data);
+      setBots(res.data || []);
     } catch (err) {
       console.error("Failed to load bots:", err);
     } finally {
       setLoading(false);
     }
   };
-  
 
   const handleDeleteBot = async (e, botId) => {
     e.stopPropagation();
@@ -48,16 +47,19 @@ const DashboardPage = () => {
       console.error("Failed to delete bot:", err);
     }
   };
-  
 
   return (
-    <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar">
+    <div className={`flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar ${
+      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+    }`}>
       
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">AI Agent Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage multi-tenant isolated AI agents, RAG knowledge bases, and API integrations.</p>
+          <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Manage multi-tenant isolated AI agents, RAG knowledge bases, and API integrations.
+          </p>
         </div>
 
         <button
@@ -71,17 +73,19 @@ const DashboardPage = () => {
 
       {/* Main Content View */}
       {loading ? (
-        <div className="flex items-center justify-center h-64 text-slate-400 text-xs font-medium">
+        <div className={`flex items-center justify-center h-64 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
           Loading AI Agents...
         </div>
       ) : bots.length === 0 ? (
         /* EMPTY STATE: "No Bots Found" */
-        <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-2xl p-12 text-center my-8 bg-slate-950/40">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-3xl mb-4">
+        <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${
+          isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-300 bg-white"
+        }`}>
+          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-500 text-3xl mb-4">
             <FiCpu />
           </div>
-          <h3 className="text-lg font-bold text-slate-100">No Bots Found</h3>
-          <p className="text-xs text-slate-400 max-w-sm mt-1 mb-6">
+          <h3 className={`text-lg font-bold ${isDark ? "text-slate-100" : "text-slate-900"}`}>No Bots Found</h3>
+          <p className={`text-xs max-w-sm mt-1 mb-6 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
             You haven't created any AI Agents yet. Create your first isolated agent with custom knowledge files and API integrations.
           </p>
           <button
@@ -99,19 +103,27 @@ const DashboardPage = () => {
             <div
               key={bot._id}
               onClick={() => navigate(`/bots/${bot._id}`)}
-              className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 cursor-pointer transition shadow-lg group relative flex flex-col justify-between"
+              className={`border rounded-2xl p-5 cursor-pointer transition shadow-lg group relative flex flex-col justify-between ${
+                isDark
+                  ? "bg-slate-900/90 border-slate-800 hover:border-slate-700"
+                  : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl"
+              }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-500 font-bold text-lg">
                       <FiCpu />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-100 group-hover:text-blue-400 transition truncate max-w-[150px]">
+                      <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${
+                        isDark ? "text-slate-100 group-hover:text-blue-400" : "text-slate-900 group-hover:text-blue-600"
+                      }`}>
                         {bot.name}
                       </h3>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono uppercase">
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${
+                        isDark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-600"
+                      }`}>
                         {bot.model}
                       </span>
                     </div>
@@ -119,31 +131,35 @@ const DashboardPage = () => {
 
                   <button
                     onClick={(e) => handleDeleteBot(e, bot._id)}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 transition"
+                    className={`p-1.5 transition ${
+                      isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
+                    }`}
                     title="Delete Bot"
                   >
                     <FiTrash2 className="text-sm" />
                   </button>
                 </div>
 
-                <p className="text-xs text-slate-400 line-clamp-2 mb-4 h-8">
+                <p className={`text-xs line-clamp-2 mb-4 h-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   {bot.description || "Isolated multi-tenant RAG agent with dedicated knowledge base."}
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-4 text-slate-400">
+              <div className={`pt-4 border-t flex items-center justify-between text-xs ${
+                isDark ? "border-slate-800/80" : "border-slate-100"
+              }`}>
+                <div className={`flex items-center gap-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   <span className="flex items-center gap-1">
-                    <FiFileText className="text-blue-400" />
-                    <strong className="text-slate-200">{bot.fileCount || 0}</strong> Files
+                    <FiFileText className="text-blue-500" />
+                    <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
                   </span>
                   <span className="flex items-center gap-1">
-                    <FiCode className="text-indigo-400" />
-                    <strong className="text-slate-200">{bot.apiCount || 0}</strong> APIs
+                    <FiCode className="text-indigo-500" />
+                    <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.apiCount || 0}</strong> APIs
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1 text-blue-400 font-semibold group-hover:translate-x-1 transition">
+                <div className="flex items-center gap-1 text-blue-500 font-semibold group-hover:translate-x-1 transition">
                   <span>Open</span>
                   <FiArrowRight />
                 </div>

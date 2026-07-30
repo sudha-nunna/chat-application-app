@@ -21,9 +21,10 @@ import AuthModal from "../auth/AuthModal";
 import PlanBadge from "../subscription/PlanBadge";
 import UpgradeButton from "../subscription/UpgradeButton";
 import SubscriptionModal from "../subscription/SubscriptionModal";
+import { useTheme } from "../../context/ThemeContext";
 
 const AppLayout = ({ children }) => {
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+  const { theme, isDark, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [bots, setBots] = useState([]);
@@ -33,10 +34,6 @@ const AppLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -64,10 +61,6 @@ const AppLayout = ({ children }) => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -83,25 +76,24 @@ const AppLayout = ({ children }) => {
     b.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const isDark = theme === "dark";
   const isGoogleCallbackRoute = location.pathname.startsWith("/auth/google");
 
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-800/40 flex items-center justify-between">
+      <div className={`p-4 border-b ${isDark ? "border-slate-800/40" : "border-slate-200"} flex items-center justify-between`}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
             <FiCpu className="text-xl" />
           </div>
           <div>
-            <h1 className="font-bold text-sm tracking-tight">Allvion Platform</h1>
-            <p className="text-[11px] text-slate-400 font-medium">Multi-Tenant AI Agents</p>
+            <h1 className={`font-bold text-sm tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Allvion Platform</h1>
+            <p className={`text-[11px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Multi-Tenant AI Agents</p>
           </div>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(false)}
-          className="md:hidden p-1 text-slate-400 hover:text-white"
+          className={`md:hidden p-1 ${isDark ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}
         >
           <FiX className="text-lg" />
         </button>
@@ -172,10 +164,15 @@ const AppLayout = ({ children }) => {
             placeholder="Search AI agents..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900/80 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+            className={`w-full border rounded-lg pl-8 pr-3 py-1.5 text-xs placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${
+              isDark
+                ? "bg-slate-900/80 border-slate-800 text-slate-200"
+                : "bg-white border-slate-300 text-slate-800"
+            }`}
           />
         </div>
       </div>
+
 
       {/* MY BOTS LIST */}
       <div className="flex-1 overflow-y-auto px-3 py-1 space-y-1 custom-scrollbar">

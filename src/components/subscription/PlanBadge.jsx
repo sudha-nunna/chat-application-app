@@ -1,29 +1,37 @@
 import { useSubscription } from "../../context/SubscriptionContext";
+import { useTheme } from "../../context/ThemeContext";
 import { FiZap, FiShield } from "react-icons/fi";
 
 const PlanBadge = ({ showPriority = false, className = "" }) => {
   const { currentPlan, priorityScore } = useSubscription();
+  const { isDark } = useTheme();
 
   const getBadgeStyle = () => {
     switch (currentPlan.toLowerCase()) {
       case "enterprise":
         return {
-          bg: "bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/40",
-          icon: <FiShield className="text-emerald-400 shrink-0" />,
+          bg: isDark
+            ? "bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/40"
+            : "bg-emerald-100 text-emerald-800 border-emerald-300",
+          icon: <FiShield className="text-emerald-500 shrink-0" />,
           label: "ENTERPRISE",
           priorityLabel: "Dedicated Priority",
         };
       case "pro":
         return {
-          bg: "bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border-blue-500/40",
-          icon: <FiZap className="text-blue-400 shrink-0 animate-pulse" />,
+          bg: isDark
+            ? "bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border-blue-500/40"
+            : "bg-blue-100 text-blue-800 border-blue-300",
+          icon: <FiZap className="text-blue-500 shrink-0 animate-pulse" />,
           label: "PRO",
           priorityLabel: "High Priority",
         };
       case "free":
       default:
         return {
-          bg: "bg-slate-800/80 text-slate-400 border-slate-700/60",
+          bg: isDark
+            ? "bg-slate-800/80 text-slate-400 border-slate-700/60"
+            : "bg-slate-200 text-slate-700 border-slate-300",
           icon: null,
           label: "FREE",
           priorityLabel: "Standard Priority",

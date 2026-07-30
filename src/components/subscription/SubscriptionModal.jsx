@@ -3,6 +3,7 @@ import { useSubscription } from "../../context/SubscriptionContext";
 import { usePlans } from "../../hooks/usePlans";
 import { FiX, FiZap, FiShield, FiRefreshCw } from "react-icons/fi";
 import PlanCard from "./PlanCard";
+import { useTheme } from "../../context/ThemeContext";
 
 const SubscriptionModal = () => {
   const {
@@ -14,6 +15,7 @@ const SubscriptionModal = () => {
   } = useSubscription();
 
   const { plans, loading: plansLoading, error: plansError } = usePlans();
+  const { isDark } = useTheme();
 
   const [isAnnual, setIsAnnual] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -49,27 +51,35 @@ const SubscriptionModal = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
+        className={`fixed inset-0 backdrop-blur-md transition-opacity ${
+          isDark ? "bg-slate-950/80" : "bg-slate-900/40"
+        }`}
         onClick={() => setIsUpgradeModalOpen(false)}
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-5xl bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 my-auto">
+      <div className={`relative w-full max-w-5xl border rounded-3xl shadow-2xl overflow-hidden z-10 my-auto ${
+        isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+      }`}>
         {/* Header Bar */}
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+        <div className={`p-6 border-b flex items-center justify-between ${
+          isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50"
+        }`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/20">
               <FiZap className="animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Upgrade Your Plan</h2>
-              <p className="text-xs text-slate-400">Unlock high priority processing, expanded agent limits, and enterprise features</p>
+              <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>Upgrade Your Plan</h2>
+              <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Unlock high priority processing, expanded agent limits, and enterprise features</p>
             </div>
           </div>
 
           <button
             onClick={() => setIsUpgradeModalOpen(false)}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className={`p-2 rounded-xl transition ${
+              isDark ? "text-slate-400 hover:text-white hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            }`}
           >
             <FiX className="text-xl" />
           </button>
@@ -82,8 +92,8 @@ const SubscriptionModal = () => {
             <div
               className={`p-3 rounded-xl text-xs font-semibold text-center border ${
                 feedback.type === "success"
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                  ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
+                  : "bg-rose-500/20 text-rose-500 border-rose-500/30"
               }`}
             >
               {feedback.message}
@@ -92,24 +102,26 @@ const SubscriptionModal = () => {
 
           {/* Billing Cycle Switch */}
           <div className="flex justify-center items-center gap-3">
-            <span className={`text-xs font-semibold ${!isAnnual ? "text-white" : "text-slate-400"}`}>
+            <span className={`text-xs font-semibold ${!isAnnual ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"}`}>
               Monthly Billing
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
-              className="relative w-12 h-6 rounded-full bg-slate-800 p-1 transition-colors border border-slate-700 focus:outline-none"
+              className={`relative w-12 h-6 rounded-full p-1 transition-colors border focus:outline-none ${
+                isDark ? "bg-slate-800 border-slate-700" : "bg-slate-200 border-slate-300"
+              }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-blue-500 shadow-md transition-transform ${
+                className={`w-4 h-4 rounded-full bg-blue-600 shadow-md transition-transform ${
                   isAnnual ? "translate-x-6" : "translate-x-0"
                 }`}
               />
             </button>
             <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-semibold ${isAnnual ? "text-white" : "text-slate-400"}`}>
+              <span className={`text-xs font-semibold ${isAnnual ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"}`}>
                 Annual Billing
               </span>
-              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                 Save 20%
               </span>
             </div>
@@ -118,11 +130,11 @@ const SubscriptionModal = () => {
           {/* Dynamic Plan Cards Grid */}
           {plansLoading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <FiRefreshCw className="text-2xl text-blue-400 animate-spin" />
-              <p className="text-xs text-slate-400 font-medium">Loading subscription plans...</p>
+              <FiRefreshCw className="text-2xl text-blue-500 animate-spin" />
+              <p className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading subscription plans...</p>
             </div>
           ) : plansError ? (
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs text-center">
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs text-center">
               {plansError}
             </div>
           ) : (
@@ -141,9 +153,11 @@ const SubscriptionModal = () => {
           )}
 
           {/* SaaS Trust Footer */}
-          <div className="pt-4 border-t border-slate-800/60 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+          <div className={`pt-4 border-t flex flex-wrap items-center justify-between text-xs gap-2 ${
+            isDark ? "border-slate-800/60 text-slate-400" : "border-slate-200 text-slate-500"
+          }`}>
             <div className="flex items-center gap-2">
-              <FiShield className="text-blue-400" />
+              <FiShield className="text-blue-500" />
               <span>Cancel or downgrade anytime with 1-click</span>
             </div>
             <div className="flex items-center gap-4">

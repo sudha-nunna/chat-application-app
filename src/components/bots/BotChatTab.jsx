@@ -20,6 +20,7 @@ import {
   FiStopCircle
 } from "react-icons/fi";
 import api from "../../services/api";
+import { useTheme } from "../../context/ThemeContext";
 
 const BotChatTab = ({ bot }) => {
   const [conversations, setConversations] = useState([]);
@@ -30,6 +31,8 @@ const BotChatTab = ({ bot }) => {
   const [openSourcesIdx, setOpenSourcesIdx] = useState(null);
   const [showHistorySidebar, setShowHistorySidebar] = useState(true);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const { isDark } = useTheme();
+
   const [clusterNodes, setClusterNodes] = useState([
     { id: "Node-1", name: "Primary Node", status: "HEALTHY", defaultModel: "qwen2.5:1.5b", activeRequests: 0 },
     { id: "Node-2", name: "Secondary Node", status: "HEALTHY", defaultModel: "gemma-3-4b-it", activeRequests: 0 }
@@ -105,153 +108,168 @@ const BotChatTab = ({ bot }) => {
       const res = await api.post(`/bots/${bot._id}/conversations`, {
         title: "New Conversation"
       });
-      const newConv = res.data;
-      setConversations((prev) => [newConv, ...prev]);
-      setActiveConvId(newConv._id);
-      setMessages([]);
+      await fetchConversations(false);
+      setActiveConvId(res.data._id);
       setIsMobileDrawerOpen(false);
     } catch (err) {
-      console.error("Failed to create new bot conversation:", err);
+      console.error("Failed to create new conversation:", err);
     }
   };
 
   const handleDeleteConversation = async (e, convId) => {
     e.stopPropagation();
     if (!window.confirm("Delete this conversation thread?")) return;
-
     try {
       await api.delete(`/bots/${bot._id}/conversations/${convId}`);
-      const updatedList = conversations.filter((c) => c._id !== convId);
-      setConversations(updatedList);
-
       if (activeConvId === convId) {
-        if (updatedList.length > 0) {
-          setActiveConvId(updatedList[0]._id);
-        } else {
-          setActiveConvId(null);
-          setMessages([]);
-        }
+        setActiveConvId(null);
       }
+      fetchConversations(true);
     } catch (err) {
-      console.error("Failed to delete bot conversation:", err);
+      console.error("Failed to delete conversation:", err);
     }
+  };
+
+  const [abortController, setAbortController] = useState(null);
+
+  const handleStopBotGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    isStreamingRef.current = false;
+    setLoading(false);
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    const userQuery = input.trim();
-    const t0 = performance.now();
-    let firstTokenTime = null;
-
-    console.log(`\n🚀 [FRONTEND BOT CHAT START] User Prompt: "${userQuery}" at t=0 ms`);
-
+    const userText = input;
     setInput("");
+    setLoading(true);
     isStreamingRef.current = true;
 
-    const userMsgObj = { _id: Date.now().toString(), role: "user", content: userQuery };
-    setMessages((prev) => [...prev, userMsgObj]);
+    let targetConvId = activeConvId;
 
-    setLoading(true);
+    if (!targetConvId) {
+      try {
+        const createRes = await api.post(`/bots/${bot._id}/conversations`, {
+          title: userText.slice(0, 30) || "New Conversation"
+        });
+        targetConvId = createRes.data._id;
+        setActiveConvId(targetConvId);
+      } catch (err) {
+        console.error("Failed to auto-create conversation:", err);
+        setLoading(false);
+        isStreamingRef.current = false;
+        return;
+      }
+    }
 
-    const assistantMsgId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      { _id: assistantMsgId, role: "assistant", content: "", sources: [] }
-    ]);
+    const tempUserMsg = { role: "user", content: userText };
+    const tempBotMsg = { role: "assistant", content: "", sources: [] };
+
+    setMessages((prev) => [...prev, tempUserMsg, tempBotMsg]);
+
+    const controller = new AbortController();
+    setAbortController(controller);
+
+    const token = localStorage.getItem("token");
 
     try {
-      const token = localStorage.getItem("token");
-      abortControllerRef.current = new AbortController();
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/bots/${bot._id}/chat`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/bots/${bot._id}/chat/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ message: userQuery, conversationId: activeConvId }),
-        signal: abortControllerRef.current.signal
+        body: JSON.stringify({
+          conversationId: targetConvId,
+          message: userText
+        }),
+        signal: controller.signal
       });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let streamText = "";
-      let retrievedSources = [];
+      let accumulatedAnswer = "";
+      let accumulatedSources = [];
+      let buffer = "";
 
       while (true) {
-        const { value, done } = await reader.read();
+        const { done, value } = await reader.read();
         if (done) break;
 
-        const chunkStr = decoder.decode(value, { stream: true });
-        const lines = chunkStr.split("\n\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const jsonStr = line.replace("data: ", "").trim();
-            if (jsonStr === "[DONE]") continue;
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+          const jsonStr = trimmed.replace(/^data:\s*/, "");
+          if (jsonStr === "[DONE]") continue;
 
-            try {
-              const data = JSON.parse(jsonStr);
-              if (data.type === "meta") {
-                if (!activeConvId || activeConvId !== data.conversationId) {
-                  setActiveConvId(data.conversationId);
-                  fetchConversations(false);
+          try {
+            const parsed = JSON.parse(jsonStr);
+
+            if (parsed.sources && parsed.sources.length > 0) {
+              accumulatedSources = parsed.sources;
+            }
+
+            if (parsed.chunk) {
+              accumulatedAnswer += parsed.chunk;
+              setMessages((prev) => {
+                const next = [...prev];
+                const lastIdx = next.length - 1;
+                if (lastIdx >= 0 && next[lastIdx].role === "assistant") {
+                  next[lastIdx] = {
+                    ...next[lastIdx],
+                    content: accumulatedAnswer,
+                    sources: accumulatedSources
+                  };
                 }
-              } else if (data.type === "sources") {
-                retrievedSources = data.sources || [];
-              } else if (data.type === "chunk") {
-                if (!firstTokenTime) {
-                  firstTokenTime = performance.now();
-                  const ttftMs = (firstTokenTime - t0).toFixed(2);
-                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs/1000).toFixed(2)} s)`);
-                }
-                streamText += data.text;
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg._id === assistantMsgId
-                      ? { ...msg, content: streamText, sources: retrievedSources }
-                      : msg
-                  )
-                );
-              }
-            } catch (e) {}
-          }
+                return next;
+              });
+            }
+          } catch (e) {}
         }
       }
 
-      const totalTime = (performance.now() - t0).toFixed(2);
-      const streamDuration = firstTokenTime ? (performance.now() - firstTokenTime).toFixed(2) : "N/A";
-
-      console.log(`
-⏱️  =================== [FRONTEND UI BOT CHAT DIAGNOSTICS] ===================
-  ├── 🚀 Time To First Token (TTFT):   ${firstTokenTime ? (firstTokenTime - t0).toFixed(2) + ' ms' : 'N/A'}
-  ├── ⚡ UI Stream Rendering Duration: ${streamDuration} ms
-  └── 🏁 Total UI Round-Trip Time:    ${totalTime} ms (${(totalTime/1000).toFixed(2)} s)
-===========================================================================\n
-`);
+      fetchConversations(false);
     } catch (err) {
-      if (err.name === "AbortError" || err.message?.includes("aborted")) {
+      if (err.name === "AbortError") {
         console.log("🛑 Bot stream generation stopped by user.");
       } else {
-        console.error("Bot chat streaming error:", err);
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === assistantMsgId
-              ? { ...msg, content: "I could not find information related to that question in the uploaded knowledge base." }
-              : msg
-          )
-        );
+        console.error("Stream error:", err);
+        setMessages((prev) => {
+          const next = [...prev];
+          const lastIdx = next.length - 1;
+          if (lastIdx >= 0 && next[lastIdx].role === "assistant") {
+            next[lastIdx] = {
+              ...next[lastIdx],
+              content: "⚠️ Error generating response from Bot engine."
+            };
+          }
+          return next;
+        });
       }
     } finally {
       setLoading(false);
+      setAbortController(null);
       isStreamingRef.current = false;
     }
   };
 
   return (
-    <div className="flex-1 min-w-0 flex h-full overflow-hidden bg-slate-900/50 relative">
+    <div className={`flex-1 min-w-0 flex h-full overflow-hidden relative ${
+      isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
+    }`}>
       
       {/* MOBILE DRAWER OVERLAY */}
       {isMobileDrawerOpen && (
@@ -263,26 +281,26 @@ const BotChatTab = ({ bot }) => {
 
       {/* MOBILE SLIDE-IN SIDEBAR DRAWER */}
       <div 
-        className={`fixed inset-y-0 left-0 w-72 bg-slate-950 border-r border-slate-800 z-50 flex flex-col h-full transition-transform duration-300 md:hidden ${
-          isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 w-72 border-r z-50 flex flex-col h-full transition-transform duration-300 md:hidden ${
+          isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+        } ${isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <FiMessageSquare className="text-blue-400" />
+        <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+          <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+            <FiMessageSquare className="text-blue-500" />
             <span>Chat Threads</span>
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={handleCreateNewChat}
-              className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2 py-1 rounded-lg transition"
+              className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2 py-1 rounded-lg transition"
             >
               <FiPlus />
               <span>New</span>
             </button>
             <button
               onClick={() => setIsMobileDrawerOpen(false)}
-              className="p-1 text-slate-400 hover:text-slate-200"
+              className={`p-1 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}
             >
               <FiX className="text-base" />
             </button>
@@ -291,7 +309,7 @@ const BotChatTab = ({ bot }) => {
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {conversations.length === 0 ? (
-            <div className="text-[11px] text-slate-500 text-center py-8">
+            <div className={`text-[11px] text-center py-8 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               No chat history yet.<br />Start asking questions!
             </div>
           ) : (
@@ -306,18 +324,22 @@ const BotChatTab = ({ bot }) => {
                   }}
                   className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
                     isActive
-                      ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
-                      : "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
+                      ? isDark
+                        ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
+                        : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
+                      : isDark
+                      ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
+                      : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <FiMessageSquare className={isActive ? "text-blue-400 shrink-0" : "text-slate-600 shrink-0"} />
+                    <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
                     <span className="truncate text-[11px]">{c.title || "New Conversation"}</span>
                   </div>
 
                   <button
                     onClick={(e) => handleDeleteConversation(e, c._id)}
-                    className="p-1 text-slate-500 hover:text-rose-400 transition"
+                    className={`p-1 hover:text-rose-500 transition ${isDark ? "text-slate-500" : "text-slate-400"}`}
                   >
                     <FiTrash2 className="text-xs" />
                   </button>
@@ -330,18 +352,20 @@ const BotChatTab = ({ bot }) => {
 
       {/* DESKTOP THREADS SUB-SIDEBAR (256px FIXED - COLLAPSIBLE) */}
       <div 
-        className={`hidden md:flex flex-col h-full bg-slate-950 border-r border-slate-800 shrink-0 transition-all duration-300 select-none ${
+        className={`hidden md:flex flex-col h-full border-r shrink-0 transition-all duration-300 select-none ${
+          isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+        } ${
           showHistorySidebar ? "w-64 min-w-[256px] max-w-[256px]" : "w-0 min-w-0 max-w-0 overflow-hidden border-none"
         }`}
       >
-        <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <FiMessageSquare className="text-blue-400" />
+        <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+          <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+            <FiMessageSquare className="text-blue-500" />
             <span>Chat Threads</span>
           </span>
           <button
             onClick={handleCreateNewChat}
-            className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
+            className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
             title="New Chat Thread"
           >
             <FiPlus />
@@ -351,7 +375,7 @@ const BotChatTab = ({ bot }) => {
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {conversations.length === 0 ? (
-            <div className="text-[11px] text-slate-500 text-center py-8">
+            <div className={`text-[11px] text-center py-8 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               No chat history yet.<br />Start asking questions!
             </div>
           ) : (
@@ -363,18 +387,22 @@ const BotChatTab = ({ bot }) => {
                   onClick={() => setActiveConvId(c._id)}
                   className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
                     isActive
-                      ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
-                      : "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
+                      ? isDark
+                        ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
+                        : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
+                      : isDark
+                      ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
+                      : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <FiMessageSquare className={isActive ? "text-blue-400 shrink-0" : "text-slate-600 shrink-0"} />
+                    <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
                     <span className="truncate text-[11px]">{c.title || "New Conversation"}</span>
                   </div>
 
                   <button
                     onClick={(e) => handleDeleteConversation(e, c._id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition"
+                    className={`opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition ${isDark ? "text-slate-500" : "text-slate-400"}`}
                     title="Delete Thread"
                   >
                     <FiTrash2 className="text-xs" />
@@ -390,12 +418,16 @@ const BotChatTab = ({ bot }) => {
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
         
         {/* Fixed Controls Header */}
-        <div className="px-4 py-2.5 bg-slate-950/60 backdrop-blur-md border-b border-slate-800/60 flex items-center justify-between shrink-0">
+        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${
+          isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+        }`}>
           <div className="flex items-center gap-2">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden flex items-center justify-center p-1.5 text-slate-300 hover:text-white bg-slate-900 border border-slate-800 rounded-lg"
+              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${
+                isDark ? "text-slate-300 hover:text-white bg-slate-900 border-slate-800" : "text-slate-700 hover:text-slate-900 bg-white border-slate-200 shadow-sm"
+              }`}
               title="Toggle Threads Menu"
             >
               <FiMenu className="text-base" />
@@ -404,7 +436,9 @@ const BotChatTab = ({ bot }) => {
             {/* Desktop Toggle Button */}
             <button
               onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-              className="hidden md:flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200"
+              className={`hidden md:flex items-center gap-1.5 text-xs ${
+                isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+              }`}
             >
               <FiSidebar />
               <span>{showHistorySidebar ? "Hide History" : "Show History"}</span>
@@ -414,7 +448,7 @@ const BotChatTab = ({ bot }) => {
           <div className="flex items-center gap-3 relative">
             <button
               onClick={() => setShowStatusModal(!showStatusModal)}
-              className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
+              className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
               title="Click to view AI Cluster Health & Load Balancing"
             >
               <span className="relative flex h-2 w-2">
@@ -426,15 +460,17 @@ const BotChatTab = ({ bot }) => {
             </button>
 
             {showStatusModal && (
-              <div className="absolute right-0 top-10 z-50 w-80 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl p-4 text-xs">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
-                  <div className="flex items-center gap-2 font-semibold text-slate-100">
-                    <FiServer className="text-blue-400" />
+              <div className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${
+                isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
+              }`}>
+                <div className={`flex items-center justify-between border-b pb-2.5 mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                  <div className={`flex items-center gap-2 font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+                    <FiServer className="text-blue-500" />
                     <span>AI Cluster Health Status</span>
                   </div>
                   <button
                     onClick={() => setShowStatusModal(false)}
-                    className="text-slate-400 hover:text-slate-200 p-1 rounded-md hover:bg-slate-800"
+                    className={`p-1 rounded-md ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
                   >
                     <FiX />
                   </button>
@@ -442,32 +478,32 @@ const BotChatTab = ({ bot }) => {
 
                 <div className="space-y-2.5">
                   {clusterNodes.map((node, idx) => (
-                    <div key={idx} className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5">
+                    <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-slate-200">{node.id} ({node.name || `Node ${idx+1}`})</span>
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.id} ({node.name || `Node ${idx+1}`})</span>
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                           <FiCheckCircle className="text-[10px]" />
                           {node.status || "HEALTHY"}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-400 space-y-0.5">
-                        <p>• Model: <span className="text-slate-300 font-mono text-[10px]">{node.defaultModel}</span></p>
-                        <p>• Active Load: <span className="text-slate-200">{node.activeRequests || 0} active request(s)</span></p>
-                        <p className="truncate">• Endpoint: <span className="text-slate-400 font-mono text-[10px]">{node.url}</span></p>
+                      <div className={`text-[11px] space-y-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        <p>• Model: <span className={`font-mono text-[10px] ${isDark ? "text-slate-300" : "text-slate-700"}`}>{node.defaultModel}</span></p>
+                        <p>• Active Load: <span className={isDark ? "text-slate-200" : "text-slate-800"}>{node.activeRequests || 0} active request(s)</span></p>
+                        <p className="truncate">• Endpoint: <span className={`font-mono text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{node.url}</span></p>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 flex items-center gap-1.5">
-                  <FiActivity className="text-blue-400 shrink-0" />
+                <div className={`mt-3 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"}`}>
+                  <FiActivity className="text-blue-500 shrink-0" />
                   <span>Smart Load Balancer dispatches concurrent requests automatically.</span>
                 </div>
               </div>
             )}
 
-            <span className="text-[11px] text-slate-400 font-mono truncate hidden md:inline">
-              Bot: <strong className="text-slate-200">{bot.name}</strong> ({bot.model})
+            <span className={`text-[11px] font-mono truncate hidden md:inline ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+              Bot: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.name}</strong> ({bot.model})
             </span>
           </div>
         </div>
@@ -478,12 +514,12 @@ const BotChatTab = ({ bot }) => {
           className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar"
         >
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 p-8">
-              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-2xl mb-3">
+            <div className={`flex flex-col items-center justify-center h-full text-center p-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-500 text-2xl mb-3">
                 <FiCpu />
               </div>
-              <h3 className="text-base font-bold text-slate-200">Chat with {bot.name}</h3>
-              <p className="text-xs max-w-md text-slate-400 mt-1">
+              <h3 className={`text-base font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>Chat with {bot.name}</h3>
+              <p className={`text-xs max-w-md mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 Ask anything about uploaded knowledge base files and integrated APIs.
               </p>
             </div>
@@ -502,7 +538,9 @@ const BotChatTab = ({ bot }) => {
                     className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
                       isUser
                         ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                        : "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
+                        : isDark
+                        ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
+                        : "bg-indigo-100 text-indigo-700 border border-indigo-200"
                     }`}
                   >
                     {isUser ? <FiUser /> : <FiCpu />}
@@ -514,7 +552,9 @@ const BotChatTab = ({ bot }) => {
                       className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${
                         isUser
                           ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
-                          : "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
+                          : isDark
+                          ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
+                          : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
                       }`}
                     >
                       {isUser ? (
@@ -524,24 +564,34 @@ const BotChatTab = ({ bot }) => {
                           remarkPlugins={[remarkGfm]}
                           components={{
                             table: ({ node, ...props }) => (
-                              <div className="w-full max-w-full overflow-x-auto my-2.5 rounded-lg border border-slate-800 custom-scrollbar">
+                              <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${
+                                isDark ? "border-slate-800" : "border-slate-300"
+                              }`}>
                                 <table className="w-full border-collapse text-left text-xs min-w-full" {...props} />
                               </div>
                             ),
                             code({ node, inline, className, children, ...props }) {
                               const isMultiLine = String(children).includes("\n");
                               return inline || !isMultiLine ? (
-                                <code className="bg-slate-800/80 text-blue-300 px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere]" {...props}>
+                                <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${
+                                  isUser
+                                    ? "bg-blue-700/80 text-blue-100"
+                                    : isDark
+                                    ? "bg-slate-800/80 text-blue-300"
+                                    : "bg-slate-200 text-blue-700"
+                                }`} {...props}>
                                   {children}
                                 </code>
                               ) : (
-                                <div className="my-2.5 w-full max-w-full overflow-x-auto rounded-xl bg-slate-950 border border-slate-800 p-3.5 custom-scrollbar font-mono text-[11px] text-emerald-400">
+                                <div className={`my-2.5 w-full max-w-full overflow-x-auto rounded-xl border p-3.5 custom-scrollbar font-mono text-[11px] text-emerald-400 ${
+                                  isDark ? "bg-slate-950 border-slate-800" : "bg-slate-900 border-slate-700"
+                                }`}>
                                   <pre className="overflow-x-auto m-0 p-0">{children}</pre>
                                 </div>
                               );
                             },
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0 break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />,
-                            strong: ({ node, ...props }) => <strong className="font-bold text-blue-400" {...props} />
+                            strong: ({ node, ...props }) => <strong className={`font-bold ${isUser ? "text-white" : isDark ? "text-blue-400" : "text-blue-600"}`} {...props} />
                           }}
                         >
                           {msg.content || "Thinking..."}
@@ -549,24 +599,32 @@ const BotChatTab = ({ bot }) => {
                       )}
                     </div>
 
-                    {/* COLLAPSED SOURCES TOGGLE BUTTON (SHOWN ONLY WHEN ACTUAL SOURCES EXIST) */}
+                    {/* COLLAPSED SOURCES TOGGLE BUTTON */}
                     {!isUser && msg.sources && msg.sources.length > 0 && (
                       <div className="pt-0.5">
                         <button
                           onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-blue-400 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 transition"
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${
+                            isDark
+                              ? "text-slate-400 hover:text-blue-400 bg-slate-950 border-slate-800"
+                              : "text-slate-600 hover:text-blue-600 bg-slate-100 border-slate-200"
+                          }`}
                         >
-                          <FiFileText className="text-blue-400" />
+                          <FiFileText className="text-blue-500" />
                           <span>View Sources</span>
                           {isSourcesOpen ? <FiChevronUp /> : <FiChevronDown />}
                         </button>
 
                         {isSourcesOpen && (
-                          <div className="mt-2 p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2 max-w-full overflow-hidden">
+                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${
+                            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+                          }`}>
                             {msg.sources.map((s, sIdx) => (
-                              <div key={sIdx} className="p-2 bg-slate-900 rounded-lg text-[10px]">
-                                <p className="font-bold text-blue-400">{s.fileName}</p>
-                                <p className="text-slate-400 mt-0.5 line-clamp-2">{s.snippet}</p>
+                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${
+                                isDark ? "bg-slate-900" : "bg-white border border-slate-200"
+                              }`}>
+                                <p className="font-bold text-blue-500">{s.fileName}</p>
+                                <p className={`mt-0.5 line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{s.snippet}</p>
                               </div>
                             ))}
                           </div>
@@ -581,7 +639,7 @@ const BotChatTab = ({ bot }) => {
 
           {/* Loading Indicator */}
           {loading && messages[messages.length - 1]?.content === "" && (
-            <div className="flex items-center gap-2 text-xs text-slate-400 p-2 italic">
+            <div className={`flex items-center gap-2 text-xs p-2 italic ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span>Retrieving chunks & generating grounded response...</span>
             </div>
@@ -589,7 +647,9 @@ const BotChatTab = ({ bot }) => {
         </div>
 
         {/* STICKY INPUT FORM BAR */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950 shrink-0">
+        <div className={`p-4 border-t shrink-0 ${
+          isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"
+        }`}>
           <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-2">
             <input
               type="text"
@@ -597,13 +657,17 @@ const BotChatTab = ({ bot }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 text-slate-100 placeholder:text-slate-500 transition disabled:opacity-75"
+              className={`flex-1 border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition disabled:opacity-75 ${
+                isDark
+                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                  : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 shadow-sm"
+              }`}
             />
             {loading ? (
               <button
                 type="button"
                 onClick={handleStopBotGeneration}
-                className="w-10 h-10 rounded-full bg-black hover:bg-slate-900 border border-slate-700 flex items-center justify-center transition shrink-0 cursor-pointer shadow-lg active:scale-95"
+                className="w-10 h-10 rounded-full bg-black hover:bg-slate-900 border border-slate-700 flex items-center justify-center transition shrink-0 cursor-pointer shadow-lg active:scale-95 text-white"
                 title="Stop Generating"
               >
                 <div className="w-3.5 h-3.5 bg-white rounded-[2px]" />

@@ -1,8 +1,10 @@
 import { useSubscription } from "../../context/SubscriptionContext";
+import { useTheme } from "../../context/ThemeContext";
 import { FiZap } from "react-icons/fi";
 
 const UpgradeButton = ({ variant = "default", className = "" }) => {
   const { currentPlan, setIsUpgradeModalOpen } = useSubscription();
+  const { isDark } = useTheme();
 
   // Hide persistent upgrade CTA for paid users
   if (currentPlan !== "free") {
@@ -25,18 +27,22 @@ const UpgradeButton = ({ variant = "default", className = "" }) => {
   return (
     <button
       onClick={() => setIsUpgradeModalOpen(true)}
-      className={`w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 border border-blue-500/40 text-xs font-semibold text-blue-300 transition group ${className}`}
+      className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-semibold transition group ${
+        isDark
+          ? "bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 border-blue-500/40 text-blue-300"
+          : "bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-300 text-blue-800"
+      } ${className}`}
     >
       <div className="flex items-center gap-2">
-        <div className="p-1 rounded-lg bg-blue-500/20 text-amber-300 border border-blue-400/30 group-hover:scale-110 transition">
+        <div className="p-1 rounded-lg bg-blue-500/20 text-amber-500 border border-blue-400/30 group-hover:scale-110 transition">
           <FiZap className="text-sm animate-pulse" />
         </div>
         <div className="text-left">
-          <p className="text-[11px] font-bold text-white tracking-tight">Upgrade to Pro</p>
-          <p className="text-[9px] text-blue-300/80 font-normal">Get High Priority & Unlimited AI</p>
+          <p className={`text-[11px] font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>Upgrade to Pro</p>
+          <p className={`text-[9px] font-normal ${isDark ? "text-blue-300/80" : "text-blue-700/80"}`}>Get High Priority & Unlimited AI</p>
         </div>
       </div>
-      <span className="text-[10px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold shadow group-hover:bg-blue-400 transition">
+      <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold shadow group-hover:bg-blue-500 transition">
         20% OFF
       </span>
     </button>

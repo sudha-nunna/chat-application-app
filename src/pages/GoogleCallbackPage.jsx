@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 const GoogleCallbackPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     const run = async () => {
@@ -37,10 +39,12 @@ const GoogleCallbackPage = () => {
   }, [navigate, searchParams]);
 
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
+    <div className={`flex h-screen items-center justify-center ${
+      isDark ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"
+    }`}>
       <div className="text-center">
         <div className="mb-3 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto" />
-        <p className="text-sm text-slate-400">Finishing Google sign-in…</p>
+        <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Finishing Google sign-in…</p>
       </div>
     </div>
   );

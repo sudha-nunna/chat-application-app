@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "../../context/ThemeContext";
 
 const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const [text, setText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const { isDark } = useTheme();
 
   // Initialize Speech Recognition on component mount
   useEffect(() => {
@@ -57,7 +59,9 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   };
 
   return (
-    <div className="p-4 border-t border-slate-800/80 bg-slate-950">
+    <div className={`p-4 border-t ${
+      isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"
+    }`}>
       <div className="flex items-center gap-2 max-w-4xl mx-auto">
         <input
           type="text"
@@ -66,7 +70,11 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !isGenerating && handleSend()}
           disabled={isGenerating}
-          className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white outline-none focus:border-blue-500 text-xs transition placeholder:text-slate-500 disabled:opacity-75"
+          className={`flex-1 p-3 rounded-xl border outline-none focus:border-blue-500 text-xs transition placeholder:text-slate-500 disabled:opacity-75 ${
+            isDark
+              ? "bg-slate-900 border-slate-800 text-white"
+              : "bg-white border-slate-300 text-slate-900 shadow-sm"
+          }`}
         />
 
         {/* Microphone Button */}
@@ -74,10 +82,12 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           onClick={handleVoiceClick}
           type="button"
           disabled={isGenerating}
-          className={`p-3 rounded-xl text-white transition-colors duration-200 shrink-0 ${
+          className={`p-3 rounded-xl transition-colors duration-200 shrink-0 ${
             isListening 
-              ? "bg-rose-600 animate-pulse hover:bg-rose-700" 
-              : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+              ? "bg-rose-600 animate-pulse hover:bg-rose-700 text-white" 
+              : isDark
+              ? "bg-slate-800 hover:bg-slate-700 text-slate-300"
+              : "bg-slate-200 hover:bg-slate-300 text-slate-700"
           }`}
           title={isListening ? "Stop Recording" : "Record Voice"}
         >
@@ -97,7 +107,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           <button
             onClick={onStop}
             type="button"
-            className="w-10 h-10 rounded-full bg-black hover:bg-slate-900 border border-slate-700 flex items-center justify-center transition shrink-0 cursor-pointer shadow-lg active:scale-95"
+            className="w-10 h-10 rounded-full bg-black hover:bg-slate-900 border border-slate-700 flex items-center justify-center transition shrink-0 cursor-pointer shadow-lg active:scale-95 text-white"
             title="Stop Generating"
           >
             <div className="w-3.5 h-3.5 bg-white rounded-[2px]" />

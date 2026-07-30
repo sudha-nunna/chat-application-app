@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { FiMessageSquare, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
+import { useTheme } from "../../context/ThemeContext";
 
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
+  const { isDark } = useTheme();
   const [messages, setMessages] = useState([]);
+
   const [isSearching, setIsSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false); 
   const [streamingReply, setStreamingReply] = useState("");
@@ -343,22 +346,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative text-slate-100 bg-slate-900/50">
+    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${
+      isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
+    }`}>
       
       {/* Fixed Sticky Header Bar */}
-      <div className="px-4 md:px-6 py-3 bg-slate-950/60 backdrop-blur-md border-b border-slate-800/60 flex items-center justify-between shrink-0">
+      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${
+        isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+      }`}>
         <div className="flex items-center gap-2 truncate">
           {onToggleMobileSidebar && (
             <button
               onClick={onToggleMobileSidebar}
-              className="md:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 flex items-center gap-1 text-xs shrink-0"
+              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 ${
+                isDark ? "bg-slate-800 hover:bg-slate-700 text-blue-400 border-slate-700" : "bg-slate-200 hover:bg-slate-300 text-blue-600 border-slate-300"
+              }`}
               title="Toggle Threads List"
             >
               <FiMessageSquare className="text-sm" />
               <span className="text-[11px] font-medium">Threads</span>
             </button>
           )}
-          <span className="font-semibold text-xs text-slate-200 tracking-wide truncate">
+          <span className={`font-semibold text-xs tracking-wide truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>
             General AI Assistant (ChatGPT Mode)
           </span>
         </div>
@@ -367,7 +376,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           {/* Cluster Health Pill Badge */}
           <button
             onClick={() => setShowStatusModal(!showStatusModal)}
-            className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
             title="Click to view AI Cluster Health & Load Balancing"
           >
             <span className="relative flex h-2 w-2">
@@ -381,15 +390,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
           {/* Interactive Cluster Health Status Modal Popover */}
           {showStatusModal && (
-            <div className="absolute right-0 top-10 z-50 w-80 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl p-4 text-xs">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
-                <div className="flex items-center gap-2 font-semibold text-slate-100">
-                  <FiServer className="text-blue-400" />
+            <div className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${
+              isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
+            }`}>
+              <div className={`flex items-center justify-between border-b pb-2.5 mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                <div className={`flex items-center gap-2 font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+                  <FiServer className="text-blue-500" />
                   <span>AI Cluster Health Status</span>
                 </div>
                 <button
                   onClick={() => setShowStatusModal(false)}
-                  className="text-slate-400 hover:text-slate-200 p-1 rounded-md hover:bg-slate-800"
+                  className={`p-1 rounded-md ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
                 >
                   <FiX />
                 </button>
@@ -397,25 +408,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
               <div className="space-y-2.5">
                 {clusterNodes.map((node, idx) => (
-                  <div key={idx} className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5">
+                  <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-slate-200">{node.id} ({node.name || `Node ${idx+1}`})</span>
-                      <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.id} ({node.name || `Node ${idx+1}`})</span>
+                      <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                         <FiCheckCircle className="text-[10px]" />
                         {node.status || "HEALTHY"}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-400 space-y-0.5">
-                      <p>• Model: <span className="text-slate-300 font-mono text-[10px]">{node.defaultModel}</span></p>
-                      <p>• Active Load: <span className="text-slate-200">{node.activeRequests || 0} active request(s)</span></p>
-                      <p className="truncate">• Endpoint: <span className="text-slate-400 font-mono text-[10px]">{node.url}</span></p>
+                    <div className={`text-[11px] space-y-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                      <p>• Model: <span className={`font-mono text-[10px] ${isDark ? "text-slate-300" : "text-slate-700"}`}>{node.defaultModel}</span></p>
+                      <p>• Active Load: <span className={isDark ? "text-slate-200" : "text-slate-800"}>{node.activeRequests || 0} active request(s)</span></p>
+                      <p className="truncate">• Endpoint: <span className={`font-mono text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{node.url}</span></p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 flex items-center gap-1.5">
-                <FiActivity className="text-blue-400 shrink-0" />
+              <div className={`mt-3 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"}`}>
+                <FiActivity className="text-blue-500 shrink-0" />
                 <span>Smart Load Balancer dispatches concurrent requests automatically.</span>
               </div>
             </div>
@@ -427,8 +438,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               onClick={toggleVoiceOver}
               className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
                 isVoicePaused
-                  ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
-                  : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/30"
+                  ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
+                  : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30"
               }`}
               title={isVoicePaused ? "Click to Enable & Resume Voice" : "Click to Stop & Pause Voice"}
             >
@@ -454,7 +465,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-3 custom-scrollbar"
       >
         {messages.length === 0 && !isSearching && !isBotTyping && (
-          <div className="h-full flex items-center justify-center text-slate-500 font-medium text-xs">
+          <div className={`h-full flex items-center justify-center font-medium text-xs ${
+            isDark ? "text-slate-500" : "text-slate-400"
+          }`}>
             Start a conversation with the General AI Assistant...
           </div>
         )}
@@ -465,11 +478,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
         {isSearching && (
           <div className="flex justify-start">
-            <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl text-slate-400 italic text-xs animate-pulse">
+            <div className={`p-3 rounded-2xl border italic text-xs animate-pulse ${
+              isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-100 border-slate-200 text-slate-600"
+            }`}>
               Thinking...
             </div>
           </div>
         )}
+
 
         {isBotTyping && (
           <MessageBubble
