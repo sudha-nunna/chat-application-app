@@ -472,9 +472,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           </div>
         )}
 
-        {messages.map((m, index) => (
-          <MessageBubble key={index} role={m.role} content={m.content} />
-        ))}
+        {messages.map((m, index) => {
+          const userMsg = [...messages.slice(0, index)].reverse().find(msg => msg.role === "user");
+          return (
+            <MessageBubble
+              key={index}
+              role={m.role}
+              content={m.content}
+              onRetry={userMsg ? () => handleSendSubmit(userMsg.content) : undefined}
+            />
+          );
+        })}
 
         {isSearching && (
           <div className="flex justify-start">

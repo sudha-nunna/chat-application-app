@@ -1,12 +1,21 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FiUser, FiCpu } from "react-icons/fi";
+import { FiUser, FiCpu, FiRotateCw, FiAlertTriangle } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 
-const MessageBubble = ({ role, content }) => {
+const MessageBubble = ({ role, content, onRetry }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
+
+  const hasPauseNotice = content && typeof content === "string" && (
+    content.includes("Stream paused due to higher-priority request") ||
+    content.includes("Click Resume")
+  );
+
+  const displayContent = hasPauseNotice
+    ? content.replace(/\n\n⚠️ Stream paused due to higher-priority request\.( Click Resume\.)?/, "").trim() || "*(Response paused)*"
+    : content;
 
   return (
     <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse ml-auto max-w-[75%]" : "mr-auto max-w-[85%] md:max-w-[80%]"} my-2.5 min-w-0`}>
@@ -107,8 +116,29 @@ const MessageBubble = ({ role, content }) => {
             li: ({ node, ...props }) => <li className={`break-words ${isDark ? "text-slate-200" : "text-slate-700"}`} {...props} />,
           }}
         >
-          {content}
+          {displayContent}
         </ReactMarkdown>
+
+        {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
+        {hasPauseNotice && (
+          <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+            isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
+          }`}>
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
+              <span>Stream paused due to higher-priority request.</span>
+            </div>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+              >
+                <FiRotateCw className="w-3.5 h-3.5" />
+                Retry
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

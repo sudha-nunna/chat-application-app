@@ -17,7 +17,9 @@ import {
   FiServer,
   FiCheckCircle,
   FiActivity,
-  FiStopCircle
+  FiStopCircle,
+  FiAlertTriangle,
+  FiRotateCw
 } from "react-icons/fi";
 import api from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
@@ -141,12 +143,12 @@ const BotChatTab = ({ bot }) => {
     setLoading(false);
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  const handleSendMessage = async (e, textOverride = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const userText = textOverride !== null ? textOverride : input;
+    if (!userText || !userText.trim() || loading) return;
 
-    const userText = input;
-    setInput("");
+    if (textOverride === null) setInput("");
     setLoading(true);
     isStreamingRef.current = true;
 
@@ -570,19 +572,41 @@ const BotChatTab = ({ bot }) => {
                                 <table className="w-full border-collapse text-left text-xs min-w-full" {...props} />
                               </div>
                             ),
-                            code({ node, inline, className, children, ...props }) {
+                            thead: ({ node, ...props }) => (
+                              <thead className={`uppercase text-[10px] tracking-wider border-b ${
+                                isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
+                              }`} {...props} />
+                            ),
+                            th: ({ node, ...props }) => (
+                              <th className="px-3 py-2 font-semibold select-none whitespace-nowrap" {...props} />
+                            ),
+                            td: ({ node, ...props }) => (
+                              <td className={`px-3 py-2 border-b ${
+                                isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"
+                              }`} {...props} />
+                            ),
+                            tr: ({ node, ...props }) => (
+                              <tr className={`transition-colors last:border-none ${
+                                isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"
+                              }`} {...props} />
+                            ),
+                            code: ({ node, inline, className, children, ...props }) => {
+                              const match = /language-(\w+)/.exec(className || "");
                               const isMultiLine = String(children).includes("\n");
-                              return inline || !isMultiLine ? (
-                                <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${
-                                  isUser
-                                    ? "bg-blue-700/80 text-blue-100"
-                                    : isDark
-                                    ? "bg-slate-800/80 text-blue-300"
-                                    : "bg-slate-200 text-blue-700"
-                                }`} {...props}>
-                                  {children}
-                                </code>
-                              ) : (
+                              if (inline || (!match && !isMultiLine)) {
+                                return (
+                                  <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${
+                                    isUser
+                                      ? "bg-blue-700/80 text-blue-100"
+                                      : isDark
+                                      ? "bg-slate-800/80 text-blue-300"
+                                      : "bg-slate-200 text-blue-700"
+                                  }`} {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              }
+                              return (
                                 <div className={`my-2.5 w-full max-w-full overflow-x-auto rounded-xl border p-3.5 custom-scrollbar font-mono text-[11px] text-emerald-400 ${
                                   isDark ? "bg-slate-950 border-slate-800" : "bg-slate-900 border-slate-700"
                                 }`}>
@@ -594,8 +618,32 @@ const BotChatTab = ({ bot }) => {
                             strong: ({ node, ...props }) => <strong className={`font-bold ${isUser ? "text-white" : isDark ? "text-blue-400" : "text-blue-600"}`} {...props} />
                           }}
                         >
-                          {msg.content || "Thinking..."}
+                          {msg.content?.replace(/\n\n⚠️ Stream paused due to higher-priority request\.( Click Resume\.)?/, "").trim() || "Thinking..."}
                         </ReactMarkdown>
+                      )}
+
+                      {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
+                      {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
+                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                          isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
+                        }`}>
+                          <div className="flex items-center gap-2 text-xs font-medium">
+                            <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
+                            <span>Stream paused due to higher-priority request.</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const userMsg = [...messages.slice(0, index)].reverse().find(m => m.role === "user");
+                              if (userMsg) {
+                                handleSendMessage(null, userMsg.content);
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                          >
+                            <FiRotateCw className="w-3.5 h-3.5" />
+                            Retry
+                          </button>
+                        </div>
                       )}
                     </div>
 
