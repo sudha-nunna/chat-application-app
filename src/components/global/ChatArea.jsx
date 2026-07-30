@@ -12,8 +12,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [isBotTyping, setIsBotTyping] = useState(false); 
   const [streamingReply, setStreamingReply] = useState("");
   const [isAudioActive, setIsAudioActive] = useState(false); 
-  const [isVoicePaused, setIsVoicePaused] = useState(false);
-  const isVoicePausedRef = useRef(false);
+  const [isVoicePaused, setIsVoicePaused] = useState(true);
+  const isVoicePausedRef = useRef(true);
   const isAbortedRef = useRef(false);
   const abortControllerRef = useRef(null);
 
@@ -72,8 +72,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     isPlayingRef.current = false;
     currentSentenceBufferRef.current = "";
     setIsAudioActive(false); 
-    setIsVoicePaused(false);
-    isVoicePausedRef.current = false;
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -82,12 +80,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const toggleVoiceOver = () => {
     if (!("speechSynthesis" in window)) return;
 
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
+    currentSentenceBufferRef.current = "";
+    setIsAudioActive(false);
+
     if (isVoicePaused) {
-      window.speechSynthesis.resume();
       setIsVoicePaused(false);
       isVoicePausedRef.current = false;
     } else {
-      window.speechSynthesis.pause();
       setIsVoicePaused(true);
       isVoicePausedRef.current = true;
     }
@@ -204,7 +208,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     isAbortedRef.current = false;
     clearAudioPipeline(); 
 
-    if (window.speechSynthesis && window.speechSynthesis.paused) {
+    if (window.speechSynthesis && window.speechSynthesis.paused && !isVoicePausedRef.current) {
       window.speechSynthesis.resume();
     }
 
@@ -432,30 +436,43 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             </div>
           )}
 
-          {/* Real-World Voice Over Control Button (Stop/Pause & Enable/Resume Present Response) */}
-          {isAudioActive && (
-            <button
-              onClick={toggleVoiceOver}
-              className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
-                isVoicePaused
-                  ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
-                  : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30"
-              }`}
-              title={isVoicePaused ? "Click to Enable & Resume Voice" : "Click to Stop & Pause Voice"}
-            >
-              {isVoicePaused ? (
-                <>
-                  <FiVolume2 className="text-sm" />
-                  <span>Enable Voice</span>
-                </>
-              ) : (
-                <>
-                  <FiVolumeX className="text-sm animate-pulse" />
-                  <span>Stop Voice</span>
-                </>
-              )}
-            </button>
-          )}
+          {/* Fixed Always-Visible Voice Over Control Toggle Button */}
+          <button
+            onClick={toggleVoiceOver}
+            className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer active:scale-95 ${
+              isVoicePaused
+                ? isDark
+                  ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200"
+                  : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200 hover:text-slate-800"
+                : isAudioActive
+                ? "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30 shadow-sm"
+                : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
+            }`}
+            title={
+              isVoicePaused
+                ? "Voice Muted. Click to Enable Voice Over"
+                : isAudioActive
+                ? "Voice Playing. Click to Stop Voice"
+                : "Voice Enabled. Click to Mute Voice"
+            }
+          >
+            {isVoicePaused ? (
+              <>
+                <FiVolumeX className="text-sm" />
+                <span>Voice Muted</span>
+              </>
+            ) : isAudioActive ? (
+              <>
+                <FiVolume2 className="text-sm animate-pulse text-rose-500" />
+                <span>Stop Voice</span>
+              </>
+            ) : (
+              <>
+                <FiVolume2 className="text-sm" />
+                <span>Voice On</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
