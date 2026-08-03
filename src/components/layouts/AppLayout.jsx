@@ -13,7 +13,8 @@ import {
   FiSearch,
   FiMenu,
   FiX,
-  FiCreditCard
+  FiCreditCard,
+  FiServer
 } from "react-icons/fi";
 import api from "../../services/api";
 import CreateBotModal from "../bots/CreateBotModal";
@@ -138,6 +139,19 @@ const AppLayout = ({ children }) => {
         >
           <FiCreditCard className="text-base" />
           <span>Subscription</span>
+        </Link>
+
+        <Link
+          to="/admin/servers"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
+            location.pathname === "/admin/servers"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+              : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+          }`}
+        >
+          <FiServer className="text-base text-amber-400" />
+          <span>AI Servers</span>
         </Link>
       </div>
 

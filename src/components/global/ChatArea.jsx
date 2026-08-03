@@ -22,6 +22,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     { id: "Node-2", name: "Secondary Node", status: "HEALTHY", defaultModel: "gemma-3-4b-it", activeRequests: 0 }
   ]);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const statusModalRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const currentStreamingTextRef = useRef("");
 
@@ -30,6 +31,20 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     const interval = setInterval(fetchClusterStatus, 12000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (statusModalRef.current && !statusModalRef.current.contains(event.target)) {
+        setShowStatusModal(false);
+      }
+    };
+    if (showStatusModal) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStatusModal]);
 
   const fetchClusterStatus = async () => {
     try {
@@ -378,60 +393,87 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
         <div className="flex items-center gap-3 relative">
           {/* Cluster Health Pill Badge */}
-          <button
-            onClick={() => setShowStatusModal(!showStatusModal)}
-            className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
-            title="Click to view AI Cluster Health & Load Balancing"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <FiServer className="text-xs" />
-            <span className="hidden sm:inline">Cluster: 2 Nodes Online</span>
-            <span className="sm:hidden">2 Nodes</span>
-          </button>
+          {(() => {
+            const healthyCount = clusterNodes.filter(n => n.status && n.status.startsWith("HEALTHY")).length;
+            return (
+              <button
+                onClick={() => setShowStatusModal(!showStatusModal)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer border ${
+                  healthyCount > 0
+                    ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
+                    : "bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/30"
+                }`}
+                title="Click to view AI Cluster Health & Active Nodes"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${healthyCount > 0 ? "bg-emerald-400" : "bg-rose-400"}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${healthyCount > 0 ? "bg-emerald-500" : "bg-rose-500"}`}></span>
+                </span>
+                <FiServer className="text-xs" />
+                <span className="hidden sm:inline">
+                  {healthyCount > 0 ? `Cluster: ${healthyCount} Node${healthyCount > 1 ? "s" : ""} Online` : "Cluster: All Nodes Offline"}
+                </span>
+                <span className="sm:hidden">{healthyCount} Online</span>
+              </button>
+            );
+          })()}
 
           {/* Interactive Cluster Health Status Modal Popover */}
           {showStatusModal && (
-            <div className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${
-              isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
-            }`}>
+            <div
+              ref={statusModalRef}
+              className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${
+                isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
+              }`}
+            >
               <div className={`flex items-center justify-between border-b pb-2.5 mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                 <div className={`flex items-center gap-2 font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
                   <FiServer className="text-blue-500" />
-                  <span>AI Cluster Health Status</span>
+                  <span>AI Cluster Status ({clusterNodes.length} Nodes)</span>
                 </div>
                 <button
                   onClick={() => setShowStatusModal(false)}
-                  className={`p-1 rounded-md ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+                  className={`p-1 rounded-md transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+                  title="Close popup"
                 >
-                  <FiX />
+                  <FiX className="text-sm" />
                 </button>
               </div>
 
-              <div className="space-y-2.5">
-                {clusterNodes.map((node, idx) => (
-                  <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.id} ({node.name || `Node ${idx+1}`})</span>
-                      <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <FiCheckCircle className="text-[10px]" />
-                        {node.status || "HEALTHY"}
-                      </span>
+              <div className="space-y-2.5 max-h-64 overflow-y-auto custom-scrollbar">
+                {clusterNodes.map((node, idx) => {
+                  const isHealthy = node.status && node.status.startsWith("HEALTHY");
+                  return (
+                    <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-semibold text-xs ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                          {node.name || `Node ${idx + 1}`}
+                        </span>
+                        <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                          isHealthy
+                            ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                            : "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                        }`}>
+                          <FiCheckCircle className="text-[10px]" />
+                          {isHealthy ? "ACTIVE / ONLINE" : "INACTIVE / OFFLINE"}
+                        </span>
+                      </div>
+
+                      <div className={`text-[11px] space-y-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        <p>• Model: <span className={`font-mono text-[10px] font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>{node.defaultModel || "llama3.2:3b"}</span></p>
+                        <p>• Active Requests: <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.activeRequests || 0} load</span></p>
+                        {node.lastLatencyMs > 0 && (
+                          <p>• Response Time: <span className="font-mono text-[10px] text-emerald-400">{node.lastLatencyMs} ms</span></p>
+                        )}
+                      </div>
                     </div>
-                    <div className={`text-[11px] space-y-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                      <p>• Model: <span className={`font-mono text-[10px] ${isDark ? "text-slate-300" : "text-slate-700"}`}>{node.defaultModel}</span></p>
-                      <p>• Active Load: <span className={isDark ? "text-slate-200" : "text-slate-800"}>{node.activeRequests || 0} active request(s)</span></p>
-                      <p className="truncate">• Endpoint: <span className={`font-mono text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{node.url}</span></p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className={`mt-3 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"}`}>
                 <FiActivity className="text-blue-500 shrink-0" />
-                <span>Smart Load Balancer dispatches concurrent requests automatically.</span>
+                <span>Smart Load Balancer automatically routes requests to active nodes.</span>
               </div>
             </div>
           )}
