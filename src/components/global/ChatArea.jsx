@@ -9,9 +9,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [messages, setMessages] = useState([]);
 
   const [isSearching, setIsSearching] = useState(false);
-  const [isBotTyping, setIsBotTyping] = useState(false); 
+  const [isBotTyping, setIsBotTyping] = useState(false);
   const [streamingReply, setStreamingReply] = useState("");
-  const [isAudioActive, setIsAudioActive] = useState(false); 
+  const [isAudioActive, setIsAudioActive] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(true);
   const isVoicePausedRef = useRef(true);
   const isAbortedRef = useRef(false);
@@ -56,7 +56,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         const data = await res.json();
         if (data.nodes) setClusterNodes(data.nodes);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const audioQueueRef = useRef([]);
@@ -86,7 +86,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     audioQueueRef.current = [];
     isPlayingRef.current = false;
     currentSentenceBufferRef.current = "";
-    setIsAudioActive(false); 
+    setIsAudioActive(false);
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -144,16 +144,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
 
     isPlayingRef.current = true;
-    setIsAudioActive(true); 
+    setIsAudioActive(true);
     const nextSentence = audioQueueRef.current.shift();
 
     if ("speechSynthesis" in window) {
       const utterance = new SpeechSynthesisUtterance(nextSentence);
       utterance.lang = "en-US";
-      
+
       utterance.onend = () => {
         isPlayingRef.current = false;
-        if (!isVoicePausedRef.current) processAudioQueue(); 
+        if (!isVoicePausedRef.current) processAudioQueue();
       };
 
       utterance.onerror = () => {
@@ -221,7 +221,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${textPayload}" at t=0 ms`);
 
     isAbortedRef.current = false;
-    clearAudioPipeline(); 
+    clearAudioPipeline();
 
     if (window.speechSynthesis && window.speechSynthesis.paused && !isVoicePausedRef.current) {
       window.speechSynthesis.resume();
@@ -236,7 +236,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     try {
       const token = localStorage.getItem("token");
       const targetChatEndpoint = currentChatId && currentChatId !== "new" ? currentChatId : "new";
-      const conversationMode = "text"; 
+      const conversationMode = "text";
 
       abortControllerRef.current = new AbortController();
 
@@ -248,9 +248,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ 
-            message: textPayload, 
-            mode: conversationMode 
+          body: JSON.stringify({
+            message: textPayload,
+            mode: conversationMode
           }),
           signal: abortControllerRef.current.signal
         }
@@ -298,9 +298,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 if (!firstTokenTime) {
                   firstTokenTime = performance.now();
                   const ttftMs = (firstTokenTime - t0).toFixed(2);
-                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs/1000).toFixed(2)} s)`);
+                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
                 }
-                
+
                 currentStreamingTextRef.current += textBit;
                 setStreamingReply(currentStreamingTextRef.current);
                 handleIncomingTextChunk(textBit);
@@ -312,7 +312,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 streamFinished = true;
                 break;
               }
-            } catch (e) {}
+            } catch (e) { }
           }
         }
       }
@@ -339,7 +339,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 ⏱️  =================== [FRONTEND UI GENERAL CHAT DIAGNOSTICS] ===================
   ├── 🚀 Time To First Token (TTFT):   ${firstTokenTime ? (firstTokenTime - t0).toFixed(2) + ' ms' : 'N/A'}
   ├── ⚡ UI Stream Rendering Duration: ${streamDuration} ms
-  └── 🏁 Total UI Round-Trip Time:    ${totalTime} ms (${(totalTime/1000).toFixed(2)} s)
+  └── 🏁 Total UI Round-Trip Time:    ${totalTime} ms (${(totalTime / 1000).toFixed(2)} s)
 ===========================================================================\n
 `);
 
@@ -365,21 +365,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   return (
-    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${
-      isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
-    }`}>
-      
-      {/* Fixed Sticky Header Bar */}
-      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${
-        isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
       }`}>
+
+      {/* Fixed Sticky Header Bar */}
+      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+        }`}>
         <div className="flex items-center gap-2 truncate">
           {onToggleMobileSidebar && (
             <button
               onClick={onToggleMobileSidebar}
-              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 ${
-                isDark ? "bg-slate-800 hover:bg-slate-700 text-blue-400 border-slate-700" : "bg-slate-200 hover:bg-slate-300 text-blue-600 border-slate-300"
-              }`}
+              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 ${isDark ? "bg-slate-800 hover:bg-slate-700 text-blue-400 border-slate-700" : "bg-slate-200 hover:bg-slate-300 text-blue-600 border-slate-300"
+                }`}
               title="Toggle Threads List"
             >
               <FiMessageSquare className="text-sm" />
@@ -398,11 +395,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             return (
               <button
                 onClick={() => setShowStatusModal(!showStatusModal)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer border ${
-                  healthyCount > 0
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer border ${healthyCount > 0
                     ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
                     : "bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/30"
-                }`}
+                  }`}
                 title="Click to view AI Cluster Health & Active Nodes"
               >
                 <span className="relative flex h-2 w-2">
@@ -422,9 +418,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           {showStatusModal && (
             <div
               ref={statusModalRef}
-              className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${
-                isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
-              }`}
+              className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
+                }`}
             >
               <div className={`flex items-center justify-between border-b pb-2.5 mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                 <div className={`flex items-center gap-2 font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
@@ -446,14 +441,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   return (
                     <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`font-semibold text-xs ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                        <span className={`font-semibold text-xs capitalize ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                           {node.name || `Node ${idx + 1}`}
                         </span>
-                        <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                          isHealthy
+                        <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${isHealthy
                             ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
                             : "text-rose-400 bg-rose-500/10 border-rose-500/20"
-                        }`}>
+                          }`}>
                           <FiCheckCircle className="text-[10px]" />
                           {isHealthy ? "ACTIVE / ONLINE" : "INACTIVE / OFFLINE"}
                         </span>
@@ -481,21 +475,20 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           {/* Fixed Always-Visible Voice Over Control Toggle Button */}
           <button
             onClick={toggleVoiceOver}
-            className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer active:scale-95 ${
-              isVoicePaused
+            className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer active:scale-95 ${isVoicePaused
                 ? isDark
                   ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200"
                   : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200 hover:text-slate-800"
                 : isAudioActive
-                ? "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30 shadow-sm"
-                : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
-            }`}
+                  ? "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30 shadow-sm"
+                  : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
+              }`}
             title={
               isVoicePaused
                 ? "Voice Muted. Click to Enable Voice Over"
                 : isAudioActive
-                ? "Voice Playing. Click to Stop Voice"
-                : "Voice Enabled. Click to Mute Voice"
+                  ? "Voice Playing. Click to Stop Voice"
+                  : "Voice Enabled. Click to Mute Voice"
             }
           >
             {isVoicePaused ? (
@@ -519,14 +512,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       </div>
 
       {/* Messages Scroll Area - ONLY this section scrolls */}
-      <div 
+      <div
         ref={messagesContainerRef}
         className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-3 custom-scrollbar"
       >
         {messages.length === 0 && !isSearching && !isBotTyping && (
-          <div className={`h-full flex items-center justify-center font-medium text-xs ${
-            isDark ? "text-slate-500" : "text-slate-400"
-          }`}>
+          <div className={`h-full flex items-center justify-center font-medium text-xs ${isDark ? "text-slate-500" : "text-slate-400"
+            }`}>
             Start a conversation with the General AI Assistant...
           </div>
         )}
@@ -545,9 +537,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
         {isSearching && (
           <div className="flex justify-start">
-            <div className={`p-3 rounded-2xl border italic text-xs animate-pulse ${
-              isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-100 border-slate-200 text-slate-600"
-            }`}>
+            <div className={`p-3 rounded-2xl border italic text-xs animate-pulse ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-100 border-slate-200 text-slate-600"
+              }`}>
               Thinking...
             </div>
           </div>
@@ -564,8 +555,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
       {/* Fixed Input Area with ChatGPT style Stop Button inside */}
       <div className="shrink-0">
-        <ChatInput 
-          onSend={handleSendSubmit} 
+        <ChatInput
+          onSend={handleSendSubmit}
           isGenerating={isSearching || isBotTyping}
           onStop={handleStopGeneration}
         />

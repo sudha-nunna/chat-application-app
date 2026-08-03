@@ -8,7 +8,9 @@ const http = axios.create({
 // Request Interceptor: Dynamically attaches token to EVERY outgoing request
 http.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("webtoken");
+    const token = localStorage.getItem("token");
+    console.log(token, 'token');
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       config.headers["x-auth-token"] = token;
@@ -31,8 +33,8 @@ http.interceptors.response.use(
       // Log network or server error
     }
     if (error.response && error.response.status === 401) {
-      localStorage.clear();
-      window.location.href = `/section_expaired?text=${encodeURIComponent(error.response.data || "")}`;
+      // localStorage.clear();
+      // window.location.href = `/section_expaired?text=${encodeURIComponent(error.response.data || "")}`;
     }
 
     return Promise.reject(error);

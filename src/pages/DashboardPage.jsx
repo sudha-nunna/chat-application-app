@@ -11,12 +11,15 @@ import {
 } from "react-icons/fi";
 import api from "../services/api";
 import CreateBotModal from "../components/bots/CreateBotModal";
+import ApiModal from "../components/bots/ApiModal";
 import { useTheme } from "../context/ThemeContext";
 
 const DashboardPage = () => {
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedApiBot, setSelectedApiBot] = useState(null);
+  const [apiModalMode, setApiModalMode] = useState("generate");
   const navigate = useNavigate();
   const { isDark } = useTheme();
 
@@ -49,10 +52,9 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className={`flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar ${
-      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
-    }`}>
-      
+    <div className={`flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar ${isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+      }`}>
+
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -78,9 +80,8 @@ const DashboardPage = () => {
         </div>
       ) : bots.length === 0 ? (
         /* EMPTY STATE: "No Bots Found" */
-        <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${
-          isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-300 bg-white"
-        }`}>
+        <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-300 bg-white"
+          }`}>
           <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-500 text-3xl mb-4">
             <FiCpu />
           </div>
@@ -103,11 +104,10 @@ const DashboardPage = () => {
             <div
               key={bot._id}
               onClick={() => navigate(`/bots/${bot._id}`)}
-              className={`border rounded-2xl p-5 cursor-pointer transition shadow-lg group relative flex flex-col justify-between ${
-                isDark
-                  ? "bg-slate-900/90 border-slate-800 hover:border-slate-700"
-                  : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl"
-              }`}
+              className={`border rounded-2xl p-5 cursor-pointer transition shadow-lg group relative flex flex-col justify-between ${isDark
+                ? "bg-slate-900/90 border-slate-800 hover:border-slate-700"
+                : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl"
+                }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-3">
@@ -116,14 +116,12 @@ const DashboardPage = () => {
                       <FiCpu />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${
-                        isDark ? "text-slate-100 group-hover:text-blue-400" : "text-slate-900 group-hover:text-blue-600"
-                      }`}>
+                      <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${isDark ? "text-slate-100 group-hover:text-blue-400" : "text-slate-900 group-hover:text-blue-600"
+                        }`}>
                         {bot.name}
                       </h3>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${
-                        isDark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-600"
-                      }`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-600"
+                        }`}>
                         {bot.model}
                       </span>
                     </div>
@@ -131,38 +129,61 @@ const DashboardPage = () => {
 
                   <button
                     onClick={(e) => handleDeleteBot(e, bot._id)}
-                    className={`p-1.5 transition ${
-                      isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
-                    }`}
+                    className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
+                      }`}
                     title="Delete Bot"
                   >
                     <FiTrash2 className="text-sm" />
                   </button>
                 </div>
 
-                <p className={`text-xs line-clamp-2 mb-4 h-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <p className={`text-xs line-clamp-2 mb-4 h-8 capitalize ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   {bot.description || "Isolated multi-tenant RAG agent with dedicated knowledge base."}
                 </p>
               </div>
 
-              <div className={`pt-4 border-t flex items-center justify-between text-xs ${
-                isDark ? "border-slate-800/80" : "border-slate-100"
-              }`}>
+              <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-slate-800/80" : "border-slate-100"
+                }`}>
                 <div className={`flex items-center gap-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   <span className="flex items-center gap-1">
                     <FiFileText className="text-blue-500" />
                     <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
                   </span>
-                  <span className="flex items-center gap-1">
+
+
+
+                  <button
+                    className="flex items-center gap-1 text-xs font-semibold hover:text-indigo-500 hover:underline transition cursor-pointer"
+                    title="Manage APIs"
+                  >
                     <FiCode className="text-indigo-500" />
-                    <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.apiCount || 0}</strong> APIs
-                  </span>
+                    <strong className={isDark ? "text-slate-200" : "text-slate-800"}>
+                      {bot.apiCount || bot.apis?.length || 0}
+                    </strong>{" "}
+                    {(bot.apiCount || bot.apis?.length || 0) === 1 ? "API" : "APIs"}
+                  </button>
+
+
                 </div>
 
-                <div className="flex items-center gap-1 text-blue-500 font-semibold group-hover:translate-x-1 transition">
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedApiBot(bot);
+                    setApiModalMode("generate");
+                  }}
+                  className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400 hover:underline transition cursor-pointer"
+                >
+                  <FiPlus className="text-xs" />
+                  <span>API Keys</span>
+                </button>
+
+
+                {/* <div className="flex items-center gap-1 text-blue-500 font-semibold group-hover:translate-x-1 transition">
                   <span>Open</span>
                   <FiArrowRight />
-                </div>
+                </div> */}
               </div>
             </div>
           ))}
@@ -177,6 +198,16 @@ const DashboardPage = () => {
             fetchBots();
             navigate(`/bots/${newBot._id}`);
           }}
+        />
+      )}
+
+      {/* API MODAL */}
+      {selectedApiBot && (
+        <ApiModal
+          bot={selectedApiBot}
+          initialMode={apiModalMode}
+          onClose={() => setSelectedApiBot(null)}
+          onApiUpdated={() => fetchBots()}
         />
       )}
     </div>

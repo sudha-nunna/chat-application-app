@@ -59,7 +59,7 @@ const BotChatTab = ({ bot }) => {
         const data = await res.json();
         if (data.nodes) setClusterNodes(data.nodes);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -239,7 +239,7 @@ const BotChatTab = ({ bot }) => {
                 return next;
               });
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       }
 
@@ -269,23 +269,21 @@ const BotChatTab = ({ bot }) => {
   };
 
   return (
-    <div className={`flex-1 min-w-0 flex h-full overflow-hidden relative ${
-      isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
-    }`}>
-      
+    <div className={`flex-1 min-w-0 flex h-full overflow-hidden relative ${isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
+      }`}>
+
       {/* MOBILE DRAWER OVERLAY */}
       {isMobileDrawerOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
           onClick={() => setIsMobileDrawerOpen(false)}
         />
       )}
 
       {/* MOBILE SLIDE-IN SIDEBAR DRAWER */}
-      <div 
-        className={`fixed inset-y-0 left-0 w-72 border-r z-50 flex flex-col h-full transition-transform duration-300 md:hidden ${
-          isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-        } ${isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
+      <div
+        className={`fixed inset-y-0 left-0 w-72 border-r z-50 flex flex-col h-full transition-transform duration-300 md:hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+          } ${isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? "border-slate-800" : "border-slate-200"}`}>
           <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
@@ -324,15 +322,14 @@ const BotChatTab = ({ bot }) => {
                     setActiveConvId(c._id);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
-                    isActive
-                      ? isDark
-                        ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
-                        : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
-                      : isDark
+                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${isActive
+                    ? isDark
+                      ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
+                      : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
+                    : isDark
                       ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
                       : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
@@ -353,12 +350,10 @@ const BotChatTab = ({ bot }) => {
       </div>
 
       {/* DESKTOP THREADS SUB-SIDEBAR (256px FIXED - COLLAPSIBLE) */}
-      <div 
-        className={`hidden md:flex flex-col h-full border-r shrink-0 transition-all duration-300 select-none ${
-          isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-        } ${
-          showHistorySidebar ? "w-64 min-w-[256px] max-w-[256px]" : "w-0 min-w-0 max-w-0 overflow-hidden border-none"
-        }`}
+      <div
+        className={`hidden md:flex flex-col h-full border-r shrink-0 transition-all duration-300 select-none ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+          } ${showHistorySidebar ? "w-64 min-w-[256px] max-w-[256px]" : "w-0 min-w-0 max-w-0 overflow-hidden border-none"
+          }`}
       >
         <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? "border-slate-800" : "border-slate-200"}`}>
           <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
@@ -387,15 +382,14 @@ const BotChatTab = ({ bot }) => {
                 <div
                   key={c._id}
                   onClick={() => setActiveConvId(c._id)}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
-                    isActive
-                      ? isDark
-                        ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
-                        : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
-                      : isDark
+                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${isActive
+                    ? isDark
+                      ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
+                      : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
+                    : isDark
                       ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
                       : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
@@ -418,18 +412,16 @@ const BotChatTab = ({ bot }) => {
 
       {/* MAIN CHAT AREA (Fills Remaining Space Only) */}
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-        
+
         {/* Fixed Controls Header */}
-        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${
-          isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
-        }`}>
+        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+          }`}>
           <div className="flex items-center gap-2">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${
-                isDark ? "text-slate-300 hover:text-white bg-slate-900 border-slate-800" : "text-slate-700 hover:text-slate-900 bg-white border-slate-200 shadow-sm"
-              }`}
+              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${isDark ? "text-slate-300 hover:text-white bg-slate-900 border-slate-800" : "text-slate-700 hover:text-slate-900 bg-white border-slate-200 shadow-sm"
+                }`}
               title="Toggle Threads Menu"
             >
               <FiMenu className="text-base" />
@@ -438,9 +430,8 @@ const BotChatTab = ({ bot }) => {
             {/* Desktop Toggle Button */}
             <button
               onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-              className={`hidden md:flex items-center gap-1.5 text-xs ${
-                isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`hidden md:flex items-center gap-1.5 text-xs ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+                }`}
             >
               <FiSidebar />
               <span>{showHistorySidebar ? "Hide History" : "Show History"}</span>
@@ -462,10 +453,9 @@ const BotChatTab = ({ bot }) => {
             </button>
 
             {showStatusModal && (
-              <div className={`absolute right-0 top-10 z-50 w-80 border rounded-xl shadow-2xl p-4 text-xs ${
-                isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
-              }`}>
-                <div className={`flex items-center justify-between border-b pb-2.5 mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+              <div className={`absolute right-0 top-10 z-[100] w-80 max-w-[90vw] border rounded-xl shadow-2xl p-4 text-xs flex flex-col max-h-[80vh] ${isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
+                }`}>
+                <div className={`flex items-center justify-between border-b pb-2.5 mb-3 shrink-0 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                   <div className={`flex items-center gap-2 font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
                     <FiServer className="text-blue-500" />
                     <span>AI Cluster Health Status</span>
@@ -478,11 +468,13 @@ const BotChatTab = ({ bot }) => {
                   </button>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1 custom-scrollbar shrink-0">
                   {clusterNodes.map((node, idx) => (
                     <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.id} ({node.name || `Node ${idx+1}`})</span>
+                        {console.log(clusterNodes, 'clusterNodes')
+                        }
+                        <span className={`font-semibold capitalize ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.name}</span>
                         <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                           <FiCheckCircle className="text-[10px]" />
                           {node.status || "HEALTHY"}
@@ -497,7 +489,7 @@ const BotChatTab = ({ bot }) => {
                   ))}
                 </div>
 
-                <div className={`mt-3 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"}`}>
+                <div className={`mt-3 pt-2 border-t text-[10px] flex items-center gap-1.5 shrink-0 ${isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"}`}>
                   <FiActivity className="text-blue-500 shrink-0" />
                   <span>Smart Load Balancer dispatches concurrent requests automatically.</span>
                 </div>
@@ -511,7 +503,7 @@ const BotChatTab = ({ bot }) => {
         </div>
 
         {/* MESSAGES SCROLL AREA - ONLY THIS SCROLLS */}
-        <div 
+        <div
           ref={messagesContainerRef}
           className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar"
         >
@@ -537,13 +529,12 @@ const BotChatTab = ({ bot }) => {
                 >
                   {/* Avatar */}
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
-                      isUser
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                        : isDark
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isUser
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                      : isDark
                         ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
                         : "bg-indigo-100 text-indigo-700 border border-indigo-200"
-                    }`}
+                      }`}
                   >
                     {isUser ? <FiUser /> : <FiCpu />}
                   </div>
@@ -551,13 +542,12 @@ const BotChatTab = ({ bot }) => {
                   {/* Bubble Container */}
                   <div className={`space-y-1.5 min-w-0 max-w-full flex flex-col ${isUser ? "items-end" : "items-start"}`}>
                     <div
-                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${
-                        isUser
-                          ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
-                          : isDark
+                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${isUser
+                        ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
+                        : isDark
                           ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
                           : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
-                      }`}
+                        }`}
                     >
                       {isUser ? (
                         <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
@@ -566,50 +556,44 @@ const BotChatTab = ({ bot }) => {
                           remarkPlugins={[remarkGfm]}
                           components={{
                             table: ({ node, ...props }) => (
-                              <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${
-                                isDark ? "border-slate-800" : "border-slate-300"
-                              }`}>
+                              <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${isDark ? "border-slate-800" : "border-slate-300"
+                                }`}>
                                 <table className="w-full border-collapse text-left text-xs min-w-full" {...props} />
                               </div>
                             ),
                             thead: ({ node, ...props }) => (
-                              <thead className={`uppercase text-[10px] tracking-wider border-b ${
-                                isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
-                              }`} {...props} />
+                              <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
+                                }`} {...props} />
                             ),
                             th: ({ node, ...props }) => (
                               <th className="px-3 py-2 font-semibold select-none whitespace-nowrap" {...props} />
                             ),
                             td: ({ node, ...props }) => (
-                              <td className={`px-3 py-2 border-b ${
-                                isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"
-                              }`} {...props} />
+                              <td className={`px-3 py-2 border-b ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"
+                                }`} {...props} />
                             ),
                             tr: ({ node, ...props }) => (
-                              <tr className={`transition-colors last:border-none ${
-                                isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"
-                              }`} {...props} />
+                              <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"
+                                }`} {...props} />
                             ),
                             code: ({ node, inline, className, children, ...props }) => {
                               const match = /language-(\w+)/.exec(className || "");
                               const isMultiLine = String(children).includes("\n");
                               if (inline || (!match && !isMultiLine)) {
                                 return (
-                                  <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${
-                                    isUser
-                                      ? "bg-blue-700/80 text-blue-100"
-                                      : isDark
+                                  <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${isUser
+                                    ? "bg-blue-700/80 text-blue-100"
+                                    : isDark
                                       ? "bg-slate-800/80 text-blue-300"
                                       : "bg-slate-200 text-blue-700"
-                                  }`} {...props}>
+                                    }`} {...props}>
                                     {children}
                                   </code>
                                 );
                               }
                               return (
-                                <div className={`my-2.5 w-full max-w-full overflow-x-auto rounded-xl border p-3.5 custom-scrollbar font-mono text-[11px] text-emerald-400 ${
-                                  isDark ? "bg-slate-950 border-slate-800" : "bg-slate-900 border-slate-700"
-                                }`}>
+                                <div className={`my-2.5 w-full max-w-full overflow-x-auto rounded-xl border p-3.5 custom-scrollbar font-mono text-[11px] text-emerald-400 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-900 border-slate-700"
+                                  }`}>
                                   <pre className="overflow-x-auto m-0 p-0">{children}</pre>
                                 </div>
                               );
@@ -624,9 +608,8 @@ const BotChatTab = ({ bot }) => {
 
                       {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
                       {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
-                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                          isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
-                        }`}>
+                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
+                          }`}>
                           <div className="flex items-center gap-2 text-xs font-medium">
                             <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
                             <span>Stream paused due to higher-priority request.</span>
@@ -652,11 +635,10 @@ const BotChatTab = ({ bot }) => {
                       <div className="pt-0.5">
                         <button
                           onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${
-                            isDark
-                              ? "text-slate-400 hover:text-blue-400 bg-slate-950 border-slate-800"
-                              : "text-slate-600 hover:text-blue-600 bg-slate-100 border-slate-200"
-                          }`}
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${isDark
+                            ? "text-slate-400 hover:text-blue-400 bg-slate-950 border-slate-800"
+                            : "text-slate-600 hover:text-blue-600 bg-slate-100 border-slate-200"
+                            }`}
                         >
                           <FiFileText className="text-blue-500" />
                           <span>View Sources</span>
@@ -664,13 +646,11 @@ const BotChatTab = ({ bot }) => {
                         </button>
 
                         {isSourcesOpen && (
-                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${
-                            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-                          }`}>
+                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+                            }`}>
                             {msg.sources.map((s, sIdx) => (
-                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${
-                                isDark ? "bg-slate-900" : "bg-white border border-slate-200"
-                              }`}>
+                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${isDark ? "bg-slate-900" : "bg-white border border-slate-200"
+                                }`}>
                                 <p className="font-bold text-blue-500">{s.fileName}</p>
                                 <p className={`mt-0.5 line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{s.snippet}</p>
                               </div>
@@ -695,9 +675,8 @@ const BotChatTab = ({ bot }) => {
         </div>
 
         {/* STICKY INPUT FORM BAR */}
-        <div className={`p-4 border-t shrink-0 ${
-          isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"
-        }`}>
+        <div className={`p-4 border-t shrink-0 ${isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"
+          }`}>
           <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-2">
             <input
               type="text"
@@ -705,11 +684,10 @@ const BotChatTab = ({ bot }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className={`flex-1 border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition disabled:opacity-75 ${
-                isDark
-                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder:text-slate-500"
-                  : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 shadow-sm"
-              }`}
+              className={`flex-1 border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition disabled:opacity-75 ${isDark
+                ? "bg-slate-900 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 shadow-sm"
+                }`}
             />
             {loading ? (
               <button

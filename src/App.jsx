@@ -20,6 +20,7 @@ function App() {
             <Route path="/bots/:botId" element={<BotDetailPage />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/admin/servers" element={<AdminServerPage />} />
             <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
             <Route path="*" element={<DashboardPage />} />
           </Routes>

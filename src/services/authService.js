@@ -3,7 +3,7 @@ import { encrypt as encryptobj, decrypt as decryptobj } from "../utils/crypto";
 import { API_ENDPOINTS } from "../config/apiEndpoints";
 
 const apiUrl = import.meta.env.VITE_API_URL || "";
-const tokenKey = "webtoken";
+const tokenKey = "token";
 
 // JWT Helper Functions
 export function getJwt() {
@@ -72,7 +72,7 @@ export async function updateJwt() {
 // Unencrypted Backend Calls
 export async function NobackEndCall(route) {
   try {
-    const { data } = await http.post(apiUrl + route);
+    const { data } = await http.get(apiUrl + route);
     return data;
   } catch (error) {
     if (error.response && error.response.data) {
