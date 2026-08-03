@@ -1,449 +1,406 @@
-import { jwtDecode } from "jwt-decode";
 import http from "./httpService";
-import helpers from "./crypto";
-import { publicIpv4 } from "public-ip";
-import { LOGOUT } from "../reduxstore/rootReducer/RootReducer";
-// import { useDispatch } from "react-redux";
-// import apiUrl from "../config.json";
+import { encrypt as encryptobj, decrypt as decryptobj } from "../utils/crypto";
+import { API_ENDPOINTS } from "../config/apiEndpoints";
 
-// const { detect } = require("detect-browser");
-
-// const browser = detect();
-const apiEndpoint = import.meta.env.VITE_API_URL;
-import { backEndCallNoEnc } from "./mainService";
-import { getNetbanksRdx } from "../reduxstore/slice/getNetbanksSlice";
-
+const apiUrl = import.meta.env.VITE_API_URL || "";
 const tokenKey = "webtoken";
 
-// const dispatch = useDispatch();
-
-http.setJwt(getJwt());
-
-export async function login(obj) {
-  const drreqpob = helpers.encryptobj(obj);
-  const { data } = await http.post(apiEndpoint + "/admin/loginotp", {
-    enc: drreqpob,
-  });
-  return helpers.decryptobj(data);
+// JWT Helper Functions
+export function getJwt() {
+  return localStorage.getItem(tokenKey) || localStorage.getItem("token") || null;
 }
 
-export async function resendotp(obj) {
-  const drreqpob = helpers.encryptobj(obj);
-  const { data } = await http.post(apiEndpoint + "/admin/resend", {
-    enc: drreqpob,
-  });
-  return helpers.decryptobj(data);
-}
-
-export async function validateOTP(obj) {
-  // const IP = await publicIpv4();
-  // obj.browserid = browser.version;
-  // obj.ip = IP;
-  obj.web = true;
-  const drreqpob = helpers.encryptobj(obj);
-  var { data: jwt } = await http.post(apiEndpoint + "/member/valotp", {
-    enc: drreqpob,
-  });
-
-  // jwt = helpers.decrypt(jwt);
-
-  // localStorage.setItem(tokenKey, helpers.encrypt(jwt));
-  console.log(jwt, 'jwt');
-
-
-  return jwt;
-}
-
-export async function verifyReauth(obj) {
-  const drreqpob = helpers.encryptobj(obj);
-  console.log(obj, 'obj');
-
-  var { data } = await http.post(apiEndpoint + "/member/reset_forgot_pin", {
-    enc: drreqpob,
-  });
-
-  return helpers.decryptobj(data);
-
-  // const { data } = await http.post(apiEndpoint + "/admin/resend");
-  // return data;
-}
-
-export async function validateNonPhilOTP(obj) {
-  // const IP = await publicIpv4();
-  // obj.browserid = browser.version;
-  obj.web = true;
-  const drreqpob = helpers.encryptobj(obj);
-  var { data: jwt } = await http.post(apiEndpoint + "/member/int_valotp", {
-    enc: drreqpob,
-  });
-
-  // jwt = helpers.decrypt(jwt);
-
-  // localStorage.setItem(tokenKey, helpers.encrypt(jwt));
-
-  return jwt;
-}
-
-export async function updtkk() {
-  const token = getJwtt();
-  if (!token) {
-    console.warn("No Token in header");
-  }
-
-  http.setJwt(getJwtt());
-}
-
-export function getJwtt() {
-  return localStorage.getItem(tokenKey);
-}
-export async function updateJwt() {
-  updtkk();
-  // const drreqpob = helpers.encryptobj(obj);
-  var { data: jwt } = await http.post(apiEndpoint + "/userget/gettoken");
-  await setJwt(jwt);
-  return jwt;
-}
-export async function checkLogin(obj, res) {
-  http.setJwt(res);
-  const drreqpob = helpers.encryptobj(obj);
-  var { data } = await http.post(apiEndpoint + "/member/chklogin_web", {
-    enc: drreqpob,
-  });
-
-  return helpers.decryptobj(data);
-}
-
-export async function setPin(obj, res) {
-  http.setJwt(res);
-  const drreqpob = helpers.encryptobj(obj);
-  var { data } = await http.post(apiEndpoint + "/member/set4DigitPin", {
-    enc: drreqpob,
-  });
-
-  return helpers.decryptobj(data);
-}
-
-export async function returnUrlSetPin(obj) {
-  const drreqpob = helpers.encryptobj(obj);
-  var { data } = await http.post(apiEndpoint + "/member/reset4DigitPin", {
-    enc: drreqpob,
-  });
-
-  return helpers.decryptobj(data);
-}
-
-export async function loginwithJwt(jwt, pin) {
-  localStorage.setItem(tokenKey, jwt);
-  localStorage.setItem("google_key", helpers.encryptobj(pin));
-  localStorage.setItem("screen", helpers.encryptobj("UnLocked"));
-}
-
-export async function saveobj(arry) {
-  localStorage.setItem("obj", helpers.encryptobj(arry));
-}
-
-export async function getsaveobj() {
-  const tt = localStorage.getItem("obj");
-  if (tt) {
-    return helpers.decryptobj(tt);
+export function setJwt(jwt) {
+  if (jwt) {
+    localStorage.setItem(tokenKey, jwt);
+    localStorage.setItem("token", jwt);
   } else {
-    return [];
+    localStorage.removeItem(tokenKey);
+    localStorage.removeItem("token");
   }
 }
-
-export async function savebankobj(arry) {
-  localStorage.setItem("bankobj", helpers.encryptobj(arry));
-}
-
-export async function getbanksaveobj() {
-  const tt = localStorage.getItem("bankobj");
-  if (tt) {
-    return helpers.decryptobj(tt);
-  } else {
-    return [];
-  }
-}
-
-export async function getplanssaveobj() {
-  const tt = localStorage.getItem("planobj");
-  if (tt) {
-    return helpers.decryptobj(tt);
-  } else {
-    return [];
-  }
-}
-
-export async function saveplanobj(arry) {
-  localStorage.setItem("planobj", helpers.encryptobj(arry));
-}
-
-export async function setlockscreen(dat) {
-  localStorage.setItem("screen", helpers.encryptobj(dat));
-  // localStorage.setItem("screen", helpers.encryptobj(dat));
-  return;
-}
-
-export function getlockscreen() {
-  var lc = localStorage.getItem("screen");
-
-  // var lc = localStorage.getItem("screen");
-  if (lc) {
-    return helpers.decryptobj(lc);
-  } else {
-    return null;
-  }
-}
-
-export async function saveutiliesobj(arry) {
-  localStorage.setItem("utilobj", helpers.encryptobj(arry));
-}
-
-export async function getutiliesobj() {
-  const tt = localStorage.getItem("utilobj");
-  if (tt) {
-    return helpers.decryptobj(tt);
-  } else {
-    return [];
-  }
-}
-export async function setJwt(jwt) {
-  localStorage.setItem(tokenKey, jwt);
-}
-
-export async function saveImage(item) {
-  localStorage.setItem("image", item);
-}
-
-export async function sendotp() {
-  const { data } = await http.post(apiEndpoint + "/member/otpsupdate");
-  return helpers.decryptobj(data);
-}
-
-export async function updtk() {
-  const token = getJwt();
-  if (!token) {
-    console.warn("No Token in header");
-  }
-  http.setJwt(getJwt());
-}
-
-export async function getPinDcry() {
-  const google_key = helpers.decryptobj(localStorage.getItem("google_key"));
-  return google_key;
-}
-
-export async function setCountrem(no) {
-  localStorage.setItem("remcount", helpers.encryptobj(no));
-
-  return;
-}
-
-export async function getCountrem() {
-  const gg = localStorage.getItem("remcount");
-  if (gg) {
-    const count = helpers.decryptobj(gg);
-    return count;
-  } else {
-    return null;
-  }
-}
-export async function ind_register(obj) {
-  const IP = await publicIpv4();
-
-  obj.current_access_ip = IP;
-  const drreqpob = helpers.encryptobj(obj);
-  var res = await http.post(apiEndpoint + "/member/inividual_register", {
-    enc: drreqpob,
-  });
-
-  return res;
-}
-export async function register(obj) {
-  const IP = await publicIpv4();
-
-  obj.current_access_ip = IP;
-  const drreqpob = helpers.encryptobj(obj);
-  var res = await http.post(apiEndpoint + "/member/register", {
-    enc: drreqpob,
-  });
-
-  return res;
-}
-
-export function logout(dispatch) {
-  localStorage.removeItem(tokenKey);
-  localStorage.removeItem("google_key");
-  localStorage.removeItem("IP");
-  localStorage.removeItem("obj");
-  localStorage.removeItem("remcount");
-  localStorage.removeItem("randonid");
-  localStorage.clear();
-  dispatch({ type: LOGOUT });
-  // window.location.href = "/";
-}
-(async () => {
-  const IP = await publicIpv4();
-  localStorage.setItem("IP", helpers.encrypt(IP));
-})();
 
 export function getCurrentUser() {
   try {
-    const clientip = helpers.decrypt(localStorage.getItem("IP"));
-    const tttre = localStorage.getItem(tokenKey);
-    if (tttre) {
-      const jwt = helpers.decrypt(tttre);
+    const token = getJwt();
+    if (!token) return null;
 
-      const some = jwtDecode(jwt);
-      if (
-        some.exp >=
-        Date.now() / 1000
-        // &&
-        // some.ip === clientip &&
-        // some.browserid === browser.version
-      ) {
-        return some;
-      } else {
-        logout();
-      }
-    } else {
-      return null;
-    }
-  } catch (ex) {
-    return null;
-  }
-}
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
 
-export function getJwt() {
-  return helpers.decrypt(localStorage.getItem(tokenKey));
-}
-export async function savefcmtoken(fcm) {
-  localStorage.setItem("fcm_token", fcm);
-}
-export function getfcmtoken(fcm) {
-  return localStorage.getItem("fcm_token");
-}
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
 
-export async function savelocation(location) {
-  localStorage.setItem("location", helpers.encryptobj(location));
-}
-
-export async function getlocation() {
-  const tt = localStorage.getItem("location");
-  if (tt) {
-    return helpers.decryptobj(tt);
-  } else {
-    return null;
-  }
-}
-export async function saverecentads(arry) {
-  localStorage.setItem("recent", helpers.encryptobj(arry));
-}
-
-export async function getrecentads() {
-  const tt = localStorage.getItem("recent");
-  if (tt) {
-    return helpers.decryptobj(tt);
-  } else {
-    return [];
-  }
-}
-export async function replaceImage(error) {
-  //replacement of broken Image
-  return (error.target.src =
-    "https://t3.ftcdn.net/jpg/00/36/94/26/240_F_36942622_9SUXpSuE5JlfxLFKB1jHu5Z07eVIWQ2W.jpg");
-}
-
-export function formatBalance(value, precision = 2) {
-  const num = parseFloat(value || 0);
-  if (Number.isNaN(num)) return "0.00";
-  let number = num.toFixed(precision);
-  return number;
-}
-
-export const getAllBanksList = async (setLoader, dispatch) => {
-  setLoader(true);
-  try {
-    const res = await backEndCallNoEnc("/userget/get_netbanks");
-    const netbanksArray = Object.values(res.net_banks || {}); // convert object to array
-
-    await dispatch(getNetbanksRdx({ netbanksArray }));
-  } catch (error) {
-    console.error("Error fetching bank list:", error);
-  } finally {
-    setLoader(false);
-  }
-};
-
-export const wallet_banks = async (net_banks) => {
-  const fn = [
-    "Alipay / Lazada Wallet",
-    "DCPay / COINS.PH",
-    "GrabPay Philippines",
-    "G-Xchange / GCash",
-    "PayMaya Philippines Inc",
-    "PAYMONGO PAYMENTS  INC.",
-    "ShopeePay Philippines Inc",
-    "Starpay Corporation",
-    "TAGCASH LTD. INC.",
-    "TAYOCASH INC",
-    "TONIK DIGITAL BANK  INC.",
-    "UnionDigital Bank",
-    "Zybi Tech Inc. / JuanCash",
-    "TOKTOKWALLET INCORPORATED",
-    "UNObank",
-    "Tonik Bank",
-    "PalawanPay",
-    "Maya Bank  Inc.",
-    "MAYA BANK  INC",
-  ];
-
-  const normalize = (str) =>
-    str
-      ?.replace(
-        /[`~!@#$%^&*()_|+\-=?;:'",.<>×÷⋅°π©℗®™√€£¥¢✓•△¶∆\{\}\[\]\\\/]/gi,
-        ""
-      )
-      .replace(/\s/g, "");
-
-  return fn.map((walletName) => {
-    const normalizedWalletName = normalize(walletName);
-
-    // Find the matching bank in net_banks
-    const matchedBank = net_banks.find(
-      (bank) => normalize(bank.full_name) === normalizedWalletName
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
     );
 
-    const full_name = walletName;
-    const image = `https://img.topwallet.ph/bank_logos/${normalizedWalletName}.png`;
-    const settlement_rail = matchedBank?.settlement_rail || null;
-    const swift_bic = matchedBank?.swift_bic || null;
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Token decode error:", error);
+    return null;
+  }
+}
 
-    return {
-      full_name,
-      image,
-      settlement_rail,
-      swift_bic,
-    };
+// Update JWT token
+export async function updateJwt() {
+  try {
+    const { data } = await http.post(apiUrl + API_ENDPOINTS.UPDATE_JWT);
+    if (data && data.token) {
+      setJwt(data.token);
+    }
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+        code: error.response.data.code,
+      };
+    }
+    throw error;
+  }
+}
+
+// Unencrypted Backend Calls
+export async function NobackEndCall(route) {
+  try {
+    const { data } = await http.post(apiUrl + route);
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function NobackEndCallObj(route, obj, method = "post") {
+  try {
+    const lowerMethod = method.toLowerCase();
+    let res;
+    if (lowerMethod === "get") {
+      res = await http.get(apiUrl + route, { params: obj });
+    } else if (lowerMethod === "delete") {
+      res = await http.delete(apiUrl + route, { data: obj });
+    } else {
+      res = await http[lowerMethod](apiUrl + route, obj);
+    }
+    return res.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        ...error.response.data,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCallObjPut(route, obj) {
+  try {
+    const { data } = await http.put(apiUrl + route, obj);
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        ...error.response.data,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCallObjDel(route, id) {
+  try {
+    const url =
+      typeof id === "string" || typeof id === "number"
+        ? `${apiUrl}${route}/${id}`
+        : apiUrl + route;
+    const config = typeof id === "object" ? { data: id } : undefined;
+    const { data } = await http.delete(url, config);
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCallPatch(route, obj) {
+  try {
+    const { data } = await http.patch(apiUrl + route, obj);
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        ...error.response.data,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred",
+      };
+    }
+    throw error;
+  }
+}
+
+// Encrypted Routes
+export async function backEndCallObj(route, obj) {
+  try {
+    const drreqpob = await encryptobj(obj);
+    const { data } = await http.post(apiUrl + route, { enc: drreqpob });
+    const dec = await decryptobj(data?.data || data, "data decrypt");
+    if (!dec) return null;
+    return dec;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with encrypted request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCall(route) {
+  try {
+    const { data } = await http.post(apiUrl + route);
+    if (!data) return null;
+    return await decryptobj(data);
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with encrypted request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCallObjNoEnc(route, obj) {
+  try {
+    const { data } = await http.post(apiUrl + route, obj);
+    return await decryptobj(data);
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCallObjNoDcyt(route, obj) {
+  try {
+    const drreqpob = await encryptobj(obj);
+    const { data } = await http.post(apiUrl + route, {
+      enc: drreqpob,
+    });
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with encrypted request",
+      };
+    }
+    throw error;
+  }
+}
+
+// Captcha support call
+export async function backEndCallObjCap(route, obj, cap) {
+  if (cap) {
+    http.setCaptcha(cap);
+  }
+  try {
+    const { data } = await http.post(apiUrl + route, obj);
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  } finally {
+    http.setCaptcha(null);
+  }
+}
+
+// Upload & Download File Helpers
+export async function uploadFileCall(route, formData, method = "post") {
+  try {
+    const lowerMethod = (method || "post").toLowerCase();
+    const { data } = await http[lowerMethod](apiUrl + route, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw {
+        success: false,
+        ...error.response.data,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function fetchFileBlob(route) {
+  try {
+    const isFullUrl = route.startsWith("http");
+    const fullUrl = isFullUrl ? route : apiUrl + route;
+    const response = await http.get(fullUrl, { responseType: "blob" });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function postFileBlob(route, body = {}) {
+  try {
+    const fullUrl = apiUrl + route;
+    const response = await http.post(fullUrl, body, { responseType: "blob" });
+    return response.data;
+  } catch (error) {
+    console.error("Post file blob error:", error);
+    throw error;
+  }
+}
+
+// Login Call
+export async function loginCall(route, obj) {
+  try {
+    const { data } = await http.post(apiUrl + route, obj);
+    if (data && data.token) {
+      setJwt(data.token);
+    }
+    return data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          (typeof error.response.data === "string" ? error.response.data : "An error occurred with the request"),
+      };
+    }
+    throw error;
+  }
+}
+
+// Logout Call
+export async function logout() {
+  try {
+    const endpoint = API_ENDPOINTS?.AUTH?.LOGOUT || "/auth/logout";
+    const { data } = await http.post(apiUrl + endpoint);
+    setJwt(null);
+    return data;
+  } catch (error) {
+    setJwt(null);
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        error: error.response.data.message || "Logout failed",
+      };
+    }
+    return { success: true };
+  }
+}
+
+// Test Route
+export async function testBackendcall(type) {
+  return new Promise((resolve, reject) => {
+    if (type === "fail") {
+      let response = { response: { data: "Something went wrong" } };
+      reject(JSON.stringify(response));
+    } else {
+      resolve({ success: "Success!" });
+    }
   });
-};
+}
 
-export const getimgname = (item) => {
-  var full_name = item?.full_name
-    .replace(
-      /[`~!@#$%^&*()_|+\-=?;:'",.<>×÷⋅°π©℗®™√€£¥¢✓•△¶∆\{\}\[\]\\\/]/gi,
-      ""
-    )
-    .replace(/\s/g, "");
-  return `https://img.topwallet.ph/bank_logos/${full_name}.png`;
-};
-
-export default {
-  login,
+const exportedObject = {
+  backEndCall,
+  backEndCallObj,
+  loginCall,
   logout,
-  getCurrentUser,
+  backEndCallObjCap,
+  backEndCallObjNoDcyt,
+  backEndCallObjNoEnc,
+  NobackEndCall,
+  NobackEndCallObj,
+  uploadFileCall,
+  fetchFileBlob,
+  postFileBlob,
   getJwt,
-  validateOTP,
-  getlockscreen,
-  setlockscreen,
-  replaceImage,
+  setJwt,
+  getCurrentUser,
+  updateJwt,
+  backEndCallObjPut,
+  backEndCallPatch,
+  backEndCallObjDel,
+  testBackendcall,
 };
+
+export default exportedObject;
