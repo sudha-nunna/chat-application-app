@@ -16,28 +16,39 @@ import {
   FiCreditCard,
   FiServer
 } from "react-icons/fi";
-import api from "../../services/api";
+import { NobackEndCall } from "../../services/authService";
 import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
 import PlanBadge from "../subscription/PlanBadge";
 import UpgradeButton from "../subscription/UpgradeButton";
 import SubscriptionModal from "../subscription/SubscriptionModal";
 import { useTheme } from "../../context/ThemeContext";
+import { useTanStackData, useTanStackQueryClient } from "../../hooks/useTanStackData";
 
 const AppLayout = ({ children }) => {
   const { theme, isDark, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [bots, setBots] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useTanStackQueryClient();
 
+  const token = localStorage.getItem("token");
+
+  // TanStack Query: Sync bots automatically across AppLayout & DashboardPage
+  const { data: bots = [] } = useTanStackData(
+    ["bots"],
+    async () => {
+      const res = await NobackEndCall("/bots");
+      return Array.isArray(res) ? res : res?.data || [];
+    },
+    { enabled: !!token }
+  );
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
 
     const savedUser = localStorage.getItem("user");
@@ -47,20 +58,8 @@ const AppLayout = ({ children }) => {
       } catch (e) {}
     }
 
-    if (token) {
-      fetchBots();
-    }
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
-
-  const fetchBots = async () => {
-    try {
-      const res = await api.get("/bots");
-      setBots(res.data || []);
-    } catch (err) {
-      console.error("Failed to load bots:", err);
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -69,7 +68,7 @@ const AppLayout = ({ children }) => {
   };
 
   const handleBotCreated = (newBot) => {
-    fetchBots();
+    queryClient.invalidateQueries({ queryKey: ["bots"] });
     navigate(`/bots/${newBot._id}`);
   };
 

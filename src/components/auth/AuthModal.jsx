@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import api from "../../services/api";
+import { NobackEndCallObj, setJwt } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
 
 const AuthModal = ({ onAuthSuccess }) => {
@@ -11,12 +11,19 @@ const AuthModal = ({ onAuthSuccess }) => {
     setError("");
 
     try {
-      const res = await api.post("/auth/google", { token: credentialResponse.credential });
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const res = await NobackEndCallObj("/auth/google", { token: credentialResponse.credential }, "post");
+      const token = res?.token || res?.data?.token;
+      const user = res?.user || res?.data?.user;
+
+      if (token) {
+        setJwt(token);
+      }
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
       onAuthSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || "Google sign-in failed.");
+      setError(err?.error || err?.message || "Google sign-in failed.");
     }
   };
 

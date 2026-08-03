@@ -1,14 +1,14 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../services/api";
+import { NobackEndCall } from "../services/authService";
 
 export const fetchAllChatsAction = createAsyncThunk("chat/fetchAllChatsAction", async () => {
-  const response = await api.get("/chats");
-  return response.data;
+  const response = await NobackEndCall("/chats");
+  return Array.isArray(response) ? response : response?.data || [];
 });
 
 export const loadActiveMessagesAction = createAsyncThunk("chat/loadActiveMessagesAction", async (chatId) => {
-  const response = await api.get(`/chats/${chatId}/messages`);
-  return response.data;
+  const response = await NobackEndCall(`/chats/${chatId}/messages`);
+  return Array.isArray(response) ? response : response?.data || [];
 });
 
 const chatSlice = createSlice({

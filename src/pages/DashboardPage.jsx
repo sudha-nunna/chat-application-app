@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiCpu,
   FiPlus,
@@ -9,46 +9,54 @@ import {
   FiTrash2,
   FiLayers
 } from "react-icons/fi";
-import api from "../services/api";
+import { NobackEndCall, backEndCallObjDel } from "../services/authService";
 import CreateBotModal from "../components/bots/CreateBotModal";
 import ApiModal from "../components/bots/ApiModal";
 import { useTheme } from "../context/ThemeContext";
+import {
+  useTanStackData,
+  useTanStackMutation,
+  useTanStackQueryClient
+} from "../hooks/useTanStackData";
 
 const DashboardPage = () => {
-  const [bots, setBots] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApiBot, setSelectedApiBot] = useState(null);
   const [apiModalMode, setApiModalMode] = useState("generate");
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const queryClient = useTanStackQueryClient();
 
-  useEffect(() => {
-    fetchBots();
-  }, []);
-
-  const fetchBots = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/bots");
-      setBots(res.data || []);
-    } catch (err) {
-      console.error("Failed to load bots:", err);
-    } finally {
-      setLoading(false);
+  // 1. GET Route: Fetch bots using authService's NobackEndCall & useTanStackData hook
+  const {
+    data: bots = [],
+    isLoading: loading,
+    refetch: fetchBots
+  } = useTanStackData(
+    ["bots"],
+    async () => {
+      const res = await NobackEndCall("/bots");
+      return Array.isArray(res) ? res : res?.data || [];
     }
-  };
+  );
 
-  const handleDeleteBot = async (e, botId) => {
-    e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this AI Agent and all its knowledge files?")) return;
-
-    try {
-      await api.delete(`/bots/${botId}`);
-      fetchBots();
-    } catch (err) {
+  // 2. DELETE Route: Delete bot mutation using authService's backEndCallObjDel & useTanStackMutation hook
+  const deleteBotMutation = useTanStackMutation({
+    mutationFn: async (botId) => {
+      return await backEndCallObjDel("/bots", botId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bots"] });
+    },
+    onError: (err) => {
       console.error("Failed to delete bot:", err);
     }
+  });
+
+  const handleDeleteBot = (e, botId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this AI Agent and all its knowledge files?")) return;
+    deleteBotMutation.mutate(botId);
   };
 
   return (
@@ -129,6 +137,7 @@ const DashboardPage = () => {
 
                   <button
                     onClick={(e) => handleDeleteBot(e, bot._id)}
+                    disabled={deleteBotMutation.isPending}
                     className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
                       }`}
                     title="Delete Bot"
@@ -150,8 +159,6 @@ const DashboardPage = () => {
                     <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
                   </span>
 
-
-
                   <button
                     className="flex items-center gap-1 text-xs font-semibold hover:text-indigo-500 hover:underline transition cursor-pointer"
                     title="Manage APIs"
@@ -162,10 +169,7 @@ const DashboardPage = () => {
                     </strong>{" "}
                     {(bot.apiCount || bot.apis?.length || 0) === 1 ? "API" : "APIs"}
                   </button>
-
-
                 </div>
-
 
                 <button
                   onClick={(e) => {
@@ -178,12 +182,6 @@ const DashboardPage = () => {
                   <FiPlus className="text-xs" />
                   <span>API Keys</span>
                 </button>
-
-
-                {/* <div className="flex items-center gap-1 text-blue-500 font-semibold group-hover:translate-x-1 transition">
-                  <span>Open</span>
-                  <FiArrowRight />
-                </div> */}
               </div>
             </div>
           ))}
@@ -195,7 +193,7 @@ const DashboardPage = () => {
         <CreateBotModal
           onClose={() => setIsModalOpen(false)}
           onBotCreated={(newBot) => {
-            fetchBots();
+            queryClient.invalidateQueries({ queryKey: ["bots"] });
             navigate(`/bots/${newBot._id}`);
           }}
         />
@@ -207,7 +205,7 @@ const DashboardPage = () => {
           bot={selectedApiBot}
           initialMode={apiModalMode}
           onClose={() => setSelectedApiBot(null)}
-          onApiUpdated={() => fetchBots()}
+          onApiUpdated={() => queryClient.invalidateQueries({ queryKey: ["bots"] })}
         />
       )}
     </div>

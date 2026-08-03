@@ -21,8 +21,13 @@ import {
   FiAlertTriangle,
   FiRotateCw
 } from "react-icons/fi";
-import api from "../../services/api";
+import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  useTanStackData,
+  useTanStackMutation,
+  useTanStackQueryClient
+} from "../../hooks/useTanStackData";
 
 const BotChatTab = ({ bot }) => {
   const [conversations, setConversations] = useState([]);
@@ -86,10 +91,11 @@ const BotChatTab = ({ bot }) => {
 
   const fetchConversations = async (selectLatest = true) => {
     try {
-      const res = await api.get(`/bots/${bot._id}/conversations`);
-      setConversations(res.data || []);
-      if (selectLatest && res.data && res.data.length > 0) {
-        setActiveConvId(res.data[0]._id);
+      const res = await NobackEndCall(`/bots/${bot._id}/conversations`);
+      const list = Array.isArray(res) ? res : res?.data || [];
+      setConversations(list);
+      if (selectLatest && list.length > 0) {
+        setActiveConvId(list[0]._id);
       }
     } catch (err) {
       console.error("Failed to load bot conversations:", err);
@@ -98,8 +104,9 @@ const BotChatTab = ({ bot }) => {
 
   const fetchMessages = async (convId) => {
     try {
-      const res = await api.get(`/bots/${bot._id}/conversations/${convId}/messages`);
-      setMessages(res.data || []);
+      const res = await NobackEndCall(`/bots/${bot._id}/conversations/${convId}/messages`);
+      const list = Array.isArray(res) ? res : res?.data || [];
+      setMessages(list);
     } catch (err) {
       console.error("Failed to load bot messages:", err);
     }
@@ -107,11 +114,12 @@ const BotChatTab = ({ bot }) => {
 
   const handleCreateNewChat = async () => {
     try {
-      const res = await api.post(`/bots/${bot._id}/conversations`, {
+      const res = await NobackEndCallObj(`/bots/${bot._id}/conversations`, {
         title: "New Conversation"
-      });
+      }, "post");
+      const newConvId = res?._id || res?.data?._id;
       await fetchConversations(false);
-      setActiveConvId(res.data._id);
+      if (newConvId) setActiveConvId(newConvId);
       setIsMobileDrawerOpen(false);
     } catch (err) {
       console.error("Failed to create new conversation:", err);
@@ -122,7 +130,7 @@ const BotChatTab = ({ bot }) => {
     e.stopPropagation();
     if (!window.confirm("Delete this conversation thread?")) return;
     try {
-      await api.delete(`/bots/${bot._id}/conversations/${convId}`);
+      await backEndCallObjDel(`/bots/${bot._id}/conversations`, convId);
       if (activeConvId === convId) {
         setActiveConvId(null);
       }
@@ -156,10 +164,10 @@ const BotChatTab = ({ bot }) => {
 
     if (!targetConvId) {
       try {
-        const createRes = await api.post(`/bots/${bot._id}/conversations`, {
+        const createRes = await NobackEndCallObj(`/bots/${bot._id}/conversations`, {
           title: userText.slice(0, 30) || "New Conversation"
-        });
-        targetConvId = createRes.data._id;
+        }, "post");
+        targetConvId = createRes?._id || createRes?.data?._id;
         setActiveConvId(targetConvId);
       } catch (err) {
         console.error("Failed to auto-create conversation:", err);

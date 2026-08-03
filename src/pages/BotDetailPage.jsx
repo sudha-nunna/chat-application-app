@@ -8,44 +8,56 @@ import {
   FiArrowLeft,
   FiFileText
 } from "react-icons/fi";
-import api from "../services/api";
+import { NobackEndCall, backEndCallObjDel } from "../services/authService";
 import BotChatTab from "../components/bots/BotChatTab";
 import BotApiTab from "../components/bots/BotApiTab";
 import BotKnowledgeTab from "../components/bots/BotKnowledgeTab";
 import { useTheme } from "../context/ThemeContext";
+import {
+  useTanStackData,
+  useTanStackMutation,
+  useTanStackQueryClient
+} from "../hooks/useTanStackData";
 
 const BotDetailPage = () => {
   const { botId } = useParams();
   const navigate = useNavigate();
-  const [bot, setBot] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("chat"); // "chat" | "knowledge" | "apis"
   const { isDark } = useTheme();
+  const queryClient = useTanStackQueryClient();
 
-  useEffect(() => {
-    fetchBotDetails();
-  }, [botId]);
+  // 1. GET Route: Fetch Bot Details using authService & useTanStackData
+  const {
+    data: bot = null,
+    isLoading: loading,
+    refetch: fetchBotDetails
+  } = useTanStackData(
+    ["bot", botId],
+    async () => {
+      const res = await NobackEndCall(`/bots/${botId}`);
+      return res?.data || res;
+    },
+    { enabled: !!botId }
+  );
 
-  const fetchBotDetails = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/bots/${botId}`);
-      setBot(res.data);
-    } catch (err) {
-      console.error("Failed to load bot details:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteBot = async () => {
-    if (!window.confirm(`Are you sure you want to delete '${bot.name}' and all its knowledge files?`)) return;
-    try {
-      await api.delete(`/bots/${botId}`);
+  // 2. DELETE Route: Delete bot mutation using authService & useTanStackMutation
+  const deleteBotMutation = useTanStackMutation({
+    mutationFn: async () => {
+      return await backEndCallObjDel("/bots", botId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bots"] });
       navigate("/dashboard");
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error("Failed to delete bot:", err);
     }
+  });
+
+  const handleDeleteBot = () => {
+    if (!bot) return;
+    if (!window.confirm(`Are you sure you want to delete '${bot.name}' and all its knowledge files?`)) return;
+    deleteBotMutation.mutate();
   };
 
   if (loading) {

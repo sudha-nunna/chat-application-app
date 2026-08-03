@@ -17,8 +17,9 @@ import {
   FiDatabase,
   FiLayers
 } from "react-icons/fi";
-import api from "../../services/api";
+import { NobackEndCallObj } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import { useTanStackMutation, useTanStackQueryClient } from "../../hooks/useTanStackData";
 
 const MODELS = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", badge: "Recommended" },
@@ -42,9 +43,9 @@ const ACTION_TYPES = [
 
 const CreateBotModal = ({ onClose, onBotCreated }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { isDark } = useTheme();
+  const queryClient = useTanStackQueryClient();
 
   // Step 1: Info
   const [name, setName] = useState("");
@@ -76,6 +77,29 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   // Step 5: Test Execution
   const [testResult, setTestResult] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
+
+  // TanStack Mutation for complete Bot Creation
+  const createBotMutation = useTanStackMutation({
+    mutationFn: async (payload) => {
+      const newBot = await NobackEndCallObj("/bots", payload, "post");
+      if (stagedFiles.length > 0 && newBot?._id) {
+        for (const file of stagedFiles) {
+          await NobackEndCallObj(`/bots/${newBot._id}/upload`, file, "post");
+        }
+      }
+      return newBot;
+    },
+    onSuccess: (newBot) => {
+      queryClient.invalidateQueries({ queryKey: ["bots"] });
+      onBotCreated(newBot);
+      onClose();
+    },
+    onError: (err) => {
+      setError(err?.error || err?.message || "Failed to finalize bot creation.");
+    }
+  });
+
+  const loading = createBotMutation.isPending;
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -256,7 +280,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
     }
   };
 
-  const handleCompleteBotCreation = async () => {
+  const handleCompleteBotCreation = () => {
     if (!name.trim()) {
       setError("Please provide a Bot Name.");
       setCurrentStep(1);
@@ -269,37 +293,15 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
       return;
     }
 
-    setLoading(true);
     setError("");
-
-    try {
-      // 1. Create Bot
-      const botRes = await api.post("/bots", {
-        name: name.trim(),
-        description: description ? description.trim() : "",
-        model: selectedModel,
-        systemPrompt: `You are a specialized AI Knowledge & Tool Agent named ${name}.`,
-        initialApis: stagedApis,
-        stagedFiles
-      });
-
-      const newBot = botRes.data;
-
-      // 2. Upload staged files if any
-      if (stagedFiles.length > 0) {
-        for (const file of stagedFiles) {
-          await api.post(`/bots/${newBot._id}/upload`, file);
-        }
-      }
-
-      setLoading(false);
-      onBotCreated(newBot);
-      onClose();
-    } catch (err) {
-      console.error("Complete Bot Creation Error:", err);
-      setError(err.response?.data?.message || err.message || "Failed to finalize bot creation.");
-      setLoading(false);
-    }
+    createBotMutation.mutate({
+      name: name.trim(),
+      description: description ? description.trim() : "",
+      model: selectedModel,
+      systemPrompt: `You are a specialized AI Knowledge & Tool Agent named ${name}.`,
+      initialApis: stagedApis,
+      stagedFiles
+    });
   };
 
   return (

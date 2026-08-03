@@ -1,37 +1,51 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiPlus, FiMessageSquare, FiTrash2, FiX } from "react-icons/fi";
-import api from "../../services/api";
+import { NobackEndCall, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  useTanStackData,
+  useTanStackMutation,
+  useTanStackQueryClient
+} from "../../hooks/useTanStackData";
 
 const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdated, onCloseMobile }) => {
-  const [chats, setChats] = useState([]);
   const { isDark } = useTheme();
+  const queryClient = useTanStackQueryClient();
 
-  useEffect(() => {
-    fetchHistoryList();
-  }, [refreshTrigger]);
-
-  const fetchHistoryList = async () => {
-    try {
-      const res = await api.get("/chats");
-      setChats(res.data || []);
-    } catch (err) {
-      console.error("Failed to load history list", err);
+  // 1. GET Route: General Threads History List using useTanStackData & NobackEndCall
+  const {
+    data: chats = [],
+    isLoading: loading,
+    refetch: fetchHistoryList
+  } = useTanStackData(
+    ["chats"],
+    async () => {
+      const res = await NobackEndCall("/chats");
+      return Array.isArray(res) ? res : res?.data || [];
     }
-  };
+  );
 
-  const handleDeleteChat = async (e, chatId) => {
-    e.stopPropagation();
-    if (!window.confirm("Delete this conversation thread?")) return;
-    try {
-      await api.delete(`/chats/${chatId}`);
+  // 2. DELETE Route: Delete Thread Mutation
+  const deleteChatMutation = useTanStackMutation({
+    mutationFn: async (chatId) => {
+      return await backEndCallObjDel("/chats", chatId);
+    },
+    onSuccess: (_, chatId) => {
       if (currentChatId === chatId) {
         setCurrentChatId(null);
       }
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
       if (onChatUpdated) onChatUpdated();
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error("Error deleting chat:", err);
     }
+  });
+
+  const handleDeleteChat = (e, chatId) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this conversation thread?")) return;
+    deleteChatMutation.mutate(chatId);
   };
 
   const handleSelectChat = (chatId) => {
@@ -103,6 +117,7 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
 
                 <button
                   onClick={(e) => handleDeleteChat(e, chat._id)}
+                  disabled={deleteChatMutation.isPending}
                   className={`opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition ${
                     isDark ? "text-slate-500" : "text-slate-400"
                   }`}

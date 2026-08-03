@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   FiUpload,
@@ -8,35 +8,93 @@ import {
   FiAlertCircle,
   FiCheckCircle
 } from "react-icons/fi";
-import api from "../../services/api";
+import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  useTanStackData,
+  useTanStackMutation,
+  useTanStackQueryClient
+} from "../../hooks/useTanStackData";
 
 const BotKnowledgeTab = ({ bot }) => {
   const { botId } = useParams();
-  const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [replaceTarget, setReplaceTarget] = useState(null);
   const fileInputRef = useRef(null);
   const { isDark } = useTheme();
+  const queryClient = useTanStackQueryClient();
 
-  const fetchFiles = async () => {
-    try {
-      const res = await api.get(`/bots/${botId}/files`);
-      setFiles(res.data || []);
-    } catch (err) {
-      console.error("Failed to load knowledge files:", err);
-      setError("Unable to fetch knowledge files right now.");
-    } finally {
-      setLoading(false);
+  const targetBotId = botId || bot?._id;
+
+  // 1. GET Route: Fetch Bot Knowledge Files
+  const {
+    data: files = [],
+    isLoading: loading,
+    refetch: fetchFiles
+  } = useTanStackData(
+    ["bot-files", targetBotId],
+    async () => {
+      if (!targetBotId) return [];
+      const res = await NobackEndCall(`/bots/${targetBotId}/files`);
+      return Array.isArray(res) ? res : res?.data || [];
+    },
+    { enabled: !!targetBotId }
+  );
+
+  // Upload Files Mutation
+  const uploadFilesMutation = useTanStackMutation({
+    mutationFn: async (selectedFiles) => {
+      for (const file of selectedFiles) {
+        const payload = await readFileAsPayload(file);
+        await NobackEndCallObj(`/bots/${targetBotId}/upload`, payload, "post");
+      }
+      return selectedFiles.length;
+    },
+    onSuccess: (count) => {
+      setSuccess(`${count} knowledge file${count > 1 ? "s" : ""} added successfully.`);
+      queryClient.invalidateQueries({ queryKey: ["bot-files", targetBotId] });
+      queryClient.invalidateQueries({ queryKey: ["bots"] });
+    },
+    onError: (err) => {
+      setError(err?.error || err?.message || "Failed to upload knowledge file.");
     }
-  };
+  });
 
-  useEffect(() => {
-    fetchFiles();
-  }, [botId]);
+  // Replace File Mutation
+  const replaceFileMutation = useTanStackMutation({
+    mutationFn: async ({ selectedFile, targetFile }) => {
+      const payload = await readFileAsPayload(selectedFile);
+      return await NobackEndCallObj(`/bots/${targetBotId}/files/${targetFile._id}`, payload, "put");
+    },
+    onSuccess: () => {
+      setSuccess("Knowledge file replaced successfully.");
+      setReplaceTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["bot-files", targetBotId] });
+      queryClient.invalidateQueries({ queryKey: ["bots"] });
+    },
+    onError: (err) => {
+      setError(err?.error || err?.message || "Failed to replace knowledge file.");
+      setReplaceTarget(null);
+    }
+  });
+
+  // Delete File Mutation
+  const deleteFileMutation = useTanStackMutation({
+    mutationFn: async (fileId) => {
+      return await backEndCallObjDel(`/bots/${targetBotId}/files`, fileId);
+    },
+    onSuccess: () => {
+      setSuccess("Knowledge file removed.");
+      queryClient.invalidateQueries({ queryKey: ["bot-files", targetBotId] });
+      queryClient.invalidateQueries({ queryKey: ["bots"] });
+    },
+    onError: (err) => {
+      setError(err?.error || err?.message || "Failed to remove knowledge file.");
+    }
+  });
+
+  const saving = uploadFilesMutation.isPending || replaceFileMutation.isPending || deleteFileMutation.isPending;
 
   const readFileAsPayload = async (file) => {
     const ext = (file.name.split(".").pop() || "txt").toLowerCase();
@@ -67,28 +125,14 @@ const BotKnowledgeTab = ({ bot }) => {
     };
   };
 
-  const handleUpload = async (event) => {
+  const handleUpload = (event) => {
     const selectedFiles = Array.from(event.target.files || []);
     if (!selectedFiles.length) return;
 
-    setSaving(true);
     setError("");
     setSuccess("");
-
-    try {
-      for (const file of selectedFiles) {
-        const payload = await readFileAsPayload(file);
-        await api.post(`/bots/${botId}/upload`, payload);
-      }
-
-      setSuccess(`${selectedFiles.length} knowledge file${selectedFiles.length > 1 ? "s" : ""} added successfully.`);
-      await fetchFiles();
-    } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || "Failed to upload knowledge file.");
-    } finally {
-      setSaving(false);
-      event.target.value = "";
-    }
+    uploadFilesMutation.mutate(selectedFiles);
+    event.target.value = "";
   };
 
   const triggerReplace = (file) => {
@@ -96,149 +140,136 @@ const BotKnowledgeTab = ({ bot }) => {
     fileInputRef.current?.click();
   };
 
-  const handleReplace = async (event) => {
+  const handleReplace = (event) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile || !replaceTarget) return;
 
-    setSaving(true);
     setError("");
     setSuccess("");
-
-    try {
-      const payload = await readFileAsPayload(selectedFile);
-      await api.put(`/bots/${botId}/files/${replaceTarget._id}`, payload);
-      setSuccess(`Knowledge file replaced successfully.`);
-      await fetchFiles();
-    } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || "Failed to replace knowledge file.");
-    } finally {
-      setSaving(false);
-      setReplaceTarget(null);
-      event.target.value = "";
-    }
+    replaceFileMutation.mutate({ selectedFile, targetFile: replaceTarget });
+    event.target.value = "";
   };
 
-  const handleDelete = async (file) => {
+  const handleDelete = (file) => {
     if (!window.confirm(`Remove '${file.fileName}' from this bot's knowledge base?`)) return;
 
-    setSaving(true);
     setError("");
     setSuccess("");
-
-    try {
-      await api.delete(`/bots/${botId}/files/${file._id}`);
-      setSuccess("Knowledge file removed.");
-      await fetchFiles();
-    } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || "Failed to delete knowledge file.");
-    } finally {
-      setSaving(false);
-    }
+    deleteFileMutation.mutate(file._id);
   };
 
   return (
-    <div className={`flex-1 overflow-y-auto p-4 md:p-6 ${
-      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
-    }`}>
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleReplace} />
-
-      <div className="max-w-3xl mx-auto space-y-4">
-        <div className={`rounded-2xl border p-4 ${
-          isDark ? "border-slate-800 bg-slate-950/70" : "border-slate-200 bg-white shadow-sm"
-        }`}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>Knowledge Base</h3>
-              <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                Add documents to teach this bot. You can also replace or remove files later without changing the chat experience.
-              </p>
-            </div>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-600/10 px-3 py-2 text-xs font-semibold text-blue-500 transition hover:bg-blue-600/20">
-              <FiUpload />
-              <span>{saving ? "Uploading..." : "Add Document"}</span>
-              <input type="file" multiple accept=".pdf,.txt,.docx,.md" className="hidden" onChange={handleUpload} />
-            </label>
-          </div>
+    <div className={`p-6 rounded-2xl border space-y-6 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/40">
+        <div>
+          <h3 className="text-base font-bold tracking-tight">RAG Knowledge Documents</h3>
+          <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Upload knowledge files (PDF, TXT, DOCX, MD) to train this isolated AI Agent.
+          </p>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-500">
-            <FiAlertCircle />
-            <span>{error}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={replaceTarget ? handleReplace : handleUpload}
+            multiple={!replaceTarget}
+            accept=".pdf,.txt,.docx,.md"
+            className="hidden"
+          />
 
-        {success && (
-          <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-500">
-            <FiCheckCircle />
-            <span>{success}</span>
-          </div>
-        )}
-
-        <div className={`rounded-2xl border p-4 ${
-          isDark ? "border-slate-800 bg-slate-950/70" : "border-slate-200 bg-white shadow-sm"
-        }`}>
-          <div className="mb-3 flex items-center justify-between">
-            <h4 className={`text-xs font-semibold uppercase tracking-[0.25em] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-              Current Documents ({files.length})
-            </h4>
-            <span className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{bot?.name || "Bot"} can answer from these files.</span>
-          </div>
-
-          {loading ? (
-            <div className={`rounded-xl border border-dashed p-4 text-center text-xs ${
-              isDark ? "border-slate-800 text-slate-500" : "border-slate-300 text-slate-400"
-            }`}>
-              Loading documents...
-            </div>
-          ) : files.length === 0 ? (
-            <div className={`rounded-xl border border-dashed p-4 text-center text-xs ${
-              isDark ? "border-slate-800 text-slate-500" : "border-slate-300 text-slate-400"
-            }`}>
-              No documents yet. Add a file to give this bot knowledge.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {files.map((file) => (
-                <div key={file._id} className={`flex items-center justify-between rounded-xl border px-3 py-3 ${
-                  isDark ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-slate-50"
-                }`}>
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-lg bg-blue-600/10 p-2 text-blue-500">
-                      <FiFileText />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`truncate text-sm font-medium ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</p>
-                      <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-slate-500"}`}>
-                        {file.fileType?.toUpperCase()} • {file.fileSize ? `${Math.round(file.fileSize / 1024)} KB` : "Ready"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => triggerReplace(file)}
-                      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                        isDark ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-300 text-slate-700 hover:bg-slate-200"
-                      }`}
-                    >
-                      <FiRefreshCw /> Replace
-                    </button>
-                    <button
-                      onClick={() => handleDelete(file)}
-                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                        isDark ? "border-rose-500/20 text-rose-400 hover:bg-rose-500/10" : "border-rose-300 text-rose-600 hover:bg-rose-50"
-                      }`}
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={() => {
+              setReplaceTarget(null);
+              fileInputRef.current?.click();
+            }}
+            disabled={saving}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md transition"
+          >
+            {saving ? <FiRefreshCw className="animate-spin text-xs" /> : <FiUpload className="text-xs" />}
+            <span>{saving ? "Processing..." : "Upload Document"}</span>
+          </button>
         </div>
       </div>
+
+      {/* Notifications */}
+      {error && (
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2">
+          <FiAlertCircle className="shrink-0 text-base" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+          <FiCheckCircle className="shrink-0 text-base" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      {/* Content View */}
+      {loading ? (
+        <div className={`flex items-center justify-center h-48 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          <FiRefreshCw className="animate-spin text-lg text-indigo-500 mr-2" />
+          <span>Loading Knowledge Base Files...</span>
+        </div>
+      ) : files.length === 0 ? (
+        <div className={`text-center py-12 border-2 border-dashed rounded-xl ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
+          <FiFileText className="text-3xl text-indigo-400 mx-auto mb-2" />
+          <h4 className="text-xs font-bold mb-1">No Knowledge Files Attached</h4>
+          <p className={`text-[11px] max-w-xs mx-auto mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Upload PDF documents or text files to build dedicated vector embeddings for this bot.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {files.map((file) => (
+            <div
+              key={file._id}
+              className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+                isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0 text-sm">
+                  <FiFileText />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-semibold truncate">{file.fileName}</h4>
+                  <div className={`flex items-center gap-2 text-[10px] font-mono mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    <span className="uppercase font-bold text-indigo-400">{file.fileType || "doc"}</span>
+                    <span>•</span>
+                    <span>{(file.fileSize ? file.fileSize / 1024 : 0).toFixed(1)} KB</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => triggerReplace(file)}
+                  disabled={saving}
+                  className={`p-1.5 rounded-lg text-xs transition ${
+                    isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                  }`}
+                  title="Replace File"
+                >
+                  <FiRefreshCw />
+                </button>
+
+                <button
+                  onClick={() => handleDelete(file)}
+                  disabled={saving}
+                  className="p-1.5 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 transition"
+                  title="Remove File"
+                >
+                  <FiTrash2 />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

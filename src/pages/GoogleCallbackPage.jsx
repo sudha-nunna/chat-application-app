@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import api from "../services/api";
+import { NobackEndCallObj, setJwt } from "../services/authService";
 import { useTheme } from "../context/ThemeContext";
 
 const GoogleCallbackPage = () => {
@@ -20,14 +20,18 @@ const GoogleCallbackPage = () => {
       }
 
       try {
-        const res = await api.post("/auth/google/callback", {
+        const res = await NobackEndCallObj("/auth/google/callback", {
           code,
           redirectUri,
           state,
-        });
+        }, "post");
 
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        const token = res?.token || res?.data?.token;
+        const user = res?.user || res?.data?.user;
+
+        if (token) setJwt(token);
+        if (user) localStorage.setItem("user", JSON.stringify(user));
+
         navigate("/dashboard", { replace: true });
       } catch (err) {
         console.error("Google callback error", err);

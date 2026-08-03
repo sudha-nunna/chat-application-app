@@ -44,43 +44,7 @@ export function useTanStackData(queryKey, fetchFn, options = {}) {
   }, [persistKey, queryKeyString, queryClient]);
 
   // Pro-Grade: Cross-Window Synchronization Listener
-  useEffect(() => {
-    let unlistenFn = null;
-    let isMounted = true;
 
-    const setupSync = async () => {
-      if (window.__TAURI_INTERNALS__ && persistKey) {
-        try {
-          const { listen } = await import("@tauri-apps/api/event");
-          const { getCurrentWindow } = await import("@tauri-apps/api/window");
-          const appWindow = getCurrentWindow();
-
-          const unlisten = await listen("allvion://data-updated", (event) => {
-            // If the updated key matches this hook's persistKey, we invalidate
-            // BUT: only if the event came from a DIFFERENT window/sender
-            if (event.payload.key === persistKey && event.payload.sender !== appWindow.label) {
-              queryClient.invalidateQueries({ queryKey });
-            }
-          });
-
-          if (!isMounted) {
-            unlisten();
-          } else {
-            unlistenFn = unlisten;
-          }
-        } catch (err) {
-          console.error("NeuralSync: Failed to setup listener", err);
-        }
-      }
-    };
-
-    setupSync();
-
-    return () => {
-      isMounted = false;
-      if (unlistenFn) unlistenFn();
-    };
-  }, [persistKey, queryKeyString, queryClient]);
 
   return useQuery({
     queryKey,

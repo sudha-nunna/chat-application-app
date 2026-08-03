@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api from "../services/api";
+import { NobackEndCall, NobackEndCallObj } from "../services/authService";
 
 const SubscriptionContext = createContext();
 
@@ -18,12 +18,11 @@ export const SubscriptionProvider = ({ children }) => {
 
     try {
       setLoading(true);
-      const res = await api.get("/subscription/me");
-      if (res.data?.success && res.data?.subscription) {
-        const subData = res.data.subscription;
+      const res = await NobackEndCall("/subscription/me");
+      if (res?.success && res?.subscription) {
+        const subData = res.subscription;
         setSubscription(subData);
 
-        // First login experience: Show modal once per session if plan is free
         if (subData.plan === "free") {
           const hasShownModal = sessionStorage.getItem("sub_modal_shown_session");
           if (!hasShownModal) {
@@ -45,53 +44,53 @@ export const SubscriptionProvider = ({ children }) => {
 
   const upgradePlan = async (targetPlan, billingCycle = "monthly") => {
     try {
-      const res = await api.post("/subscription/upgrade", {
+      const res = await NobackEndCallObj("/subscription/upgrade", {
         plan: targetPlan,
         billingCycle,
-      });
-      if (res.data?.success) {
+      }, "post");
+      if (res?.success) {
         await fetchSubscription();
-        return { success: true, data: res.data };
+        return { success: true, data: res };
       }
-      return { success: false, message: res.data?.message || "Upgrade failed" };
+      return { success: false, message: res?.message || "Upgrade failed" };
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || "Upgrade failed",
+        message: err?.error || err?.message || "Upgrade failed",
       };
     }
   };
 
   const downgradePlan = async (targetPlan) => {
     try {
-      const res = await api.post("/subscription/downgrade", {
+      const res = await NobackEndCallObj("/subscription/downgrade", {
         plan: targetPlan,
-      });
-      if (res.data?.success) {
+      }, "post");
+      if (res?.success) {
         await fetchSubscription();
-        return { success: true, data: res.data };
+        return { success: true, data: res };
       }
-      return { success: false, message: res.data?.message || "Downgrade failed" };
+      return { success: false, message: res?.message || "Downgrade failed" };
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || "Downgrade failed",
+        message: err?.error || err?.message || "Downgrade failed",
       };
     }
   };
 
   const cancelSubscription = async () => {
     try {
-      const res = await api.post("/subscription/cancel");
-      if (res.data?.success) {
+      const res = await NobackEndCallObj("/subscription/cancel", {}, "post");
+      if (res?.success) {
         await fetchSubscription();
-        return { success: true, data: res.data };
+        return { success: true, data: res };
       }
-      return { success: false, message: res.data?.message || "Cancellation failed" };
+      return { success: false, message: res?.message || "Cancellation failed" };
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || "Cancellation failed",
+        message: err?.error || err?.message || "Cancellation failed",
       };
     }
   };

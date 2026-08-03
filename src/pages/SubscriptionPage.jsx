@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "../context/SubscriptionContext";
 import { usePlans } from "../hooks/usePlans";
-import api from "../services/api";
+import { NobackEndCall } from "../services/authService";
 import PlanBadge from "../components/subscription/PlanBadge";
 import PlanCard from "../components/subscription/PlanCard";
 import { useTheme } from "../context/ThemeContext";
@@ -44,9 +44,9 @@ const SubscriptionPage = () => {
 
   const fetchUsage = async () => {
     try {
-      const res = await api.get("/subscription/usage");
-      if (res.data?.success && res.data?.usage) {
-        setUsage(res.data.usage);
+      const res = await NobackEndCall("/subscription/usage");
+      if (res?.success && res?.usage) {
+        setUsage(res.usage);
       }
     } catch (err) {
       console.error("Error fetching usage statistics:", err);

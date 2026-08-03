@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   FiServer,
   FiPlus,
@@ -12,13 +12,18 @@ import {
   FiSliders,
   FiX
 } from "react-icons/fi";
-import api from "../services/api";
+import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../services/authService";
 import { useTheme } from "../context/ThemeContext";
+import {
+  useTanStackData,
+  useTanStackMutation,
+  useTanStackQueryClient
+} from "../hooks/useTanStackData";
 
 const AdminServerPage = () => {
   const { isDark } = useTheme();
-  const [nodes, setNodes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useTanStackQueryClient();
+
   const [pingingId, setPingingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -37,23 +42,81 @@ const AdminServerPage = () => {
     isActive: true
   });
 
-  useEffect(() => {
-    fetchNodes();
-  }, []);
-
-  const fetchNodes = async () => {
-    setLoading(true);
-    setErrorMsg("");
-    try {
-      const res = await api.get("/admin/nodes");
-      setNodes(res.data.nodes || []);
-    } catch (err) {
-      console.error("Failed to load AI server nodes:", err);
-      setErrorMsg("Failed to load server nodes.");
-    } finally {
-      setLoading(false);
+  // 1. GET Route: Admin Server Nodes
+  const {
+    data: nodesData = null,
+    isLoading: loading,
+    refetch: fetchNodes
+  } = useTanStackData(
+    ["admin-nodes"],
+    async () => {
+      const res = await NobackEndCall("/admin/nodes");
+      return res;
     }
-  };
+  );
+
+  const nodes = nodesData?.nodes || (Array.isArray(nodesData) ? nodesData : []);
+
+  // Mutations
+  const saveNodeMutation = useTanStackMutation({
+    mutationFn: async ({ isEdit, nodeId, data }) => {
+      if (isEdit) {
+        return await NobackEndCallObj(`/admin/nodes/${nodeId}`, data, "put");
+      } else {
+        return await NobackEndCallObj("/admin/nodes", data, "post");
+      }
+    },
+    onSuccess: (resData, variables) => {
+      const nodeName = resData?.node?.name || variables.data?.name || "Server node";
+      setSuccessMsg(`Server node "${nodeName}" ${variables.isEdit ? "updated" : "created"} successfully!`);
+      queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
+      setIsModalOpen(false);
+    },
+    onError: (err) => {
+      setErrorMsg(err?.error || err?.message || "Failed to save server node.");
+    }
+  });
+
+  const deleteNodeMutation = useTanStackMutation({
+    mutationFn: async (id) => {
+      return await backEndCallObjDel("/admin/nodes", id);
+    },
+    onSuccess: () => {
+      setSuccessMsg("Server node deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
+    },
+    onError: (err) => {
+      setErrorMsg(err?.error || err?.message || "Failed to delete server node.");
+    }
+  });
+
+  const pingNodeMutation = useTanStackMutation({
+    mutationFn: async (id) => {
+      setPingingId(id);
+      return await NobackEndCallObj(`/admin/nodes/${id}/ping`, {}, "post");
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
+      setSuccessMsg(`Ping result for ${data?.name || "node"}: ${data?.status || "OK"} (${data?.latencyMs || 0} ms)`);
+      setPingingId(null);
+    },
+    onError: (err) => {
+      setErrorMsg(err?.error || err?.message || "Ping failed to reach server node.");
+      setPingingId(null);
+    }
+  });
+
+  const toggleActiveMutation = useTanStackMutation({
+    mutationFn: async (node) => {
+      return await NobackEndCallObj(`/admin/nodes/${node._id}`, { isActive: !node.isActive }, "put");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
+    },
+    onError: () => {
+      setErrorMsg("Failed to toggle server node status.");
+    }
+  });
 
   const handleOpenAddModal = () => {
     setEditingNode(null);
@@ -85,7 +148,7 @@ const AdminServerPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitForm = async (e) => {
+  const handleSubmitForm = (e) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
@@ -103,8 +166,6 @@ const AdminServerPage = () => {
       hasError = true;
     } else {
       let urlToTest = formData.url.trim();
-
-      // Check if user pasted an API Key directly into the URL field (e.g. Gemini key starting with AQ.Ab or AIzaSy, or OpenAI key starting with sk-)
       const isApiKeyInput = /^(AQ\.Ab|AIzaSy|sk-proj-|sk-|gsk_)/i.test(urlToTest);
 
       if (!isApiKeyInput) {
@@ -136,52 +197,24 @@ const AdminServerPage = () => {
     setFieldErrors(errors);
     if (hasError) return;
 
-    try {
-      if (editingNode) {
-        const res = await api.put(`/admin/nodes/${editingNode._id}`, formData);
-        setSuccessMsg(`Server node "${res.data.node.name}" updated successfully!`);
-      } else {
-        const res = await api.post("/admin/nodes", formData);
-        setSuccessMsg(`Server node "${res.data.node.name}" created successfully!`);
-      }
-      setIsModalOpen(false);
-      fetchNodes();
-    } catch (err) {
-      setErrorMsg(err.response?.data?.error || "Failed to save server node.");
-    }
+    saveNodeMutation.mutate({
+      isEdit: !!editingNode,
+      nodeId: editingNode?._id,
+      data: formData
+    });
   };
 
-  const handleDeleteNode = async (id, name) => {
+  const handleDeleteNode = (id, name) => {
     if (!window.confirm(`Are you sure you want to delete server node "${name}"?`)) return;
-    try {
-      await api.delete(`/admin/nodes/${id}`);
-      setSuccessMsg(`Server node deleted successfully.`);
-      fetchNodes();
-    } catch (err) {
-      setErrorMsg("Failed to delete server node.");
-    }
+    deleteNodeMutation.mutate(id);
   };
 
-  const handlePingNode = async (id) => {
-    setPingingId(id);
-    try {
-      const res = await api.post(`/admin/nodes/${id}/ping`);
-      fetchNodes();
-      setSuccessMsg(`Ping result for ${res.data.name}: ${res.data.status} (${res.data.latencyMs} ms)`);
-    } catch (err) {
-      setErrorMsg("Ping failed to reach server node.");
-    } finally {
-      setPingingId(null);
-    }
+  const handlePingNode = (id) => {
+    pingNodeMutation.mutate(id);
   };
 
-  const handleToggleActive = async (node) => {
-    try {
-      await api.put(`/admin/nodes/${node._id}`, { isActive: !node.isActive });
-      fetchNodes();
-    } catch (err) {
-      setErrorMsg("Failed to toggle server node status.");
-    }
+  const handleToggleActive = (node) => {
+    toggleActiveMutation.mutate(node);
   };
 
   return (
@@ -201,7 +234,7 @@ const AdminServerPage = () => {
 
         <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={fetchNodes}
+            onClick={() => fetchNodes()}
             className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition whitespace-nowrap shrink-0 ${isDark ? "border-slate-800 hover:bg-slate-900 text-slate-300" : "border-slate-300 hover:bg-slate-200 text-slate-700"
               }`}
             title="Refresh Server List"
@@ -537,9 +570,10 @@ const AdminServerPage = () => {
 
                 <button
                   type="submit"
+                  disabled={saveNodeMutation.isPending}
                   className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20"
                 >
-                  {editingNode ? "Save Changes" : "Create Node"}
+                  {saveNodeMutation.isPending ? "Saving..." : editingNode ? "Save Changes" : "Create Node"}
                 </button>
               </div>
             </form>
