@@ -18,6 +18,9 @@ export function getResponseFormat(msg) {
   if (
     metadata?.responseType === "out_of_the_box" ||
     metadata?.responseType === "schedule_call" ||
+    metadata?.responseType === "card" ||
+    metadata?.type === "card" ||
+    metadata?.type === "schedule_call" ||
     metadata?.out_of_the_box ||
     (typeof content === "string" && (
       content.includes("out_of_the_box") ||

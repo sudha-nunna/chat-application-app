@@ -149,15 +149,21 @@ const ResponseSwitchRenderer = ({ msg, onOptionClick, isDark }) => {
   switch (format) {
 
     // -----------------------------------------------------------
-    // CASE 1: OUT OF THE BOX / SCHEDULE CALL FORMAT
+    // CASE 1: OUT OF THE BOX / SCHEDULE CALL / CARD FORMAT
     // -----------------------------------------------------------
     case "out_of_the_box":
+    case "card":
       return (
         <div className="w-full space-y-2 my-1">
           {/* Main Message Text */}
-          <div className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
-            isDark ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs" : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
+          <div className={`max-w-[88%] p-3.5 rounded-2xl text-xs leading-relaxed ${
+            isDark ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs shadow-md" : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs shadow-sm"
           }`}>
+            {msg.metadata?.title && (
+              <div className="font-bold text-xs text-amber-400 mb-1.5 flex items-center gap-1.5">
+                <span>💡 {msg.metadata.title}</span>
+              </div>
+            )}
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {formatMarkdownBreaks(msg.content)}
             </ReactMarkdown>
