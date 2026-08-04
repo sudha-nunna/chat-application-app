@@ -19,16 +19,63 @@ import {
   FiActivity,
   FiStopCircle,
   FiAlertTriangle,
-  FiRotateCw
+  FiRotateCw,
+  FiCalendar,
+  FiArrowRight
 } from "react-icons/fi";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
 import ClusterStatusWidget from "../global/ClusterStatusWidget";
-import {
-  useTanStackData,
-  useTanStackMutation,
-  useTanStackQueryClient
-} from "../../hooks/useTanStackData";
+import PillListWidget from "../global/PillListWidget";
+import { getResponseFormat } from "../../services/externalBotService";
+
+const formatMarkdownBreaks = (text) => {
+  if (!text || typeof text !== "string") return text;
+  return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
+};
+
+const extractListAndIntro = (content, metadata) => {
+  if (metadata?.list && Array.isArray(metadata.list)) {
+    return { intro: content, items: metadata.list };
+  }
+  if (metadata?.items && Array.isArray(metadata.items)) {
+    return { intro: content, items: metadata.items };
+  }
+  if (metadata?.options && Array.isArray(metadata.options)) {
+    return { intro: content, items: metadata.options };
+  }
+
+  if (!content || typeof content !== "string") return { intro: content, items: null };
+
+  const lines = content.split("\n");
+  const introLines = [];
+  const items = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^(?:[-*•]|\d+[\.\)])\s+(.+)$/);
+    if (match && match[1]) {
+      const itemText = match[1].trim();
+      const cleanText = itemText.replace(/^\*\*(.*)\*\*$/, "$1").trim();
+      if (cleanText && cleanText.length < 120) {
+        items.push(cleanText);
+      } else {
+        introLines.push(line);
+      }
+    } else {
+      introLines.push(line);
+    }
+  }
+
+  if (items.length >= 1) {
+    return {
+      intro: introLines.join("\n").trim(),
+      items
+    };
+  }
+
+  return { intro: content, items: null };
+};
 
 const BotChatTab = ({ bot }) => {
   const [conversations, setConversations] = useState([]);
@@ -43,7 +90,6 @@ const BotChatTab = ({ bot }) => {
 
   const [clusterNodes, setClusterNodes] = useState([]);
   const [isClusterLoading, setIsClusterLoading] = useState(true);
-  const [showStatusModal, setShowStatusModal] = useState(false);
   const messagesContainerRef = useRef(null);
   const isStreamingRef = useRef(false);
 
@@ -63,7 +109,7 @@ const BotChatTab = ({ bot }) => {
         const data = await res.json();
         if (data.nodes) setClusterNodes(data.nodes);
       }
-    } catch (e) { 
+    } catch (e) {
     } finally {
       setIsClusterLoading(false);
     }
@@ -218,173 +264,135 @@ const BotChatTab = ({ bot }) => {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
+
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data: ")) continue;
-          const jsonStr = trimmed.replace(/^data:\s*/, "");
-          if (jsonStr === "[DONE]") continue;
+          if (line.startsWith("data: ")) {
+            const dataStr = line.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") break;
 
-          try {
-            const parsed = JSON.parse(jsonStr);
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.token) {
+                accumulatedAnswer += parsed.token;
+              }
+              if (parsed.sources) {
+                accumulatedSources = parsed.sources;
+              }
+              if (parsed.metadata) {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  if (lastIdx >= 0) {
+                    updated[lastIdx] = {
+                      ...updated[lastIdx],
+                      metadata: { ...updated[lastIdx].metadata, ...parsed.metadata }
+                    };
+                  }
+                  return updated;
+                });
+              }
 
-            if (parsed.sources && parsed.sources.length > 0) {
-              accumulatedSources = parsed.sources;
-            }
-
-            if (parsed.chunk) {
-              accumulatedAnswer += parsed.chunk;
               setMessages((prev) => {
-                const next = [...prev];
-                const lastIdx = next.length - 1;
-                if (lastIdx >= 0 && next[lastIdx].role === "assistant") {
-                  next[lastIdx] = {
-                    ...next[lastIdx],
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (lastIdx >= 0) {
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
                     content: accumulatedAnswer,
                     sources: accumulatedSources
                   };
                 }
-                return next;
+                return updated;
               });
+            } catch (e) {
             }
-          } catch (e) { }
+          }
         }
       }
-
-      fetchConversations(false);
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("🛑 Bot stream generation stopped by user.");
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+            updated[lastIdx].content += "\n\n⚠️ Stream paused due to higher-priority request. Click Resume.";
+          }
+          return updated;
+        });
       } else {
         console.error("Stream error:", err);
-        setMessages((prev) => {
-          const next = [...prev];
-          const lastIdx = next.length - 1;
-          if (lastIdx >= 0 && next[lastIdx].role === "assistant") {
-            next[lastIdx] = {
-              ...next[lastIdx],
-              content: "⚠️ Error generating response from Bot engine."
-            };
-          }
-          return next;
-        });
       }
     } finally {
+      isStreamingRef.current = false;
       setLoading(false);
       setAbortController(null);
-      isStreamingRef.current = false;
+      fetchConversations(false);
     }
   };
 
-  return (
-    <div className={`flex-1 min-w-0 flex h-full overflow-hidden relative ${isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
-      }`}>
-
-      {/* MOBILE DRAWER OVERLAY */}
-      {isMobileDrawerOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
-          onClick={() => setIsMobileDrawerOpen(false)}
-        />
-      )}
-
-      {/* MOBILE SLIDE-IN SIDEBAR DRAWER */}
-      <div
-        className={`fixed inset-y-0 left-0 w-72 border-r z-50 flex flex-col h-full transition-transform duration-300 md:hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-          } ${isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-          <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-            <FiMessageSquare className="text-blue-500" />
-            <span>Chat Threads</span>
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCreateNewChat}
-              className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2 py-1 rounded-lg transition"
-            >
-              <FiPlus />
-              <span>New</span>
-            </button>
-            <button
-              onClick={() => setIsMobileDrawerOpen(false)}
-              className={`p-1 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}
-            >
-              <FiX className="text-base" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-          {conversations.length === 0 ? (
-            <div className={`text-[11px] text-center py-8 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-              No chat history yet.<br />Start asking questions!
-            </div>
-          ) : (
-            conversations.map((c) => {
-              const isActive = activeConvId === c._id;
-              return (
-                <div
-                  key={c._id}
-                  onClick={() => {
-                    setActiveConvId(c._id);
-                    setIsMobileDrawerOpen(false);
-                  }}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${isActive
-                    ? isDark
-                      ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
-                      : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
-                    : isDark
-                      ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
-                      : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
-                    }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
-                    <span className="truncate text-[11px]">{c.title || "New Conversation"}</span>
-                  </div>
-
-                  <button
-                    onClick={(e) => handleDeleteConversation(e, c._id)}
-                    className={`p-1 hover:text-rose-500 transition ${isDark ? "text-slate-500" : "text-slate-400"}`}
-                  >
-                    <FiTrash2 className="text-xs" />
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
+  // Shared Markdown Components Styling
+  const markdownComponents = (isUser) => ({
+    p: ({ node, ...props }) => (
+      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
+    ),
+    a: ({ node, ...props }) => (
+      <a className="text-blue-400 hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
+    ),
+    strong: ({ node, ...props }) => (
+      <strong
+        className={`font-extrabold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-2xs ${
+          isUser
+            ? "text-white bg-blue-700/80 border border-blue-400/30"
+            : isDark
+            ? "text-amber-300 bg-amber-500/20 border border-amber-500/30 font-extrabold"
+            : "text-indigo-700 bg-indigo-100 border border-indigo-300 font-extrabold"
+        }`}
+        {...props}
+      />
+    ),
+    table: ({ node, ...props }) => (
+      <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${isDark ? "border-slate-800" : "border-slate-300"}`}>
+        <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
       </div>
+    ),
+    thead: ({ node, ...props }) => (
+      <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"}`} {...props} />
+    ),
+    th: ({ node, ...props }) => (
+      <th className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]" {...props} />
+    ),
+    td: ({ node, ...props }) => (
+      <td className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"}`} {...props} />
+    ),
+    tr: ({ node, ...props }) => (
+      <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"}`} {...props} />
+    )
+  });
 
-      {/* DESKTOP THREADS SUB-SIDEBAR (256px FIXED - COLLAPSIBLE) */}
-      <div
-        className={`hidden md:flex flex-col h-full border-r shrink-0 transition-all duration-300 select-none ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-          } ${showHistorySidebar ? "w-64 min-w-[256px] max-w-[256px]" : "w-0 min-w-0 max-w-0 overflow-hidden border-none"
-          }`}
-      >
-        <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-          <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-            <FiMessageSquare className="text-blue-500" />
-            <span>Chat Threads</span>
-          </span>
+  return (
+    <div className="flex-1 flex h-full min-h-0 overflow-hidden relative">
+
+      {/* THREADS HISTORY SIDEBAR */}
+      <div className={`${showHistorySidebar ? "w-64" : "w-0 overflow-hidden"} ${
+        isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-slate-100/80"
+      } border-r transition-all duration-300 shrink-0 hidden md:flex flex-col h-full`}>
+        <div className="p-3 border-b border-inherit flex items-center justify-between">
           <button
             onClick={handleCreateNewChat}
-            className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
-            title="New Chat Thread"
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm transition"
           >
-            <FiPlus />
-            <span>New</span>
+            <FiPlus /> New Conversation
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {conversations.length === 0 ? (
-            <div className={`text-[11px] text-center py-8 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-              No chat history yet.<br />Start asking questions!
-            </div>
+            <p className={`text-center text-xs p-4 italic ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+              No conversation history
+            </p>
           ) : (
             conversations.map((c) => {
               const isActive = activeConvId === c._id;
@@ -392,14 +400,13 @@ const BotChatTab = ({ bot }) => {
                 <div
                   key={c._id}
                   onClick={() => setActiveConvId(c._id)}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${isActive
-                    ? isDark
-                      ? "bg-blue-600/15 border border-blue-500/30 text-blue-300 font-semibold"
-                      : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
-                    : isDark
+                  className={`group flex items-center justify-between p-2.5 rounded-lg text-xs cursor-pointer transition ${
+                    isActive
+                      ? "bg-blue-600/10 text-blue-500 font-semibold"
+                      : isDark
                       ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
                       : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
-                    }`}
+                  }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
@@ -420,28 +427,27 @@ const BotChatTab = ({ bot }) => {
         </div>
       </div>
 
-      {/* MAIN CHAT AREA (Fills Remaining Space Only) */}
+      {/* MAIN CHAT AREA */}
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
 
         {/* Fixed Controls Header */}
-        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
-          }`}>
+        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${
+          isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+        }`}>
           <div className="flex items-center gap-2">
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${isDark ? "text-slate-300 hover:text-white bg-slate-900 border-slate-800" : "text-slate-700 hover:text-slate-900 bg-white border-slate-200 shadow-sm"
-                }`}
+              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${
+                isDark ? "text-slate-300 hover:text-white bg-slate-900 border-slate-800" : "text-slate-700 hover:text-slate-900 bg-white border-slate-200 shadow-sm"
+              }`}
               title="Toggle Threads Menu"
             >
               <FiMenu className="text-base" />
             </button>
 
-            {/* Desktop Toggle Button */}
             <button
               onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-              className={`hidden md:flex items-center gap-1.5 text-xs ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
-                }`}
+              className={`hidden md:flex items-center gap-1.5 text-xs ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"}`}
             >
               <FiSidebar />
               <span>{showHistorySidebar ? "Hide History" : "Show History"}</span>
@@ -457,7 +463,7 @@ const BotChatTab = ({ bot }) => {
           </div>
         </div>
 
-        {/* MESSAGES SCROLL AREA - ONLY THIS SCROLLS */}
+        {/* MESSAGES SCROLL AREA */}
         <div
           ref={messagesContainerRef}
           className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar"
@@ -477,6 +483,9 @@ const BotChatTab = ({ bot }) => {
               const isUser = msg.role === "user";
               const isSourcesOpen = openSourcesIdx === index;
 
+              const format = getResponseFormat(msg);
+              const { intro, items } = extractListAndIntro(msg.content, msg.metadata);
+
               return (
                 <div
                   key={msg._id || index}
@@ -484,116 +493,125 @@ const BotChatTab = ({ bot }) => {
                 >
                   {/* Avatar */}
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isUser
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                      : isDark
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
+                      isUser
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                        : isDark
                         ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
                         : "bg-indigo-100 text-indigo-700 border border-indigo-200"
-                      }`}
+                    }`}
                   >
                     {isUser ? <FiUser /> : <FiCpu />}
                   </div>
 
                   {/* Bubble Container */}
                   <div className={`space-y-1.5 min-w-0 max-w-full flex flex-col ${isUser ? "items-end" : "items-start"}`}>
-                    <div
-                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${isUser
-                        ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
-                        : isDark
-                          ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
-                          : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
-                        }`}
-                    >
-                      {isUser ? (
-                        <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
-                      ) : (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            table: ({ node, ...props }) => (
-                              <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${isDark ? "border-slate-800" : "border-slate-300"
-                                }`}>
-                                <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
-                              </div>
-                            ),
-                            thead: ({ node, ...props }) => (
-                              <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
-                                }`} {...props} />
-                            ),
-                            th: ({ node, ...props }) => (
-                              <th className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]" {...props} />
-                            ),
-                            td: ({ node, ...props }) => (
-                              <td className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"
-                                }`} {...props} />
-                            ),
-                            tr: ({ node, ...props }) => (
-                              <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"
-                                }`} {...props} />
-                            ),
-                            code: ({ node, inline, className, children, ...props }) => {
-                              const match = /language-(\w+)/.exec(className || "");
-                              const isMultiLine = String(children).includes("\n");
-                              if (inline || (!match && !isMultiLine)) {
-                                return (
-                                  <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${isUser
-                                    ? "bg-blue-700/80 text-blue-100"
-                                    : isDark
-                                      ? "bg-slate-800/80 text-blue-300"
-                                      : "bg-slate-200 text-blue-700"
-                                    }`} {...props}>
-                                    {children}
-                                  </code>
-                                );
-                              }
-                              return (
-                                <div className={`my-2.5 w-full max-w-full overflow-x-auto rounded-xl border p-3.5 custom-scrollbar font-mono text-[11px] text-emerald-400 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-900 border-slate-700"
-                                  }`}>
-                                  <pre className="overflow-x-auto m-0 p-0">{children}</pre>
-                                </div>
-                              );
-                            },
-                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />,
-                            strong: ({ node, ...props }) => <strong className={`font-bold ${isUser ? "text-white" : isDark ? "text-blue-400" : "text-blue-600"}`} {...props} />
-                          }}
-                        >
-                          {msg.content?.replace(/\n\n⚠️ Stream paused due to higher-priority request\.( Click Resume\.)?/, "").trim() || "Thinking..."}
-                        </ReactMarkdown>
-                      )}
+                    
+                    {/* ----------------------------------------------------------- */}
+                    {/* FORMAT TYPE RENDERING SWITCH */}
+                    {/* ----------------------------------------------------------- */}
+                    {format === "out_of_the_box" ? (
+                      <div className="w-full space-y-2">
+                        <div className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words shadow-md ${
+                          isDark ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none" : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
+                        }`}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
+                            {formatMarkdownBreaks(msg.content) || ""}
+                          </ReactMarkdown>
+                        </div>
 
-                      {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
-                      {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
-                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
-                          }`}>
-                          <div className="flex items-center gap-2 text-xs font-medium">
-                            <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
-                            <span>Stream paused due to higher-priority request.</span>
-                          </div>
+                        {/* Schedule Call Interactive Button */}
+                        <div className="w-full max-w-md pt-1">
                           <button
+                            type="button"
                             onClick={() => {
-                              const userMsg = [...messages.slice(0, index)].reverse().find(m => m.role === "user");
-                              if (userMsg) {
-                                handleSendMessage(null, userMsg.content);
+                              if (msg.metadata?.actionUrl) {
+                                window.open(msg.metadata.actionUrl, "_blank");
+                              } else {
+                                handleSendMessage(null, "Schedule a discovery call with engineering team");
                               }
                             }}
-                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                            className={`w-full py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-between transition-all duration-200 shadow-md active:scale-95 cursor-pointer group ${
+                              isDark
+                                ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 border border-indigo-500/40"
+                                : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-indigo-500/20 border border-indigo-300"
+                            }`}
                           >
-                            <FiRotateCw className="w-3.5 h-3.5" />
-                            Retry
+                            <div className="flex items-center gap-2">
+                              <FiCalendar className="text-sm text-amber-300 shrink-0" />
+                              <span>📅 Schedule Call</span>
+                            </div>
+                            <FiArrowRight className="text-xs shrink-0 group-hover:translate-x-1 transition-transform" />
                           </button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : format === "list" && items && items.length > 0 ? (
+                      <div className="w-full space-y-1">
+                        {intro && (
+                          <div className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words shadow-md ${
+                            isDark ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none" : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
+                          }`}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
+                              {formatMarkdownBreaks(intro)}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                        <PillListWidget items={items} onItemClick={(text) => handleSendMessage(null, text)} />
+                      </div>
+                    ) : (
+                      <div
+                        className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${
+                          isUser
+                            ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
+                            : isDark
+                            ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
+                            : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
+                        }`}
+                      >
+                        {isUser ? (
+                          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
+                        ) : (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
+                            {formatMarkdownBreaks(msg.content) || "Thinking..."}
+                          </ReactMarkdown>
+                        )}
+
+                        {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
+                        {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
+                          <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                            isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
+                          }`}>
+                            <div className="flex items-center gap-2 text-xs font-medium">
+                              <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
+                              <span>Stream paused due to higher-priority request.</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const userMsg = [...messages.slice(0, index)].reverse().find(m => m.role === "user");
+                                if (userMsg) {
+                                  handleSendMessage(null, userMsg.content);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                            >
+                              <FiRotateCw className="w-3.5 h-3.5" />
+                              Retry
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* COLLAPSED SOURCES TOGGLE BUTTON */}
                     {!isUser && msg.sources && msg.sources.length > 0 && (
                       <div className="pt-0.5">
                         <button
                           onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${isDark
-                            ? "text-slate-400 hover:text-blue-400 bg-slate-950 border-slate-800"
-                            : "text-slate-600 hover:text-blue-600 bg-slate-100 border-slate-200"
-                            }`}
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${
+                            isDark
+                              ? "text-slate-400 hover:text-blue-400 bg-slate-950 border-slate-800"
+                              : "text-slate-600 hover:text-blue-600 bg-slate-100 border-slate-200"
+                          }`}
                         >
                           <FiFileText className="text-blue-500" />
                           <span>View Sources</span>
@@ -601,11 +619,13 @@ const BotChatTab = ({ bot }) => {
                         </button>
 
                         {isSourcesOpen && (
-                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-                            }`}>
+                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${
+                            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+                          }`}>
                             {msg.sources.map((s, sIdx) => (
-                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${isDark ? "bg-slate-900" : "bg-white border border-slate-200"
-                                }`}>
+                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${
+                                isDark ? "bg-slate-900" : "bg-white border border-slate-200"
+                              }`}>
                                 <p className="font-bold text-blue-500">{s.fileName}</p>
                                 <p className={`mt-0.5 line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{s.snippet}</p>
                               </div>
@@ -630,8 +650,7 @@ const BotChatTab = ({ bot }) => {
         </div>
 
         {/* STICKY INPUT FORM BAR */}
-        <div className={`p-4 border-t shrink-0 ${isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"
-          }`}>
+        <div className={`p-4 border-t shrink-0 ${isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"}`}>
           <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-2">
             <input
               type="text"
@@ -639,34 +658,35 @@ const BotChatTab = ({ bot }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className={`flex-1 border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition disabled:opacity-75 ${isDark
-                ? "bg-slate-900 border-slate-800 text-slate-100 placeholder:text-slate-500"
-                : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 shadow-sm"
-                }`}
+              className={`flex-1 px-4 py-2.5 rounded-xl text-xs focus:outline-none transition ${
+                isDark
+                  ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
+                  : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
+              }`}
             />
+
             {loading ? (
               <button
                 type="button"
                 onClick={handleStopBotGeneration}
-                className="w-10 h-10 rounded-full bg-black hover:bg-slate-900 border border-slate-700 flex items-center justify-center transition shrink-0 cursor-pointer shadow-lg active:scale-95 text-white"
-                title="Stop Generating"
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                title="Stop Streaming Generation"
               >
-                <div className="w-3.5 h-3.5 bg-white rounded-[2px]" />
+                <FiStopCircle className="text-sm" />
+                <span>Stop</span>
               </button>
             ) : (
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl transition shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                className="p-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold rounded-xl text-xs transition shrink-0 shadow-md shadow-blue-600/20 active:scale-95 cursor-pointer"
               >
-                <FiSend className="text-sm" />
+                <FiSend />
               </button>
             )}
           </form>
         </div>
-
       </div>
-
     </div>
   );
 };
