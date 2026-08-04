@@ -1,6 +1,7 @@
 import http from "./httpService";
 import { encrypt as encryptobj, decrypt as decryptobj } from "../utils/crypto";
 import { API_ENDPOINTS } from "../config/apiEndpoints";
+import { localDataService } from "./localDataService";
 
 const apiUrl = import.meta.env.VITE_API_URL || "";
 const tokenKey = "token";
@@ -17,6 +18,9 @@ export function setJwt(jwt) {
   } else {
     localStorage.removeItem(tokenKey);
     localStorage.removeItem("token");
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth-change"));
   }
 }
 
@@ -82,6 +86,78 @@ export async function NobackEndCall(route) {
           error.response.data.message ||
           error.response.data.error ||
           "An error occurred with the request",
+      };
+    }
+    throw error;
+  }
+}
+
+export async function backEndCallGet(route) {
+  try {
+    const fullUrl = apiUrl + route;
+
+    // 1. Check for cached ETagcheck
+    const cachedEntry = await localDataService.getEtag(route);
+    const headers = {};
+    if (cachedEntry?.etag) {
+      headers["If-None-Match"] = cachedEntry.etag;
+    }
+
+    // 2. Perform the request
+    const response = await http.get(fullUrl, {
+      headers,
+      validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
+    });
+
+    // 3. Handle 304 Not Modified
+    if (response.status === 304) {
+      return cachedEntry.data;
+    }
+
+    // 4. Handle 200 OK
+    const data = response.data;
+    const newEtag = response.headers["etag"] || response.headers["ETag"];
+
+    if (!newEtag)
+      console.warn(`[Agentic Network] No ETag header found for: ${route}`);
+    if (!data?.success)
+      console.warn(
+        `[Agentic Network] Data Success is false or missing for: ${route}`,
+        data
+      );
+
+    if (newEtag && data?.success) {
+      await localDataService.saveEtag(route, newEtag, data);
+    }
+
+    return data;
+  } catch (error) {
+    // 5. Offline Fallback: If network fails, try to return last known good cache
+    // Only fallback if the server did NOT explicitly respond with a client error (e.g. 401, 403)
+    const isNetworkError = !error.response || error.response.status >= 500;
+
+    if (isNetworkError) {
+      const cachedEntry = await localDataService.getEtag(route);
+      if (cachedEntry?.data) {
+        console.warn(
+          `[Allvion Network] Network failed for ${route}. Falling back to offline cache.`
+        );
+        return {
+          ...cachedEntry.data,
+          isOffline: true,
+          offlineAt: cachedEntry.timestamp,
+        };
+      }
+    }
+
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        error:
+          error.response.data.message ||
+          error.response.data.error ||
+          "An error occurred with the request",
+        code: error.response.data.code
       };
     }
     throw error;

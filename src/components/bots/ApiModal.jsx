@@ -76,9 +76,9 @@ const ApiModal = ({ bot, onClose, onApiUpdated }) => {
 
   // API Endpoint URLs & Specs
   const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  const fullEndpointUrl = `${apiBaseUrl}/api/v1/external/bots/chatHeaders`;
-  const apiKeyPlaceholder = activeApiKey || "<YOUR_BOT_API_KEY>";
-  const secretKeyPlaceholder = activeSecretKey || "<YOUR_BOT_SECRET_KEY>";
+  const fullEndpointUrl = `${apiBaseUrl}/api/v1/external/bots/chat`;
+  const apiKeyPlaceholder = activeApiKey;
+  const secretKeyPlaceholder = activeSecretKey;
 
   const getCodeSnippet = (lang) => {
     if (lang === "curl") {
@@ -149,7 +149,7 @@ for chunk in response.iter_content(chunk_size=1024):
       const newApiKey = data?.apiKey || data?.key || data?.api?.apiKey;
       const newSecretKey = data?.secretKey || data?.secret || data?.api?.secretKey;
 
-      setGeneratedKey(newApiKey || `bot_pk_${Math.random().toString(36).substring(2)}${Date.now()}`);
+      setGeneratedKey(newApiKey);
       if (newSecretKey) {
         setGeneratedSecretKey(newSecretKey);
       }
@@ -199,17 +199,15 @@ for chunk in response.iter_content(chunk_size=1024):
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn">
       <div
-        className={`w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden transition-all flex flex-col max-h-[82vh] ${
-          isDark
-            ? "bg-slate-900 border-slate-800 text-slate-100"
-            : "bg-white border-slate-200 text-slate-900"
-        }`}
+        className={`w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden transition-all flex flex-col max-h-[82vh] ${isDark
+          ? "bg-slate-900 border-slate-800 text-slate-100"
+          : "bg-white border-slate-200 text-slate-900"
+          }`}
       >
         {/* Modal Header */}
         <div
-          className={`flex items-center justify-between p-3.5 px-4 border-b shrink-0 ${
-            isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50"
-          }`}
+          className={`flex items-center justify-between p-3.5 px-4 border-b shrink-0 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50"
+            }`}
         >
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 text-base font-bold">
@@ -225,11 +223,10 @@ for chunk in response.iter_content(chunk_size=1024):
 
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-xl transition ${
-              isDark
-                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-            }`}
+            className={`p-1.5 rounded-xl transition ${isDark
+              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+              }`}
           >
             <FiX className="text-base" />
           </button>
@@ -240,13 +237,12 @@ for chunk in response.iter_content(chunk_size=1024):
           <div className={`flex items-center border-b px-3 pt-1 shrink-0 ${isDark ? "border-slate-800 bg-slate-950/20" : "border-slate-100 bg-slate-50/50"}`}>
             <button
               onClick={() => setActiveSubTab("keys")}
-              className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${
-                activeSubTab === "keys"
-                  ? "border-indigo-500 text-indigo-500"
-                  : isDark
+              className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${activeSubTab === "keys"
+                ? "border-indigo-500 text-indigo-500"
+                : isDark
                   ? "border-transparent text-slate-400 hover:text-slate-200"
                   : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               <FiShield className="text-xs" />
               <span>Active Keys</span>
@@ -254,13 +250,12 @@ for chunk in response.iter_content(chunk_size=1024):
 
             <button
               onClick={() => setActiveSubTab("guide")}
-              className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${
-                activeSubTab === "guide"
-                  ? "border-indigo-500 text-indigo-500"
-                  : isDark
+              className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${activeSubTab === "guide"
+                ? "border-indigo-500 text-indigo-500"
+                : isDark
                   ? "border-transparent text-slate-400 hover:text-slate-200"
                   : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               <FiTerminal className="text-xs" />
               <span>Integration Guide</span>
@@ -268,13 +263,12 @@ for chunk in response.iter_content(chunk_size=1024):
 
             <button
               onClick={() => setActiveSubTab("generate")}
-              className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${
-                activeSubTab === "generate"
-                  ? "border-indigo-500 text-indigo-500"
-                  : isDark
+              className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${activeSubTab === "generate"
+                ? "border-indigo-500 text-indigo-500"
+                : isDark
                   ? "border-transparent text-slate-400 hover:text-slate-200"
                   : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               <FiRefreshCw className="text-xs" />
               <span>Regenerate Keys</span>
@@ -335,9 +329,8 @@ for chunk in response.iter_content(chunk_size=1024):
               {/* TAB 1: ACTIVE KEYS */}
               {activeSubTab === "keys" && (
                 <div className="space-y-3">
-                  <div className={`p-3.5 rounded-xl border ${
-                    isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"
-                  }`}>
+                  <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"
+                    }`}>
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-1.5">
                         <FiShield className="text-emerald-400 text-xs" />
@@ -351,14 +344,12 @@ for chunk in response.iter_content(chunk_size=1024):
                     {/* Public API Key */}
                     {activeApiKey && (
                       <div className="mb-2.5">
-                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${
-                          isDark ? "text-slate-400" : "text-slate-500"
-                        }`}>
+                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? "text-slate-400" : "text-slate-500"
+                          }`}>
                           Public API Key (apiKey)
                         </label>
-                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${
-                          isDark ? "bg-slate-900 border-slate-800 text-emerald-400" : "bg-white border-slate-300 text-emerald-700"
-                        }`}>
+                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${isDark ? "bg-slate-900 border-slate-800 text-emerald-400" : "bg-white border-slate-300 text-emerald-700"
+                          }`}>
                           <span className="truncate mr-2 select-all">{activeApiKey}</span>
                           <button
                             type="button"
@@ -375,30 +366,27 @@ for chunk in response.iter_content(chunk_size=1024):
                     {/* Secret Key */}
                     {activeSecretKey && (
                       <div>
-                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${
-                          isDark ? "text-slate-400" : "text-slate-500"
-                        }`}>
+                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? "text-slate-400" : "text-slate-500"
+                          }`}>
                           Secret Key (secretKey)
                         </label>
-                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${
-                          isDark ? "bg-slate-900 border-slate-800 text-indigo-400" : "bg-white border-slate-300 text-indigo-700"
-                        }`}>
+                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${isDark ? "bg-slate-900 border-slate-800 text-indigo-400" : "bg-white border-slate-300 text-indigo-700"
+                          }`}>
                           <span className="truncate mr-2 select-all tracking-wider font-mono">
                             {showSecret
                               ? activeSecretKey
                               : (activeSecretKey.length > 10
-                                  ? `${activeSecretKey.substring(0, 7)}${"•".repeat(20)}`
-                                  : "••••••••••••••••••••")}
+                                ? `${activeSecretKey.substring(0, 7)}${"•".repeat(20)}`
+                                : "••••••••••••••••••••")}
                           </span>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               type="button"
                               onClick={() => setShowSecret(!showSecret)}
-                              className={`p-1 rounded-md transition ${
-                                isDark
-                                  ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                              }`}
+                              className={`p-1 rounded-md transition ${isDark
+                                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                }`}
                               title={showSecret ? "Hide Secret Key" : "Show Secret Key"}
                             >
                               {showSecret ? <FiEyeOff className="text-xs" /> : <FiEye className="text-xs" />}
@@ -440,9 +428,8 @@ for chunk in response.iter_content(chunk_size=1024):
               {activeSubTab === "guide" && (
                 <div className="space-y-3">
                   {/* Endpoint & Headers Specs Box */}
-                  <div className={`p-3 rounded-xl border font-mono text-xs space-y-2 ${
-                    isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
-                  }`}>
+                  <div className={`p-3 rounded-xl border font-mono text-xs space-y-2 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+                    }`}>
                     <div className="flex items-center justify-between border-b pb-1.5 border-slate-800/50">
                       <div className="flex items-center gap-1.5 truncate">
                         <span className="font-bold text-indigo-400 text-[10px] px-1.5 py-0.5 bg-indigo-500/10 rounded">POST</span>
@@ -473,13 +460,12 @@ for chunk in response.iter_content(chunk_size=1024):
                             key={lang}
                             type="button"
                             onClick={() => setSelectedLang(lang)}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition ${
-                              selectedLang === lang
-                                ? "bg-indigo-600 text-white shadow-xs"
-                                : isDark
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition ${selectedLang === lang
+                              ? "bg-indigo-600 text-white shadow-xs"
+                              : isDark
                                 ? "bg-slate-900 text-slate-400 hover:text-slate-200"
                                 : "bg-slate-200 text-slate-600 hover:text-slate-900"
-                            }`}
+                              }`}
                           >
                             {lang === "javascript" ? "JS (fetch)" : lang}
                           </button>
@@ -497,9 +483,8 @@ for chunk in response.iter_content(chunk_size=1024):
                     </div>
 
                     {/* Compact Code Block */}
-                    <pre className={`p-2.5 rounded-xl border text-[11px] font-mono max-h-36 overflow-auto whitespace-pre custom-scrollbar ${
-                      isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-900 border-slate-800 text-slate-200"
-                    }`}>
+                    <pre className={`p-2.5 rounded-xl border text-[11px] font-mono max-h-36 overflow-auto whitespace-pre custom-scrollbar ${isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-900 border-slate-800 text-slate-200"
+                      }`}>
                       <code>{getCodeSnippet(selectedLang)}</code>
                     </pre>
                   </div>
@@ -508,9 +493,8 @@ for chunk in response.iter_content(chunk_size=1024):
 
               {/* TAB 3: REGENERATE KEYS */}
               {activeSubTab === "generate" && (
-                <div className={`p-4 rounded-xl border space-y-3 ${
-                  isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-200"
-                }`}>
+                <div className={`p-4 rounded-xl border space-y-3 ${isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-200"
+                  }`}>
                   <div className="flex items-center gap-2">
                     <FiRefreshCw className="text-indigo-400 text-xs" />
                     <h5 className="text-xs font-bold">Regenerate API Credentials</h5>

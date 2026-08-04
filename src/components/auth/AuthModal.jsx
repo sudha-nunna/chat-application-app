@@ -21,6 +21,9 @@ const AuthModal = ({ onAuthSuccess }) => {
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
       }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-change"));
+      }
       onAuthSuccess();
     } catch (err) {
       setError(err?.error || err?.message || "Google sign-in failed.");

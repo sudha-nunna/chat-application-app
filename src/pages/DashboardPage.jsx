@@ -9,7 +9,7 @@ import {
   FiTrash2,
   FiLayers
 } from "react-icons/fi";
-import { NobackEndCall, backEndCallObjDel } from "../services/authService";
+import { NobackEndCall, backEndCallGet, backEndCallObjDel } from "../services/authService";
 import CreateBotModal from "../components/bots/CreateBotModal";
 import ApiModal from "../components/bots/ApiModal";
 import { useTheme } from "../context/ThemeContext";
@@ -35,7 +35,7 @@ const DashboardPage = () => {
   } = useTanStackData(
     ["bots"],
     async () => {
-      const res = await NobackEndCall("/bots");
+      const res = await backEndCallGet("/bots");
       return Array.isArray(res) ? res : res?.data || [];
     }
   );

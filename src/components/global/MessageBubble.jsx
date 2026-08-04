@@ -4,6 +4,11 @@ import remarkGfm from "remark-gfm";
 import { FiUser, FiCpu, FiRotateCw, FiAlertTriangle } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 
+const formatMarkdownBreaks = (text) => {
+  if (!text || typeof text !== "string") return text;
+  return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
+};
+
 const MessageBubble = ({ role, content, onRetry }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
@@ -13,9 +18,11 @@ const MessageBubble = ({ role, content, onRetry }) => {
     content.includes("Click Resume")
   );
 
-  const displayContent = hasPauseNotice
+  const rawDisplayContent = hasPauseNotice
     ? content.replace(/\n\n⚠️ Stream paused due to higher-priority request\.( Click Resume\.)?/, "").trim() || "*(Response paused)*"
     : content;
+
+  const displayContent = formatMarkdownBreaks(rawDisplayContent);
 
   return (
     <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse ml-auto max-w-[75%]" : "mr-auto max-w-[85%] md:max-w-[80%]"} my-2.5 min-w-0`}>
@@ -108,8 +115,19 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 </div>
               );
             },
-            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />,
-            strong: ({ node, ...props }) => <strong className={`font-bold ${isUser ? "text-white" : isDark ? "text-blue-400" : "text-blue-600"}`} {...props} />,
+            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />,
+            strong: ({ node, ...props }) => (
+              <strong
+                className={`font-extrabold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-2xs ${
+                  isUser
+                    ? "text-white bg-blue-700/80 border border-blue-400/30"
+                    : isDark
+                    ? "text-amber-300 bg-amber-500/20 border border-amber-500/30 font-extrabold"
+                    : "text-indigo-700 bg-indigo-100 border border-indigo-300 font-extrabold"
+                }`}
+                {...props}
+              />
+            ),
             a: ({ node, ...props }) => <a className="text-blue-500 hover:underline font-medium break-all" target="_blank" rel="noopener noreferrer" {...props} />,
             ul: ({ node, ...props }) => <ul className={`list-disc pl-4 my-1.5 space-y-0.5 break-words ${isDark ? "text-slate-200" : "text-slate-700"}`} {...props} />,
             ol: ({ node, ...props }) => <ol className={`list-decimal pl-4 my-1.5 space-y-0.5 break-words ${isDark ? "text-slate-200" : "text-slate-700"}`} {...props} />,

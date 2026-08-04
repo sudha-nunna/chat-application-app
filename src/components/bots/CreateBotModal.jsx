@@ -305,17 +305,14 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4 ${
-      isDark ? "bg-black/80" : "bg-slate-900/50"
-    }`}>
-      <div className={`border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] ${
-        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4 ${isDark ? "bg-black/80" : "bg-slate-900/50"
       }`}>
-        
-        {/* Header */}
-        <div className={`p-5 border-b flex justify-between items-center ${
-          isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
+      <div className={`border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
         }`}>
+
+        {/* Header */}
+        <div className={`p-5 border-b flex justify-between items-center ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
+          }`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20">
               <FiCpu className="text-xl" />
@@ -331,18 +328,16 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           </div>
           <button
             onClick={onClose}
-            className={`p-2 rounded-xl transition ${
-              isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-            }`}
+            className={`p-2 rounded-xl transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              }`}
           >
             <FiX className="text-lg" />
           </button>
         </div>
 
         {/* Step Stepper Navigation */}
-        <div className={`grid grid-cols-5 text-center text-xs font-semibold border-b select-none ${
-          isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-100/50"
-        }`}>
+        <div className={`grid grid-cols-5 text-center text-xs font-semibold border-b select-none ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-100/50"
+          }`}>
           {[
             { num: 1, label: "1. Info" },
             { num: 2, label: "2. Model" },
@@ -355,13 +350,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               onClick={() => {
                 if (s.num < currentStep) setCurrentStep(s.num);
               }}
-              className={`py-3 transition border-b-2 cursor-pointer ${
-                currentStep === s.num
+              className={`py-3 transition border-b-2 cursor-pointer ${currentStep === s.num
                   ? "border-blue-500 text-blue-500 font-bold bg-blue-500/10"
                   : currentStep > s.num
-                  ? "border-emerald-500 text-emerald-500"
-                  : isDark ? "border-transparent text-slate-500" : "border-transparent text-slate-400"
-              }`}
+                    ? "border-emerald-500 text-emerald-500"
+                    : isDark ? "border-transparent text-slate-500" : "border-transparent text-slate-400"
+                }`}
             >
               {s.label}
             </div>
@@ -389,9 +383,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   placeholder="e.g. Technical Documentation Assistant"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition ${
-                    isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400"
-                  }`}
+                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    }`}
                 />
               </div>
 
@@ -404,9 +397,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   placeholder="Describe what this bot does, its scope, and primary audience..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full border rounded-xl p-4 text-xs focus:outline-none focus:border-blue-500 transition ${
-                    isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400"
-                  }`}
+                  className={`w-full border rounded-xl p-4 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    }`}
                 />
               </div>
             </div>
@@ -423,13 +415,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   <div
                     key={m.id}
                     onClick={() => setSelectedModel(m.id)}
-                    className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-                      selectedModel === m.id
+                    className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${selectedModel === m.id
                         ? "bg-blue-600/10 border-blue-500 text-blue-500 shadow-md shadow-blue-500/10"
                         : isDark
-                        ? "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
-                        : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700"
-                    }`}
+                          ? "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
+                          : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs">{m.name}</span>
@@ -456,9 +447,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                 </span>
               </div>
 
-              <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${
-                isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"
-              }`}>
+              <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"
+                }`}>
                 <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
                 <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                   Upload Mandatory Knowledge PDF File
@@ -490,9 +480,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   {stagedFiles.map((file, idx) => (
                     <div
                       key={idx}
-                      className={`flex items-center justify-between p-3 border rounded-xl text-xs ${
-                        isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-                      }`}
+                      className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"
+                        }`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <FiFileText className="text-blue-500 shrink-0" />
@@ -525,11 +514,10 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   <button
                     type="button"
                     onClick={() => setApiOptionTab("postman")}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
-                      apiOptionTab === "postman"
+                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${apiOptionTab === "postman"
                         ? "border-amber-500 text-amber-500"
                         : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     <FiUploadCloud />
                     <span>Option 1: Upload Postman Collection</span>
@@ -538,11 +526,10 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   <button
                     type="button"
                     onClick={() => setApiOptionTab("manual")}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
-                      apiOptionTab === "manual"
+                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${apiOptionTab === "manual"
                         ? "border-blue-500 text-blue-500"
                         : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     <FiLayers />
                     <span>Option 2: Add API Manually</span>
@@ -551,25 +538,22 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
 
                 {/* OPTION 1 FORM */}
                 {apiOptionTab === "manual" && (
-                  <div className={`p-4 border rounded-xl space-y-3 ${
-                    isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                  }`}>
+                  <div className={`p-4 border rounded-xl space-y-3 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                    }`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input
                         type="text"
                         placeholder="API Name (e.g. Create Contact API)"
                         value={apiName}
                         onChange={(e) => setApiName(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
-                          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                        }`}
+                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                          }`}
                       />
                       <select
                         value={apiMethod}
                         onChange={(e) => setApiMethod(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
-                          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                        }`}
+                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                          }`}
                       >
                         <option value="GET">GET</option>
                         <option value="POST">POST</option>
@@ -584,18 +568,16 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       placeholder="API Endpoint URL (e.g. https://api.example.com/v1/contacts)"
                       value={apiUrl}
                       onChange={(e) => setApiUrl(e.target.value)}
-                      className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
-                        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                      }`}
+                      className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                        }`}
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <select
                         value={apiActionType}
                         onChange={(e) => setApiActionType(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
-                          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                        }`}
+                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                          }`}
                       >
                         {ACTION_TYPES.map(a => (
                           <option key={a.id} value={a.id}>{a.label}</option>
@@ -605,9 +587,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       <select
                         value={apiAuthType}
                         onChange={(e) => setApiAuthType(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
-                          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                        }`}
+                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                          }`}
                       >
                         <option value="none">No Auth</option>
                         <option value="apiKey">API Key (x-api-key)</option>
@@ -621,9 +602,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                         placeholder="API Key / Token Value"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${
-                          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                        }`}
+                        className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                          }`}
                       />
                     )}
 
@@ -639,9 +619,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
 
                 {/* OPTION 2 FORM: POSTMAN UPLOAD IN WIZARD */}
                 {apiOptionTab === "postman" && (
-                  <div className={`p-4 border rounded-xl space-y-3 ${
-                    isDark ? "bg-slate-950 border-amber-500/30" : "bg-amber-50/50 border-amber-200"
-                  }`}>
+                  <div className={`p-4 border rounded-xl space-y-3 ${isDark ? "bg-slate-950 border-amber-500/30" : "bg-amber-50/50 border-amber-200"
+                    }`}>
                     <div>
                       <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                         Upload Postman Collection File (.json)
@@ -650,9 +629,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                         type="file"
                         accept=".json"
                         onChange={handlePostmanFileChange}
-                        className={`w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer ${
-                          isDark ? "text-slate-300" : "text-slate-700"
-                        }`}
+                        className={`w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer ${isDark ? "text-slate-300" : "text-slate-700"
+                          }`}
                       />
                       {postmanFileName && (
                         <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
@@ -670,18 +648,16 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                         placeholder="Paste Postman Collection JSON schema here..."
                         value={postmanJsonText}
                         onChange={handlePostmanTextChange}
-                        className={`w-full border rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:border-amber-500 ${
-                          isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-300 text-slate-900"
-                        }`}
+                        className={`w-full border rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:border-amber-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-300 text-slate-900"
+                          }`}
                       />
                     </div>
 
                     {parsedPostmanPreview && (
-                      <div className={`p-3 rounded-lg border text-xs ${
-                        parsedPostmanPreview.valid
+                      <div className={`p-3 rounded-lg border text-xs ${parsedPostmanPreview.valid
                           ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
                           : "bg-rose-500/10 border-rose-500/30 text-rose-300"
-                      }`}>
+                        }`}>
                         {parsedPostmanPreview.valid ? (
                           <div className="flex items-center justify-between font-semibold">
                             <span>Collection: {parsedPostmanPreview.collectionName}</span>
@@ -716,9 +692,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   {stagedApis.map((apiItem, idx) => (
                     <div
                       key={idx}
-                      className={`flex items-center justify-between p-3 border rounded-lg text-xs ${
-                        isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                      }`}
+                      className={`flex items-center justify-between p-3 border rounded-lg text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                        }`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <span className="font-mono text-[10px] bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded font-bold">
@@ -758,17 +733,15 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               </div>
 
               {stagedApis.length === 0 ? (
-                <div className={`p-4 rounded-xl border border-dashed text-center text-xs ${
-                  isDark ? "bg-slate-950 border-slate-800 text-slate-500" : "bg-slate-50 border-slate-300 text-slate-500"
-                }`}>
+                <div className={`p-4 rounded-xl border border-dashed text-center text-xs ${isDark ? "bg-slate-950 border-slate-800 text-slate-500" : "bg-slate-50 border-slate-300 text-slate-500"
+                  }`}>
                   No custom Tool APIs configured. The bot will operate in Strict RAG Knowledge Mode.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {stagedApis.map((apiItem, idx) => (
-                    <div key={idx} className={`p-4 rounded-xl border space-y-2 text-xs ${
-                      isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                    }`}>
+                    <div key={idx} className={`p-4 rounded-xl border space-y-2 text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                      }`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-bold bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded">
@@ -792,19 +765,17 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               )}
 
               {testResult && (
-                <div className={`p-4 border rounded-xl space-y-2 text-xs ${
-                  testResult.success
+                <div className={`p-4 border rounded-xl space-y-2 text-xs ${testResult.success
                     ? isDark ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-300 text-emerald-900"
                     : isDark ? "bg-rose-500/10 border-rose-500/30 text-rose-400" : "bg-rose-50 border-rose-300 text-rose-900"
-                }`}>
+                  }`}>
                   <div className="flex items-center gap-2 font-bold">
                     <FiCheckCircle />
                     <span>{testResult.message}</span>
                   </div>
                   {testResult.data && (
-                    <pre className={`p-2.5 rounded font-mono text-[10px] overflow-x-auto ${
-                      isDark ? "bg-slate-900 text-slate-300" : "bg-white text-slate-800"
-                    }`}>
+                    <pre className={`p-2.5 rounded font-mono text-[10px] overflow-x-auto ${isDark ? "bg-slate-900 text-slate-300" : "bg-white text-slate-800"
+                      }`}>
                       {JSON.stringify(testResult.data, null, 2)}
                     </pre>
                   )}
@@ -815,15 +786,13 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
         </div>
 
         {/* Footer Action Buttons */}
-        <div className={`p-4 border-t flex justify-between items-center ${
-          isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
-        }`}>
+        <div className={`p-4 border-t flex justify-between items-center ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
+          }`}>
           <button
             onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 1))}
             disabled={currentStep === 1 || loading}
-            className={`flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer disabled:opacity-40 ${
-              isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200" : "bg-slate-200 hover:bg-slate-300 text-slate-800"
-            }`}
+            className={`flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer disabled:opacity-40 ${isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200" : "bg-slate-200 hover:bg-slate-300 text-slate-800"
+              }`}
           >
             <FiArrowLeft /> Back
           </button>

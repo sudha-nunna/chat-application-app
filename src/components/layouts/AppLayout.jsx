@@ -16,19 +16,21 @@ import {
   FiCreditCard,
   FiServer
 } from "react-icons/fi";
-import { NobackEndCall } from "../../services/authService";
+import { backEndCallGet, NobackEndCall } from "../../services/authService";
 import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
 import PlanBadge from "../subscription/PlanBadge";
 import UpgradeButton from "../subscription/UpgradeButton";
 import SubscriptionModal from "../subscription/SubscriptionModal";
+import FloatingExternalBotWidget from "../global/FloatingExternalBotWidget";
 import { useTheme } from "../../context/ThemeContext";
 import { useTanStackData, useTanStackQueryClient } from "../../hooks/useTanStackData";
 
 const AppLayout = ({ children }) => {
   const { theme, isDark, toggleTheme } = useTheme();
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("token"));
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem("token"));
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -36,34 +38,55 @@ const AppLayout = ({ children }) => {
   const navigate = useNavigate();
   const queryClient = useTanStackQueryClient();
 
-  const token = localStorage.getItem("token");
+  // Sync auth state & invalidate bots query dynamically without page reloads
+  useEffect(() => {
+    const syncAuth = () => {
+      const currentToken = localStorage.getItem("token");
+      setAuthToken(currentToken);
+      setIsAuthenticated(!!currentToken);
+
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+
+      if (currentToken) {
+        queryClient.invalidateQueries({ queryKey: ["bots"] });
+      }
+    };
+
+    syncAuth();
+
+    window.addEventListener("auth-change", syncAuth);
+    window.addEventListener("storage", syncAuth);
+
+    return () => {
+      window.removeEventListener("auth-change", syncAuth);
+      window.removeEventListener("storage", syncAuth);
+    };
+  }, [location.pathname, queryClient]);
 
   // TanStack Query: Sync bots automatically across AppLayout & DashboardPage
   const { data: bots = [] } = useTanStackData(
     ["bots"],
     async () => {
-      const res = await NobackEndCall("/bots");
+      const res = await backEndCallGet("/bots");
       return Array.isArray(res) ? res : res?.data || [];
     },
-    { enabled: !!token }
+    { enabled: !!authToken }
   );
-
-  useEffect(() => {
-    setIsAuthenticated(!!token);
-
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {}
-    }
-
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("auth-change"));
+    queryClient.clear();
     window.location.href = "/";
   };
 
@@ -104,11 +127,10 @@ const AppLayout = ({ children }) => {
         <Link
           to="/dashboard"
           onClick={() => setIsMobileMenuOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
-            location.pathname === "/dashboard" || location.pathname === "/"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-              : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-          }`}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${location.pathname === "/dashboard" || location.pathname === "/"
+            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+            : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+            }`}
         >
           <FiGrid className="text-base" />
           <span>Dashboard</span>
@@ -117,11 +139,10 @@ const AppLayout = ({ children }) => {
         <Link
           to="/chat"
           onClick={() => setIsMobileMenuOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
-            location.pathname === "/chat"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-              : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-          }`}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${location.pathname === "/chat"
+            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+            : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+            }`}
         >
           <FiMessageSquare className="text-base" />
           <span>General Chat</span>
@@ -130,11 +151,10 @@ const AppLayout = ({ children }) => {
         <Link
           to="/subscription"
           onClick={() => setIsMobileMenuOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
-            location.pathname === "/subscription"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-              : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-          }`}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${location.pathname === "/subscription"
+            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+            : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+            }`}
         >
           <FiCreditCard className="text-base" />
           <span>Subscription</span>
@@ -143,11 +163,10 @@ const AppLayout = ({ children }) => {
         <Link
           to="/admin/servers"
           onClick={() => setIsMobileMenuOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
-            location.pathname === "/admin/servers"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-              : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-          }`}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${location.pathname === "/admin/servers"
+            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+            : isDark ? "text-slate-400 hover:bg-slate-900 hover:text-slate-200" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+            }`}
         >
           <FiServer className="text-base text-amber-400" />
           <span>AI Servers</span>
@@ -177,11 +196,10 @@ const AppLayout = ({ children }) => {
             placeholder="Search AI agents..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full border rounded-lg pl-8 pr-3 py-1.5 text-xs placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${
-              isDark
-                ? "bg-slate-900/80 border-slate-800 text-slate-200"
-                : "bg-white border-slate-300 text-slate-800"
-            }`}
+            className={`w-full border rounded-lg pl-8 pr-3 py-1.5 text-xs placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${isDark
+              ? "bg-slate-900/80 border-slate-800 text-slate-200"
+              : "bg-white border-slate-300 text-slate-800"
+              }`}
           />
         </div>
       </div>
@@ -205,13 +223,12 @@ const AppLayout = ({ children }) => {
                 key={bot._id}
                 to={`/bots/${bot._id}`}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs transition font-medium group ${
-                  isActive
-                    ? "bg-slate-800 text-white font-semibold border-l-4 border-blue-500 shadow"
-                    : isDark
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs transition font-medium group ${isActive
+                  ? "bg-slate-800 text-white font-semibold border-l-4 border-blue-500 shadow"
+                  : isDark
                     ? "text-slate-300 hover:bg-slate-900"
                     : "text-slate-700 hover:bg-slate-200"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
                   <div className={`w-2 h-2 rounded-full ${isActive ? "bg-blue-400" : "bg-emerald-400"}`} />
@@ -316,6 +333,9 @@ const AppLayout = ({ children }) => {
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative">
         {children}
       </main>
+
+      {/* FLOATING EXTERNAL BOT CHAT WIDGET (Bottom Right Corner) */}
+      <FloatingExternalBotWidget />
 
       {/* CREATE BOT MODAL WIZARD */}
       {isCreateModalOpen && (
