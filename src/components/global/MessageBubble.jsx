@@ -49,7 +49,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
               <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${
                 isDark ? "border-slate-800" : "border-slate-300"
               }`}>
-                <table className="w-full border-collapse text-left text-xs min-w-full" {...props} />
+                <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
               </div>
             ),
             thead: ({ node, ...props }) => (
@@ -58,10 +58,10 @@ const MessageBubble = ({ role, content, onRetry }) => {
               }`} {...props} />
             ),
             th: ({ node, ...props }) => (
-              <th className="px-3 py-2 font-semibold select-none whitespace-nowrap" {...props} />
+              <th className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]" {...props} />
             ),
             td: ({ node, ...props }) => (
-              <td className={`px-3 py-2 border-b ${
+              <td className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${
                 isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"
               }`} {...props} />
             ),
