@@ -3,14 +3,62 @@ const BOT_API_KEY = "bot_pk_e465312abcf8a4dd44d3fe113569be48";
 const BOT_SECRET_KEY = "bot_sk_9d4c62e87acb835c97ee93d871d01f5f82506533fe4a6ab0";
 
 /**
+ * Detects the response format type of a bot message
+ * @param {Object} msg - The message object { content, metadata }
+ * @returns {"out_of_the_box" | "table" | "list" | "text"} - The detected response format
+ */
+export function getResponseFormat(msg) {
+  if (!msg) return "text";
+
+  const { content = "", metadata = {} } = msg;
+
+  // 1. OUT OF THE BOX / SCHEDULE CALL FORMAT DETECTION
+  console.log(metadata?.responseType, 'metadata?.responseType');
+
+  if (
+    metadata?.responseType === "out_of_the_box" ||
+    metadata?.responseType === "schedule_call" ||
+    metadata?.out_of_the_box ||
+    (typeof content === "string" && (
+      content.includes("out_of_the_box") ||
+      content.toLowerCase().includes("schedule a call") ||
+      content.toLowerCase().includes("schedule call") ||
+      content.toLowerCase().includes("discovery call")
+    ))
+  ) {
+    return "out_of_the_box";
+  }
+
+  // 2. TABLE FORMAT DETECTION
+  if (
+    metadata?.responseType === "table" ||
+    metadata?.headers ||
+    metadata?.rows ||
+    metadata?.table ||
+    (typeof content === "string" && content.includes("|---") && content.includes("|"))
+  ) {
+    return "table";
+  }
+
+  // 3. LIST FORMAT DETECTION
+  if (
+    metadata?.responseType === "list" ||
+    (metadata?.list && Array.isArray(metadata.list)) ||
+    (metadata?.items && Array.isArray(metadata.items)) ||
+    (typeof content === "string" && /^(?:[-*•]|\d+[\.\)])\s+/m.test(content))
+  ) {
+    return "list";
+  }
+
+  // 4. DEFAULT TEXT FORMAT
+  return "text";
+}
+
+/**
  * Advanced SSE Stream Service Method supporting multi-event streams
- * Handles:
- * - event: chunk -> text streaming ({ text: "..." })
- * - event: metadata -> rich structured metadata ({ responseType: "table", title: "..." })
- * - event: done -> stream completion ([DONE])
  */
 export async function streamExternalChatApi({ message, onChunk, onMetadata, onDone, signal }) {
-  console.log("🚀 [streamExternalChatApi Initiated] Sending Prompt:", message);
+  console.log("🚀 [streamExternalChatApi Initiated] Prompt:", message);
 
   const response = await fetch(API_ENDPOINT, {
     method: "POST",
@@ -42,7 +90,6 @@ export async function streamExternalChatApi({ message, onChunk, onMetadata, onDo
 
     buffer += decoder.decode(value, { stream: true });
 
-    // Split stream by block double newlines (\n\n) or single newlines (\n)
     const blocks = buffer.split(/\n\n/);
     buffer = blocks.pop() || "";
 
@@ -51,7 +98,6 @@ export async function streamExternalChatApi({ message, onChunk, onMetadata, onDo
     }
   }
 
-  // Process remaining buffer chunk if present
   if (buffer.trim()) {
     parseAndDispatchSSEBlock(buffer.trim(), { onChunk, onMetadata, onDone });
   }
@@ -66,7 +112,7 @@ function parseAndDispatchSSEBlock(block, { onChunk, onMetadata, onDone }) {
   console.log("📥 [SSE Raw Block Received]:", block);
 
   const lines = block.split(/\r?\n/);
-  let eventType = "chunk"; // Default SSE event type
+  let eventType = "chunk";
   let dataStr = "";
 
   for (const line of lines) {
@@ -94,23 +140,6 @@ function parseAndDispatchSSEBlock(block, { onChunk, onMetadata, onDone }) {
     const parsed = JSON.parse(dataStr);
     console.log(`📡 [SSE Event: "${eventType}"] Parsed Data:`, parsed);
 
-    // High-Visibility Log for Table Formats / Structured Data
-    if (
-      parsed.responseType === "table" ||
-      eventType === "table" ||
-      parsed.table ||
-      parsed.headers ||
-      parsed.rows
-    ) {
-      console.log("📊 [TABLE FORMAT RECEIVED]:", {
-        responseType: parsed.responseType || eventType,
-        title: parsed.title,
-        headers: parsed.headers,
-        rows: parsed.rows,
-        data: parsed.data || parsed
-      });
-    }
-
     if (eventType === "metadata" || parsed.responseType || parsed.title || parsed.metadata) {
       const metaObj = parsed.metadata || parsed;
       console.log("🏷️ [Metadata Callback Dispatched]:", metaObj);
@@ -119,14 +148,12 @@ function parseAndDispatchSSEBlock(block, { onChunk, onMetadata, onDone }) {
       const token = parsed.text ?? parsed.chunk ?? parsed.content ?? parsed.message ?? "";
       if (token && onChunk) onChunk(token);
     } else {
-      // Fallback for general json objects
       const token = parsed.text ?? parsed.chunk ?? (typeof parsed === "string" ? parsed : "");
       if (token && onChunk) onChunk(token);
       if (parsed.responseType && onMetadata) onMetadata(parsed);
     }
   } catch (e) {
     console.log(`🔤 [SSE Non-JSON Text Chunk]:`, dataStr);
-    // Non-JSON raw text fallback
     if (dataStr && dataStr !== "[DONE]" && onChunk) {
       onChunk(dataStr);
     }

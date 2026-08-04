@@ -9,10 +9,12 @@ import {
   FiRefreshCw,
   FiSquare,
   FiZap,
-  FiMove
+  FiMove,
+  FiCalendar,
+  FiArrowRight
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
-import { streamExternalChatApi } from "../../services/externalBotService";
+import { streamExternalChatApi, getResponseFormat } from "../../services/externalBotService";
 import PillListWidget from "./PillListWidget";
 
 const SUGGESTED_PROMPTS = [
@@ -32,6 +34,18 @@ const createMessageObj = (role, content, extra = {}) => ({
 const formatMarkdownBreaks = (text) => {
   if (!text || typeof text !== "string") return text;
   return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
+};
+
+/**
+ * Capitalizes every word in a string (Title Case Format)
+ * e.g. "explain react hooks" -> "Explain React Hooks"
+ */
+const toCapitalized = (str) => {
+  if (!str || typeof str !== "string") return "";
+  return str
+    .split(" ")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
+    .join(" ");
 };
 
 /**
@@ -80,6 +94,239 @@ const extractListAndIntro = (content, metadata) => {
   return { intro: content, items: null };
 };
 
+/**
+ * Dynamic Switch-Case Renderer based on Response Format:
+ * Handles: "out_of_the_box" | "table" | "list" | "text"
+ */
+const ResponseSwitchRenderer = ({ msg, onOptionClick, isDark }) => {
+  const format = getResponseFormat(msg);
+  const { intro, items } = extractListAndIntro(msg.content, msg.metadata);
+  const tableData = msg.metadata?.table || (msg.metadata?.headers && msg.metadata?.rows ? msg.metadata : null);
+
+  // Common Markdown Components Styling
+  const markdownComponents = {
+    p: ({ node, ...props }) => (
+      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
+    ),
+    a: ({ node, ...props }) => (
+      <a className="text-blue-400 hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
+    ),
+    strong: ({ node, ...props }) => (
+      <strong
+        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${
+          msg.role === "user"
+            ? "text-white bg-blue-700/70 border border-blue-400/40"
+            : isDark
+            ? "text-amber-300 bg-amber-500/20 border border-amber-500/40"
+            : "text-indigo-700 bg-indigo-100 border border-indigo-300"
+        }`}
+        {...props}
+      />
+    ),
+    em: ({ node, ...props }) => (
+      <em className={`italic font-medium ${isDark ? "text-amber-200" : "text-indigo-600"}`} {...props} />
+    ),
+    table: ({ node, ...props }) => (
+      <div className={`w-full max-w-full overflow-x-auto my-2 rounded-xl border custom-scrollbar ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-300 bg-white"}`}>
+        <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
+      </div>
+    ),
+    thead: ({ node, ...props }) => (
+      <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"}`} {...props} />
+    ),
+    th: ({ node, ...props }) => (
+      <th className="px-3 py-2 font-semibold select-none whitespace-nowrap align-top" {...props} />
+    ),
+    td: ({ node, ...props }) => (
+      <td className={`px-3 py-2 border-b align-top ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"}`} {...props} />
+    ),
+    tr: ({ node, ...props }) => (
+      <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"}`} {...props} />
+    )
+  };
+
+  // SWITCH CASE FORMAT RENDERING
+  switch (format) {
+
+    // -----------------------------------------------------------
+    // CASE 1: OUT OF THE BOX / SCHEDULE CALL FORMAT
+    // -----------------------------------------------------------
+    case "out_of_the_box":
+      return (
+        <div className="w-full space-y-2 my-1">
+          {/* Main Message Text */}
+          <div className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
+            isDark ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs" : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
+          }`}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {formatMarkdownBreaks(msg.content)}
+            </ReactMarkdown>
+          </div>
+
+          {/* Schedule Call Interactive Action Button */}
+          <div className="w-[88%] mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (msg.metadata?.actionUrl) {
+                  window.open(msg.metadata.actionUrl, "_blank");
+                } else {
+                  onOptionClick && onOptionClick("Schedule a discovery call with engineering team");
+                }
+              }}
+              className={`w-full py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-between transition-all duration-200 shadow-md active:scale-95 cursor-pointer group ${
+                isDark
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 border border-indigo-500/40"
+                  : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-indigo-500/20 border border-indigo-300"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FiCalendar className="text-sm text-amber-300 shrink-0" />
+                <span>📅 Schedule Call</span>
+              </div>
+              <FiArrowRight className="text-xs shrink-0 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+      );
+
+    // -----------------------------------------------------------
+    // CASE 2: TABLE RESPONSE FORMAT
+    // -----------------------------------------------------------
+    case "table":
+      return (
+        <div className="w-full space-y-2">
+          {intro && (
+            <div className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
+              isDark ? "bg-slate-800/90 text-slate-100 border border-slate-700/60" : "bg-slate-100 text-slate-900 border border-slate-200"
+            }`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {formatMarkdownBreaks(intro)}
+              </ReactMarkdown>
+            </div>
+          )}
+
+          {tableData ? (
+            <div className={`w-[95%] overflow-x-auto my-2 rounded-xl border custom-scrollbar ${
+              isDark ? "border-slate-800 bg-slate-950/90 text-slate-200" : "border-slate-300 bg-white text-slate-800"
+            }`}>
+              {tableData.title && (
+                <div className={`p-2.5 border-b font-bold text-xs ${
+                  isDark ? "bg-slate-900 border-slate-800 text-amber-400" : "bg-slate-100 border-slate-200 text-slate-800"
+                }`}>
+                  📊 {tableData.title}
+                </div>
+              )}
+              <table className="w-full text-left text-xs border-collapse min-w-full">
+                <thead className={`uppercase text-[10px] tracking-wider border-b ${
+                  isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
+                }`}>
+                  <tr>
+                    {tableData.headers?.map((h, i) => (
+                      <th key={i} className="px-3 py-2 font-semibold select-none whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.rows?.map((row, rIdx) => (
+                    <tr key={rIdx} className={`border-b last:border-none ${
+                      isDark ? "border-slate-800/50 hover:bg-slate-800/30 even:bg-slate-900/40" : "border-slate-200 hover:bg-slate-100/50 even:bg-slate-50"
+                    }`}>
+                      {Array.isArray(row)
+                        ? row.map((cell, cIdx) => (
+                            <td key={cIdx} className="px-3 py-2 text-xs">
+                              {cell}
+                            </td>
+                          ))
+                        : tableData.headers?.map((h, cIdx) => (
+                            <td key={cIdx} className="px-3 py-2 text-xs">
+                              {row[h] ?? row[h.toLowerCase()] ?? ""}
+                            </td>
+                          ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className={`max-w-[95%] p-3 rounded-2xl text-xs leading-relaxed ${
+              isDark ? "bg-slate-800/90 text-slate-100 border border-slate-700/60" : "bg-slate-100 text-slate-900 border border-slate-200"
+            }`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {formatMarkdownBreaks(msg.content)}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
+      );
+
+    // -----------------------------------------------------------
+    // CASE 3: LIST RESPONSE FORMAT (Pill Cards)
+    // -----------------------------------------------------------
+    case "list":
+      return (
+        <div className="w-full space-y-1">
+          {intro && (
+            <div className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
+              isDark ? "bg-slate-800/90 text-slate-100 border border-slate-700/60" : "bg-slate-100 text-slate-900 border border-slate-200"
+            }`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {formatMarkdownBreaks(intro)}
+              </ReactMarkdown>
+            </div>
+          )}
+
+          {items && items.length > 0 && (
+            <div className="w-[88%] mt-1">
+              <PillListWidget items={items} onItemClick={onOptionClick} />
+            </div>
+          )}
+        </div>
+      );
+
+    // -----------------------------------------------------------
+    // CASE 4: TEXT RESPONSE FORMAT (Standard Markdown / User Msg)
+    // -----------------------------------------------------------
+    case "text":
+    default:
+      return (
+        <div
+          className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
+            msg.role === "user"
+              ? "bg-blue-600 text-white rounded-br-xs shadow-md shadow-blue-600/10 font-medium capitalize"
+              : isDark
+              ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs"
+              : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
+          }`}
+        >
+          {msg.role === "user" ? (
+            <span className="whitespace-pre-wrap capitalize">{msg.content}</span>
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {formatMarkdownBreaks(msg.content) || ""}
+            </ReactMarkdown>
+          )}
+
+          {msg.isStreaming && !msg.content && (
+            <span className="flex items-center gap-1.5 text-blue-400 font-mono italic">
+              <FiRefreshCw className="animate-spin text-xs" />
+              <span>Thinking & Streaming response...</span>
+            </span>
+          )}
+
+          {msg.isStreaming && msg.content && (
+            <span className="inline-block w-1.5 h-3 bg-blue-400 ml-1 animate-pulse" />
+          )}
+        </div>
+      );
+  }
+};
+
+/**
+ * Main Floating External Bot Widget Component
+ */
 const FloatingExternalBotWidget = () => {
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -202,13 +449,16 @@ const FloatingExternalBotWidget = () => {
   };
 
   const handleSendMessage = async (textOverride = null) => {
-    const userText = textOverride !== null ? textOverride : input;
-    if (!userText || !userText.trim() || loading) return;
+    const rawText = textOverride !== null ? textOverride : input;
+    if (!rawText || !rawText.trim() || loading) return;
+
+    // Convert prompt to capitalized Title Case
+    const userText = toCapitalized(rawText.trim());
 
     if (textOverride === null) setInput("");
     setLoading(true);
 
-    const userMessage = createMessageObj("user", userText.trim());
+    const userMessage = createMessageObj("user", userText);
     const botMessageId = `bot-${Date.now()}`;
     const initialBotMessage = {
       ...createMessageObj("assistant", ""),
@@ -221,7 +471,7 @@ const FloatingExternalBotWidget = () => {
 
     try {
       await streamExternalChatApi({
-        message: userText.trim(),
+        message: userText,
         signal: abortControllerRef.current.signal,
         onChunk: (token) => {
           setMessages((prev) =>
@@ -307,13 +557,15 @@ const FloatingExternalBotWidget = () => {
       >
         <button
           onClick={handleFabClick}
-          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${isDragging ? "ring-4 ring-blue-500/40 scale-110" : ""
-            } ${isOpen
+          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${
+            isDragging ? "ring-4 ring-blue-500/40 scale-110" : ""
+          } ${
+            isOpen
               ? "bg-rose-600 text-white border-rose-500 shadow-rose-600/30 rotate-90"
               : isDark
-                ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-500/50 shadow-blue-600/40"
-                : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-400 shadow-blue-500/30"
-            }`}
+              ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-500/50 shadow-blue-600/40"
+              : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-400 shadow-blue-500/30"
+          }`}
           title={isOpen ? "Close Assistant (Drag to Move)" : "Open External AI Chatbot Widget (Drag to Move)"}
         >
           {isOpen ? (
@@ -338,17 +590,19 @@ const FloatingExternalBotWidget = () => {
             left: `${modalLeft}px`,
             top: `${modalTop}px`
           }}
-          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${isDark
+          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${
+            isDark
               ? "bg-slate-900/95 border-slate-800 text-slate-100 backdrop-blur-xl"
               : "bg-white/95 border-slate-200 text-slate-900 backdrop-blur-xl shadow-slate-300/60"
-            }`}
+          }`}
         >
           {/* Header - Draggable Drag Handle */}
           <div
             onMouseDown={handlePointerDown}
             onTouchStart={handlePointerDown}
-            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
-              }`}
+            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${
+              isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+            }`}
             title="Drag Header to Move Chat Widget"
           >
             <div className="flex items-center gap-3">
@@ -371,8 +625,9 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={handleClearHistory}
-                className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
-                  }`}
+                className={`p-1.5 rounded-lg text-xs transition ${
+                  isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                }`}
                 title="Clear Chat History"
               >
                 <FiRefreshCw />
@@ -380,8 +635,9 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
-                  }`}
+                className={`p-1.5 rounded-lg text-xs transition ${
+                  isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                }`}
                 title="Minimize Widget"
               >
                 <FiX className="text-base" />
@@ -391,156 +647,31 @@ const FloatingExternalBotWidget = () => {
 
           {/* Messages Container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar">
-            {messages.map((msg) => {
-              const { intro, items } = extractListAndIntro(msg.content, msg.metadata);
-              const tableData = msg.metadata?.table || (msg.metadata?.headers && msg.metadata?.rows ? msg.metadata : null);
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex flex-col w-full ${msg.role === "user" ? "items-end" : "items-start"}`}
+              >
+                {/* Dynamic Switch-Case Renderer based on Response Format */}
+                <ResponseSwitchRenderer
+                  msg={msg}
+                  isDark={isDark}
+                  onOptionClick={(selectedText) => handleSendMessage(selectedText)}
+                />
 
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col w-full ${msg.role === "user" ? "items-end" : "items-start"}`}
-                >
-                  {(intro || msg.isStreaming) && (
-                    <div
-                      className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${msg.role === "user"
-                          ? "bg-blue-600 text-white rounded-br-xs shadow-md shadow-blue-600/10"
-                          : isDark
-                            ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs"
-                            : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
-                        }`}
-                    >
-
-
-                      {/* Full Markdown & Table Support matching MessageBubble.jsx */}
-                      {msg.role === "user" ? (
-                        <span className="whitespace-pre-wrap">{intro}</span>
-                      ) : (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />,
-                            a: ({ node, ...props }) => <a className="text-blue-400 hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />,
-                            strong: ({ node, ...props }) => (
-                              <strong
-                                className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${
-                                  msg.role === "user"
-                                    ? "text-white bg-blue-700/70 border border-blue-400/40"
-                                    : isDark
-                                    ? "text-amber-300 bg-amber-500/20 border border-amber-500/40"
-                                    : "text-indigo-700 bg-indigo-100 border border-indigo-300"
-                                }`}
-                                {...props}
-                              />
-                            ),
-                            em: ({ node, ...props }) => (
-                              <em className={`italic font-medium ${isDark ? "text-amber-200" : "text-indigo-600"}`} {...props} />
-                            ),
-                            table: ({ node, ...props }) => (
-                              <div className={`w-full max-w-full overflow-x-auto my-2 rounded-xl border custom-scrollbar ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-300 bg-white"
-                                }`}>
-                                <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
-                              </div>
-                            ),
-                            thead: ({ node, ...props }) => (
-                              <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
-                                }`} {...props} />
-                            ),
-                            th: ({ node, ...props }) => (
-                              <th className="px-3 py-2 font-semibold select-none whitespace-nowrap align-top" {...props} />
-                            ),
-                            td: ({ node, ...props }) => (
-                              <td className={`px-3 py-2 border-b align-top ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"
-                                }`} {...props} />
-                            ),
-                            tr: ({ node, ...props }) => (
-                              <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"
-                                }`} {...props} />
-                            )
-                          }}
-                        >
-                          {formatMarkdownBreaks(intro) || ""}
-                        </ReactMarkdown>
-                      )}
-
-                      {msg.isStreaming && !msg.content && (
-                        <span className="flex items-center gap-1.5 text-blue-400 font-mono italic">
-                          <FiRefreshCw className="animate-spin text-xs" />
-                          <span>Thinking & Streaming response...</span>
-                        </span>
-                      )}
-
-                      {msg.isStreaming && msg.content && (
-                        <span className="inline-block w-1.5 h-3 bg-blue-400 ml-1 animate-pulse" />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Render Structured Table if present in metadata */}
-                  {tableData && (
-                    <div className={`w-[95%] overflow-x-auto my-2 rounded-xl border custom-scrollbar ${isDark ? "border-slate-800 bg-slate-950/90 text-slate-200" : "border-slate-300 bg-white text-slate-800"
-                      }`}>
-                      {tableData.title && (
-                        <div className={`p-2.5 border-b font-bold text-xs ${isDark ? "bg-slate-900 border-slate-800 text-amber-400" : "bg-slate-100 border-slate-200 text-slate-800"
-                          }`}>
-                          📊 {tableData.title}
-                        </div>
-                      )}
-                      <table className="w-full text-left text-xs border-collapse min-w-full">
-                        <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"
-                          }`}>
-                          <tr>
-                            {tableData.headers?.map((h, i) => (
-                              <th key={i} className="px-3 py-2 font-semibold select-none whitespace-nowrap">
-                                {h}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {tableData.rows?.map((row, rIdx) => (
-                            <tr key={rIdx} className={`border-b last:border-none ${isDark ? "border-slate-800/50 hover:bg-slate-800/30 even:bg-slate-900/40" : "border-slate-200 hover:bg-slate-100/50 even:bg-slate-50"
-                              }`}>
-                              {Array.isArray(row)
-                                ? row.map((cell, cIdx) => (
-                                  <td key={cIdx} className="px-3 py-2 text-xs">
-                                    {cell}
-                                  </td>
-                                ))
-                                : tableData.headers?.map((h, cIdx) => (
-                                  <td key={cIdx} className="px-3 py-2 text-xs">
-                                    {row[h] ?? row[h.toLowerCase()] ?? ""}
-                                  </td>
-                                ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  {/* Render PillListWidget if bullet/list items are present */}
-                  {items && items.length > 0 && (
-                    <div className="w-[88%] mt-1">
-                      <PillListWidget
-                        items={items}
-                        onItemClick={(selectedText) => handleSendMessage(selectedText)}
-                      />
-                    </div>
-                  )}
-
-                  <span className={`text-[9px] mt-1 px-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                    {msg.timestamp}
-                  </span>
-                </div>
-              );
-            })}
+                <span className={`text-[9px] mt-1 px-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  {msg.timestamp}
+                </span>
+              </div>
+            ))}
             <div ref={messagesEndRef} />
           </div>
 
           {/* Quick Suggested Prompts (Visible when only 1 message or idle) */}
           {messages.length <= 2 && !loading && (
-            <div className={`px-4 py-2 border-t flex flex-col gap-1.5 shrink-0 ${isDark ? "bg-slate-950/40 border-slate-800/60" : "bg-slate-50/60 border-slate-200/60"
-              }`}>
+            <div className={`px-4 py-2 border-t flex flex-col gap-1.5 shrink-0 ${
+              isDark ? "bg-slate-950/40 border-slate-800/60" : "bg-slate-50/60 border-slate-200/60"
+            }`}>
               <div className={`text-[10px] font-bold flex items-center gap-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 <FiZap className="text-amber-400" />
                 <span>Suggested Prompts:</span>
@@ -550,10 +681,11 @@ const FloatingExternalBotWidget = () => {
                   <button
                     key={i}
                     onClick={() => handleSendMessage(prompt)}
-                    className={`text-left text-[11px] px-2.5 py-1.5 rounded-xl border transition truncate ${isDark
+                    className={`text-left text-[11px] px-2.5 py-1.5 rounded-xl border transition truncate ${
+                      isDark
                         ? "bg-slate-900 border-slate-800 hover:border-blue-500/50 hover:bg-blue-600/10 text-slate-300 hover:text-blue-300"
                         : "bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 hover:text-blue-700 shadow-2xs"
-                      }`}
+                    }`}
                   >
                     💡 {prompt}
                   </button>
@@ -568,8 +700,9 @@ const FloatingExternalBotWidget = () => {
               e.preventDefault();
               handleSendMessage();
             }}
-            className={`p-3 border-t flex items-center gap-2 shrink-0 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
-              }`}
+            className={`p-3 border-t flex items-center gap-2 shrink-0 ${
+              isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+            }`}
           >
             <input
               type="text"
@@ -577,10 +710,11 @@ const FloatingExternalBotWidget = () => {
               onChange={(e) => setInput(e.target.value)}
               placeholder={loading ? "Generating response..." : "Ask anything..."}
               disabled={loading}
-              className={`flex-1 px-3.5 py-2 rounded-xl text-xs focus:outline-none transition ${isDark
+              className={`flex-1 px-3.5 py-2 rounded-xl text-xs focus:outline-none transition capitalize ${
+                isDark
                   ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
                   : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
-                }`}
+              }`}
             />
 
             {loading ? (
