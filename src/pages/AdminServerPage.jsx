@@ -292,7 +292,7 @@ const AdminServerPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {nodes.map((node) => {
-              const isHealthy = node.status && node.status.startsWith("HEALTHY");
+              const isHealthy = node.status && (node.status === "ACTIVE" || node.status.startsWith("HEALTHY"));
               return (
                 <div
                   key={node._id}

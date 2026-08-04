@@ -23,6 +23,7 @@ import {
 } from "react-icons/fi";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import ClusterStatusWidget from "../global/ClusterStatusWidget";
 import {
   useTanStackData,
   useTanStackMutation,
@@ -40,10 +41,8 @@ const BotChatTab = ({ bot }) => {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isDark } = useTheme();
 
-  const [clusterNodes, setClusterNodes] = useState([
-    { id: "Node-1", name: "Primary Node", status: "HEALTHY", defaultModel: "qwen2.5:1.5b", activeRequests: 0 },
-    { id: "Node-2", name: "Secondary Node", status: "HEALTHY", defaultModel: "gemma-3-4b-it", activeRequests: 0 }
-  ]);
+  const [clusterNodes, setClusterNodes] = useState([]);
+  const [isClusterLoading, setIsClusterLoading] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const messagesContainerRef = useRef(null);
   const isStreamingRef = useRef(false);
@@ -64,7 +63,10 @@ const BotChatTab = ({ bot }) => {
         const data = await res.json();
         if (data.nodes) setClusterNodes(data.nodes);
       }
-    } catch (e) { }
+    } catch (e) { 
+    } finally {
+      setIsClusterLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -447,62 +449,7 @@ const BotChatTab = ({ bot }) => {
           </div>
 
           <div className="flex items-center gap-3 relative">
-            <button
-              onClick={() => setShowStatusModal(!showStatusModal)}
-              className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium transition cursor-pointer"
-              title="Click to view AI Cluster Health & Load Balancing"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <FiServer className="text-xs" />
-              <span className="hidden sm:inline">Cluster: 2 Nodes Online</span>
-            </button>
-
-            {showStatusModal && (
-              <div className={`absolute right-0 top-10 z-[100] w-80 max-w-[90vw] border rounded-xl shadow-2xl p-4 text-xs flex flex-col max-h-[80vh] ${isDark ? "bg-slate-900 border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-slate-300/50"
-                }`}>
-                <div className={`flex items-center justify-between border-b pb-2.5 mb-3 shrink-0 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                  <div className={`flex items-center gap-2 font-semibold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-                    <FiServer className="text-blue-500" />
-                    <span>AI Cluster Health Status</span>
-                  </div>
-                  <button
-                    onClick={() => setShowStatusModal(false)}
-                    className={`p-1 rounded-md ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
-                  >
-                    <FiX />
-                  </button>
-                </div>
-
-                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1 custom-scrollbar shrink-0">
-                  {clusterNodes.map((node, idx) => (
-                    <div key={idx} className={`border rounded-lg p-2.5 ${isDark ? "bg-slate-950/70 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        {console.log(clusterNodes, 'clusterNodes')
-                        }
-                        <span className={`font-semibold capitalize ${isDark ? "text-slate-200" : "text-slate-800"}`}>{node.name}</span>
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                          <FiCheckCircle className="text-[10px]" />
-                          {node.status || "HEALTHY"}
-                        </span>
-                      </div>
-                      <div className={`text-[11px] space-y-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        <p>• Model: <span className={`font-mono text-[10px] ${isDark ? "text-slate-300" : "text-slate-700"}`}>{node.defaultModel}</span></p>
-                        <p>• Active Load: <span className={isDark ? "text-slate-200" : "text-slate-800"}>{node.activeRequests || 0} active request(s)</span></p>
-                        <p className="truncate">• Endpoint: <span className={`font-mono text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{node.url}</span></p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={`mt-3 pt-2 border-t text-[10px] flex items-center gap-1.5 shrink-0 ${isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"}`}>
-                  <FiActivity className="text-blue-500 shrink-0" />
-                  <span>Smart Load Balancer dispatches concurrent requests automatically.</span>
-                </div>
-              </div>
-            )}
+            <ClusterStatusWidget clusterNodes={clusterNodes} isDark={isDark} isLoading={isClusterLoading} />
 
             <span className={`text-[11px] font-mono truncate hidden md:inline ${isDark ? "text-slate-400" : "text-slate-600"}`}>
               Bot: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.name}</strong> ({bot.model})
