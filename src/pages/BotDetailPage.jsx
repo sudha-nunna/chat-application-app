@@ -6,12 +6,14 @@ import {
   FiCode,
   FiTrash2,
   FiArrowLeft,
-  FiFileText
+  FiFileText,
+  FiEdit2
 } from "react-icons/fi";
 import { NobackEndCall, backEndCallObjDel } from "../services/authService";
 import BotChatTab from "../components/bots/BotChatTab";
 import BotApiTab from "../components/bots/BotApiTab";
 import BotKnowledgeTab from "../components/bots/BotKnowledgeTab";
+import EditBotModal from "../components/bots/EditBotModal";
 import { useTheme } from "../context/ThemeContext";
 import {
   useTanStackData,
@@ -23,6 +25,7 @@ const BotDetailPage = () => {
   const { botId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("chat"); // "chat" | "knowledge" | "apis"
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { isDark } = useTheme();
   const queryClient = useTanStackQueryClient();
 
@@ -135,6 +138,15 @@ const BotDetailPage = () => {
           </div>
 
           <button
+            onClick={() => setIsEditModalOpen(true)}
+            className={`p-2 rounded-lg transition ${isDark ? "text-slate-400 hover:text-blue-400 hover:bg-slate-800" : "text-slate-500 hover:text-blue-600 hover:bg-slate-100"
+              }`}
+            title="Edit Bot Settings"
+          >
+            <FiEdit2 className="text-base" />
+          </button>
+
+          <button
             onClick={handleDeleteBot}
             className={`p-2 rounded-lg transition ${isDark ? "text-slate-500 hover:text-rose-400 hover:bg-rose-950/40" : "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
               }`}
@@ -144,6 +156,15 @@ const BotDetailPage = () => {
           </button>
         </div>
       </div>
+
+      {/* EDIT BOT MODAL */}
+      {isEditModalOpen && (
+        <EditBotModal
+          bot={bot}
+          onClose={() => setIsEditModalOpen(false)}
+          onBotUpdated={() => fetchBotDetails()}
+        />
+      )}
 
       {/* TAB NAVIGATION BAR */}
       <div className={`flex border-b px-4 ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-100/60"

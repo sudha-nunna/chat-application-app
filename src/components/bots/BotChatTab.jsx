@@ -275,8 +275,9 @@ const BotChatTab = ({ bot }) => {
 
             try {
               const parsed = JSON.parse(dataStr);
-              if (parsed.token) {
-                accumulatedAnswer += parsed.token;
+              const chunkContent = parsed.chunk ?? parsed.text ?? parsed.token ?? parsed.content ?? parsed.message ?? "";
+              if (chunkContent) {
+                accumulatedAnswer += chunkContent;
               }
               if (parsed.sources) {
                 accumulatedSources = parsed.sources;

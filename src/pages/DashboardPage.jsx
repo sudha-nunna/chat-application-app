@@ -7,10 +7,12 @@ import {
   FiCode,
   FiArrowRight,
   FiTrash2,
+  FiEdit2,
   FiLayers
 } from "react-icons/fi";
 import { NobackEndCall, backEndCallGet, backEndCallObjDel } from "../services/authService";
 import CreateBotModal from "../components/bots/CreateBotModal";
+import EditBotModal from "../components/bots/EditBotModal";
 import ApiModal from "../components/bots/ApiModal";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -21,6 +23,7 @@ import {
 
 const DashboardPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingBot, setEditingBot] = useState(null);
   const [selectedApiBot, setSelectedApiBot] = useState(null);
   const [apiModalMode, setApiModalMode] = useState("generate");
   const navigate = useNavigate();
@@ -57,6 +60,11 @@ const DashboardPage = () => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this AI Agent and all its knowledge files?")) return;
     deleteBotMutation.mutate(botId);
+  };
+
+  const handleEditBot = (e, bot) => {
+    e.stopPropagation();
+    setEditingBot(bot);
   };
 
   return (
@@ -135,15 +143,26 @@ const DashboardPage = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={(e) => handleDeleteBot(e, bot._id)}
-                    disabled={deleteBotMutation.isPending}
-                    className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
-                      }`}
-                    title="Delete Bot"
-                  >
-                    <FiTrash2 className="text-sm" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => handleEditBot(e, bot)}
+                      className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-blue-400" : "text-slate-400 hover:text-blue-600"
+                        }`}
+                      title="Edit Bot Settings"
+                    >
+                      <FiEdit2 className="text-sm" />
+                    </button>
+
+                    <button
+                      onClick={(e) => handleDeleteBot(e, bot._id)}
+                      disabled={deleteBotMutation.isPending}
+                      className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
+                        }`}
+                      title="Delete Bot"
+                    >
+                      <FiTrash2 className="text-sm" />
+                    </button>
+                  </div>
                 </div>
 
                 <p className={`text-xs line-clamp-2 mb-4 h-8 capitalize ${isDark ? "text-slate-400" : "text-slate-500"}`}>
@@ -196,6 +215,15 @@ const DashboardPage = () => {
             queryClient.invalidateQueries({ queryKey: ["bots"] });
             navigate(`/bots/${newBot._id}`);
           }}
+        />
+      )}
+
+      {/* EDIT BOT MODAL */}
+      {editingBot && (
+        <EditBotModal
+          bot={editingBot}
+          onClose={() => setEditingBot(null)}
+          onBotUpdated={() => queryClient.invalidateQueries({ queryKey: ["bots"] })}
         />
       )}
 
