@@ -97,10 +97,8 @@ export function getResponseFormat(msg) {
   if (
     type === "out_of_the_box" ||
     type === "schedule_call" ||
-    type === "live_agent" ||
     type === "card" ||
     metadata?.out_of_the_box ||
-    metadata?.liveAgent ||
     (typeof content === "string" && content.toLowerCase().includes("schedule a discovery call"))
   ) {
     return "out_of_the_box";
@@ -135,7 +133,7 @@ export function getResponseFormat(msg) {
 /**
  * Advanced SSE Stream Service Method supporting both positional and object options
  */
-export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetadataCb, signalOrDone, conversationId, visitorId) {
+export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetadataCb, signalOrDone) {
   let message = "";
   let onChunk = onChunkCb;
   let onMetadata = onMetadataCb;
@@ -163,10 +161,9 @@ export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetada
       "Content-Type": "application/json",
       "Accept": "text/event-stream",
       "X-Bot-Api-Key": BOT_API_KEY,
-      "X-Bot-Secret-Key": BOT_SECRET_KEY,
-      ...(visitorId ? { "X-Visitor-Id": visitorId } : {})
+      "X-Bot-Secret-Key": BOT_SECRET_KEY
     },
-    body: JSON.stringify({ message, conversationId, visitorId }),
+    body: JSON.stringify({ message }),
     signal
   });
 
