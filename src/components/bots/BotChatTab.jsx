@@ -13,26 +13,14 @@ import {
   FiMessageSquare,
   FiSidebar,
   FiMenu,
-  FiX,
-  FiServer,
-  FiCheckCircle,
-  FiActivity,
   FiStopCircle,
   FiAlertTriangle,
-  FiRotateCw,
-  FiCalendar,
-  FiArrowRight
+  FiRotateCw
 } from "react-icons/fi";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
 import ClusterStatusWidget from "../global/ClusterStatusWidget";
-import PillListWidget from "../global/PillListWidget";
-import {
-  getResponseFormat,
-  formatMarkdownBreaks,
-  toCapitalized,
-  extractListAndIntro
-} from "../../services/externalBotService";
+import { formatMarkdownBreaks } from "../../services/externalBotService";
 
 const BotChatTab = ({ bot }) => {
   const [conversations, setConversations] = useState([]);
@@ -446,9 +434,6 @@ const BotChatTab = ({ bot }) => {
               const isUser = msg.role === "user";
               const isSourcesOpen = openSourcesIdx === index;
 
-              const format = getResponseFormat(msg);
-              const { intro, items } = extractListAndIntro(msg.content, msg.metadata);
-
               return (
                 <div
                   key={msg._id || index}
@@ -469,98 +454,46 @@ const BotChatTab = ({ bot }) => {
                   {/* Bubble Container */}
                   <div className={`space-y-1.5 min-w-0 max-w-full flex flex-col ${isUser ? "items-end" : "items-start"}`}>
 
-                    {/* FORMAT TYPE RENDERING SWITCH */}
-                    {format === "out_of_the_box" ? (
-                      <div className="w-full space-y-2">
-                        <div className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words shadow-md ${isDark ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none" : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
-                          }`}>
-                          {msg.metadata?.title && (
-                            <div className="font-bold text-xs text-amber-400 mb-1.5 flex items-center gap-1.5">
-                              <span>💡 {msg.metadata.title}</span>
-                            </div>
-                          )}
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
-                            {formatMarkdownBreaks(msg.content) || ""}
-                          </ReactMarkdown>
-                        </div>
+                    {/* DIRECT MARKDOWN RENDERER */}
+                    <div
+                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${isUser
+                        ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
+                        : isDark
+                          ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
+                          : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
+                        }`}
+                    >
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
+                      ) : (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
+                          {formatMarkdownBreaks(msg.content) || "Thinking..."}
+                        </ReactMarkdown>
+                      )}
 
-                        {/* Schedule Call Interactive Button */}
-                        <div className="w-full max-w-md pt-1">
+                      {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
+                      {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
+                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
+                          }`}>
+                          <div className="flex items-center gap-2 text-xs font-medium">
+                            <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
+                            <span>Stream paused due to higher-priority request.</span>
+                          </div>
                           <button
-                            type="button"
                             onClick={() => {
-                              if (msg.metadata?.actionUrl) {
-                                window.open(msg.metadata.actionUrl, "_blank");
-                              } else {
-                                handleSendMessage(null, "Schedule a discovery call with engineering team");
+                              const userMsg = [...messages.slice(0, index)].reverse().find(m => m.role === "user");
+                              if (userMsg) {
+                                handleSendMessage(null, userMsg.content);
                               }
                             }}
-                            className={`w-full py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-between transition-all duration-200 shadow-md active:scale-95 cursor-pointer group ${isDark
-                              ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 border border-indigo-500/40"
-                              : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-indigo-500/20 border border-indigo-300"
-                              }`}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
                           >
-                            <div className="flex items-center gap-2">
-                              <FiCalendar className="text-sm text-amber-300 shrink-0" />
-                              <span>📅 Schedule Call</span>
-                            </div>
-                            <FiArrowRight className="text-xs shrink-0 group-hover:translate-x-1 transition-transform" />
+                            <FiRotateCw className="w-3.5 h-3.5" />
+                            Retry
                           </button>
                         </div>
-                      </div>
-                    ) : format === "list" && items && items.length > 0 ? (
-                      <div className="w-full space-y-1">
-                        {intro && (
-                          <div className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words shadow-md ${isDark ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none" : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
-                            }`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
-                              {formatMarkdownBreaks(intro)}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-                        <PillListWidget items={items} onItemClick={(text) => handleSendMessage(null, text)} />
-                      </div>
-                    ) : (
-                      <div
-                        className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${isUser
-                          ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
-                          : isDark
-                            ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
-                            : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
-                          }`}
-                      >
-                        {isUser ? (
-                          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
-                        ) : (
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
-                            {formatMarkdownBreaks(msg.content) || "Thinking..."}
-                          </ReactMarkdown>
-                        )}
-
-                        {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
-                        {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
-                          <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
-                            }`}>
-                            <div className="flex items-center gap-2 text-xs font-medium">
-                              <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
-                              <span>Stream paused due to higher-priority request.</span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                const userMsg = [...messages.slice(0, index)].reverse().find(m => m.role === "user");
-                                if (userMsg) {
-                                  handleSendMessage(null, userMsg.content);
-                                }
-                              }}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
-                            >
-                              <FiRotateCw className="w-3.5 h-3.5" />
-                              Retry
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* COLLAPSED SOURCES TOGGLE BUTTON */}
                     {!isUser && msg.sources && msg.sources.length > 0 && (

@@ -131,9 +131,30 @@ export function getResponseFormat(msg) {
 }
 
 /**
- * Advanced SSE Stream Service Method supporting multi-event streams
+ * Advanced SSE Stream Service Method supporting both positional and object options
  */
-export async function streamExternalChatApi({ message, onChunk, onMetadata, onDone, signal }) {
+export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetadataCb, signalOrDone) {
+  let message = "";
+  let onChunk = onChunkCb;
+  let onMetadata = onMetadataCb;
+  let onDone = null;
+  let signal = null;
+
+  if (typeof promptOrOptions === "object" && promptOrOptions !== null) {
+    message = promptOrOptions.message || promptOrOptions.prompt || "";
+    onChunk = promptOrOptions.onChunk || onChunkCb;
+    onMetadata = promptOrOptions.onMetadata || onMetadataCb;
+    onDone = promptOrOptions.onDone;
+    signal = promptOrOptions.signal;
+  } else {
+    message = promptOrOptions || "";
+    if (signalOrDone instanceof AbortSignal) {
+      signal = signalOrDone;
+    } else if (typeof signalOrDone === "function") {
+      onDone = signalOrDone;
+    }
+  }
+
   const response = await fetch(API_ENDPOINT, {
     method: "POST",
     headers: {
