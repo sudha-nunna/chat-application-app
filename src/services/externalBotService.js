@@ -1,6 +1,86 @@
-const API_ENDPOINT = "https://chat-application-service.onrender.com/api/v1/external/bots/chat";
-const BOT_API_KEY = "bot_pk_e465312abcf8a4dd44d3fe113569be48";
-const BOT_SECRET_KEY = "bot_sk_9d4c62e87acb835c97ee93d871d01f5f82506533fe4a6ab0";
+const API_ENDPOINT =
+  import.meta.env.VITE_EXTERNAL_BOT_API_ENDPOINT ||
+  `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/v1/external/bots/chat`;
+
+const BOT_API_KEY =
+  import.meta.env.VITE_EXTERNAL_BOT_API_KEY ||
+  "bot_pk_e465312abcf8a4dd44d3fe113569be48";
+
+const BOT_SECRET_KEY =
+  import.meta.env.VITE_EXTERNAL_BOT_SECRET_KEY ||
+  "bot_sk_9d4c62e87acb835c97ee93d871d01f5f82506533fe4a6ab0";
+
+/**
+ * Capitalizes every word in a prompt string (Title Case Format)
+ * @param {string} str - User prompt string
+ * @returns {string} - Capitalized Title Case string
+ */
+export function toCapitalized(str) {
+  if (!str || typeof str !== "string") return "";
+  return str
+    .split(" ")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
+    .join(" ");
+}
+
+/**
+ * Formats single line breaks \n to "  \n" to ensure ReactMarkdown renders line breaks
+ * @param {string} text - Raw Markdown text
+ * @returns {string} - Formatted Markdown text
+ */
+export function formatMarkdownBreaks(text) {
+  if (!text || typeof text !== "string") return text;
+  return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
+}
+
+/**
+ * Extracts bullet lists or metadata arrays into structured items & intro text
+ * @param {string} content - Message content
+ * @param {Object} metadata - Message metadata
+ * @returns {{ intro: string, items: Array<string>|null }}
+ */
+export function extractListAndIntro(content, metadata) {
+  if (metadata?.list && Array.isArray(metadata.list)) {
+    return { intro: content, items: metadata.list };
+  }
+  if (metadata?.items && Array.isArray(metadata.items)) {
+    return { intro: content, items: metadata.items };
+  }
+  if (metadata?.options && Array.isArray(metadata.options)) {
+    return { intro: content, items: metadata.options };
+  }
+
+  if (!content || typeof content !== "string") return { intro: content, items: null };
+
+  const lines = content.split("\n");
+  const introLines = [];
+  const items = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^(?:[-*•]|\d+[\.\)])\s+(.+)$/);
+    if (match && match[1]) {
+      const itemText = match[1].trim();
+      const cleanText = itemText.replace(/^\*\*(.*)\*\*$/, "$1").trim();
+      if (cleanText && cleanText.length < 120) {
+        items.push(cleanText);
+      } else {
+        introLines.push(line);
+      }
+    } else {
+      introLines.push(line);
+    }
+  }
+
+  if (items.length >= 1) {
+    return {
+      intro: introLines.join("\n").trim(),
+      items
+    };
+  }
+
+  return { intro: content, items: null };
+}
 
 /**
  * Detects the response format type of a bot message
@@ -11,43 +91,36 @@ export function getResponseFormat(msg) {
   if (!msg) return "text";
 
   const { content = "", metadata = {} } = msg;
+  const type = msg.responseType || msg.type || metadata?.responseType || metadata?.type;
 
-  // 1. OUT OF THE BOX / SCHEDULE CALL FORMAT DETECTION
-  console.log(metadata?.responseType, 'metadata?.responseType');
-
+  // 1. OUT OF THE BOX / SCHEDULE CALL FORMAT
   if (
-    metadata?.responseType === "out_of_the_box" ||
-    metadata?.responseType === "schedule_call" ||
-    metadata?.responseType === "card" ||
-    metadata?.type === "card" ||
-    metadata?.type === "schedule_call" ||
+    type === "out_of_the_box" ||
+    type === "schedule_call" ||
+    type === "card" ||
     metadata?.out_of_the_box ||
-    (typeof content === "string" && (
-      content.includes("out_of_the_box") ||
-      content.toLowerCase().includes("schedule a call") ||
-      content.toLowerCase().includes("schedule call") ||
-      content.toLowerCase().includes("discovery call")
-    ))
+    (typeof content === "string" && content.toLowerCase().includes("schedule a discovery call"))
   ) {
     return "out_of_the_box";
   }
 
-  // 2. TABLE FORMAT DETECTION
+  // 2. TABLE FORMAT
   if (
-    metadata?.responseType === "table" ||
+    type === "table" ||
     metadata?.headers ||
-    metadata?.rows ||
     metadata?.table ||
-    (typeof content === "string" && content.includes("|---") && content.includes("|"))
+    (typeof content === "string" && content.includes("|---"))
   ) {
     return "table";
   }
 
-  // 3. LIST FORMAT DETECTION
+  // 3. LIST FORMAT
+
+
   if (
-    metadata?.responseType === "list" ||
-    (metadata?.list && Array.isArray(metadata.list)) ||
-    (metadata?.items && Array.isArray(metadata.items)) ||
+    type === "list" ||
+    metadata?.list ||
+    metadata?.items ||
     (typeof content === "string" && /^(?:[-*•]|\d+[\.\)])\s+/m.test(content))
   ) {
     return "list";
@@ -61,8 +134,6 @@ export function getResponseFormat(msg) {
  * Advanced SSE Stream Service Method supporting multi-event streams
  */
 export async function streamExternalChatApi({ message, onChunk, onMetadata, onDone, signal }) {
-  console.log("🚀 [streamExternalChatApi Initiated] Prompt:", message);
-
   const response = await fetch(API_ENDPOINT, {
     method: "POST",
     headers: {
@@ -112,8 +183,6 @@ export async function streamExternalChatApi({ message, onChunk, onMetadata, onDo
  * Utility to parse event & data lines inside an SSE block
  */
 function parseAndDispatchSSEBlock(block, { onChunk, onMetadata, onDone }) {
-  console.log("📥 [SSE Raw Block Received]:", block);
-
   const lines = block.split(/\r?\n/);
   let eventType = "chunk";
   let dataStr = "";
@@ -134,29 +203,36 @@ function parseAndDispatchSSEBlock(block, { onChunk, onMetadata, onDone }) {
   if (!dataStr) return;
 
   if (eventType === "done" || dataStr === "[DONE]") {
-    console.log("✅ [SSE Stream Finished: DONE]");
     if (onDone) onDone();
     return;
   }
 
   try {
     const parsed = JSON.parse(dataStr);
-    console.log(`📡 [SSE Event: "${eventType}"] Parsed Data:`, parsed);
 
-    if (eventType === "metadata" || parsed.responseType || parsed.title || parsed.metadata) {
-      const metaObj = parsed.metadata || parsed;
-      console.log("🏷️ [Metadata Callback Dispatched]:", metaObj);
-      if (onMetadata) onMetadata(metaObj);
-    } else if (eventType === "chunk" || parsed.text !== undefined || parsed.chunk !== undefined) {
-      const token = parsed.text ?? parsed.chunk ?? parsed.content ?? parsed.message ?? "";
-      if (token && onChunk) onChunk(token);
-    } else {
-      const token = parsed.text ?? parsed.chunk ?? (typeof parsed === "string" ? parsed : "");
-      if (token && onChunk) onChunk(token);
-      if (parsed.responseType && onMetadata) onMetadata(parsed);
+    // Extract text/token payload across all possible backend field names
+    const token =
+      parsed.text ??
+      parsed.chunk ??
+      parsed.content ??
+      parsed.message ??
+      parsed.reply ??
+      parsed.answer ??
+      parsed.response ??
+      "";
+
+    const metaObj = parsed.metadata || (parsed.responseType || parsed.type || parsed.title || parsed.headers ? parsed : null);
+
+    if (metaObj && onMetadata) {
+      onMetadata(metaObj);
+    }
+
+    if (token && onChunk) {
+      onChunk(token);
+    } else if (!token && !metaObj && typeof parsed === "string" && onChunk) {
+      onChunk(parsed);
     }
   } catch (e) {
-    console.log(`🔤 [SSE Non-JSON Text Chunk]:`, dataStr);
     if (dataStr && dataStr !== "[DONE]" && onChunk) {
       onChunk(dataStr);
     }

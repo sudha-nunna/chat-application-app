@@ -25,11 +25,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const messagesContainerRef = useRef(null);
   const currentStreamingTextRef = useRef("");
 
-  useEffect(() => {
-    fetchClusterStatus();
-    const interval = setInterval(fetchClusterStatus, 12000);
-    return () => clearInterval(interval);
-  }, []);
+  // useEffect(() => {
+  //   fetchClusterStatus();
+  //   const interval = setInterval(fetchClusterStatus, 12000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -55,7 +55,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         const data = await res.json();
         if (data.nodes) setClusterNodes(data.nodes);
       }
-    } catch (e) { 
+    } catch (e) {
     } finally {
       setIsClusterLoading(false);
     }
@@ -398,12 +398,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           <button
             onClick={toggleVoiceOver}
             className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer active:scale-95 ${isVoicePaused
-                ? isDark
-                  ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200"
-                  : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200 hover:text-slate-800"
-                : isAudioActive
-                  ? "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30 shadow-sm"
-                  : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
+              ? isDark
+                ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200"
+                : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200 hover:text-slate-800"
+              : isAudioActive
+                ? "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30 shadow-sm"
+                : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
               }`}
             title={
               isVoicePaused

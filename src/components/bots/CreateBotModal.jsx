@@ -54,8 +54,9 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   // Step 2: Model
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
 
-  // Step 3: Files
+  // Step 3: Files (Two sub-tabs: 1. Knowledge Base, 2. Rules)
   const [stagedFiles, setStagedFiles] = useState([]);
+  const [modalFileTab, setModalFileTab] = useState("knowledge"); // "knowledge" | "rules"
 
   // Step 4: APIs (Two Option Segments: 1. Postman Upload, 2. Add Manually)
   const [apiOptionTab, setApiOptionTab] = useState("postman"); // "postman" | "manual"
@@ -84,7 +85,15 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
       const newBot = await NobackEndCallObj("/bots", payload, "post");
       if (stagedFiles.length > 0 && newBot?._id) {
         for (const file of stagedFiles) {
-          await NobackEndCallObj(`/bots/${newBot._id}/upload`, file, "post");
+          const uploadPayload = {
+            fileName: file.fileName,
+            fileType: file.fileType,
+            fileCategory: file.fileCategory || "knowledge",
+            fileSize: file.fileSize,
+            fileContentBase64: file.fileContentBase64,
+            rawText: file.rawText
+          };
+          await NobackEndCallObj(`/bots/${newBot._id}/upload`, uploadPayload, "post");
         }
       }
       return newBot;
@@ -101,12 +110,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
 
   const loading = createBotMutation.isPending;
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = (e, category = "knowledge") => {
     const files = Array.from(e.target.files);
     files.forEach((file) => {
       const ext = file.name.split(".").pop().toLowerCase();
-      if (!["pdf", "txt", "docx", "md"].includes(ext)) {
-        alert(`File format .${ext} is not supported. Please upload PDF, TXT, DOCX, or Markdown (.md).`);
+      if (!["pdf", "txt", "docx", "md", "json"].includes(ext)) {
+        alert(`File format .${ext} is not supported. Please upload PDF, TXT, DOCX, JSON, or Markdown (.md).`);
         return;
       }
 
@@ -118,18 +127,20 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {
             fileName: file.name,
             fileType: ext,
+            fileCategory: category,
             fileSize: file.size,
             fileContentBase64: base64,
-            rawText: ["txt", "md"].includes(ext) ? event.target.result : ""
+            rawText: ["txt", "md", "json"].includes(ext) ? event.target.result : ""
           }
         ]);
       };
-      if (["txt", "md"].includes(ext)) {
+      if (["txt", "md", "json"].includes(ext)) {
         reader.readAsText(file);
       } else {
         reader.readAsDataURL(file);
       }
     });
+    e.target.value = "";
   };
 
   const removeStagedFile = (index) => {
@@ -341,7 +352,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {[
             { num: 1, label: "1. Info" },
             { num: 2, label: "2. Model" },
-            { num: 3, label: "3. Knowledge *" },
+            { num: 3, label: "3. Knowledge & Rules *" },
             { num: 4, label: "4. Integrations" },
             { num: 5, label: "5. Actions" }
           ].map((s) => (
@@ -435,67 +446,173 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             </div>
           )}
 
-          {/* STEP 3: KNOWLEDGE FILES (MANDATORY PDF FIELD) */}
+          {/* STEP 3: KNOWLEDGE & RULES FILES (TWO SEPARATE SUB-TABS & INPUTS) */}
           {currentStep === 3 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  Upload Knowledge Base Documents <span className="text-rose-500">* (Mandatory Field)</span>
-                </label>
-                <span className="text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                  PDF Required
-                </span>
-              </div>
-
-              <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"
-                }`}>
-                <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
-                <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-                  Upload Mandatory Knowledge PDF File
-                </p>
-                <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
-                  PDF, DOCX, TXT, or Markdown (.md)
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.txt,.docx,.md"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="modal-file-upload"
-                />
-                <label
-                  htmlFor="modal-file-upload"
-                  className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+              {/* Step 3 Sub-tab Selector */}
+              <div className={`grid grid-cols-2 p-1 rounded-xl border ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"}`}>
+                <button
+                  type="button"
+                  onClick={() => setModalFileTab("knowledge")}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition ${
+                    modalFileTab === "knowledge"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                      : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+                  }`}
                 >
-                  Browse Files
-                </label>
+                  <FiFileText />
+                  <span>Knowledge Base ({stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModalFileTab("rules")}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition ${
+                    modalFileTab === "rules"
+                      ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
+                      : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <FiLayers />
+                  <span>Rules Documents ({stagedFiles.filter(f => f.fileCategory === "rules").length})</span>
+                </button>
               </div>
 
-              {stagedFiles.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                    Staged Knowledge Files ({stagedFiles.length})
-                  </h4>
-                  {stagedFiles.map((file, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-                        }`}
+              {/* SUB-TAB 1: KNOWLEDGE BASE UPLOAD */}
+              {modalFileTab === "knowledge" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      Upload Knowledge Base Documents <span className="text-rose-500">* (Mandatory Field)</span>
+                    </label>
+                    <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                      fileCategory: "knowledge"
+                    </span>
+                  </div>
+
+                  <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
+                    <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
+                    <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                      Upload Knowledge Documents
+                    </p>
+                    <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
+                      PDF, DOCX, TXT, JSON, or Markdown (.md)
+                    </p>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.txt,.docx,.md,.json"
+                      onChange={(e) => handleFileUpload(e, "knowledge")}
+                      className="hidden"
+                      id="modal-knowledge-file-upload"
+                    />
+                    <label
+                      htmlFor="modal-knowledge-file-upload"
+                      className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
                     >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <FiFileText className="text-blue-500 shrink-0" />
-                        <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
-                        <span className="text-[10px] opacity-60 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
-                      </div>
-                      <button
-                        onClick={() => removeStagedFile(idx)}
-                        className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
-                      >
-                        <FiTrash2 />
-                      </button>
+                      Browse Knowledge Files
+                    </label>
+                  </div>
+
+                  {/* Staged Knowledge Files List */}
+                  {stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        Staged Knowledge Documents ({stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length})
+                      </h4>
+                      {stagedFiles.map((file, idx) => {
+                        if (file.fileCategory && file.fileCategory !== "knowledge") return null;
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}
+                          >
+                            <div className="flex items-center gap-2.5 truncate">
+                              <FiFileText className="text-blue-500 shrink-0" />
+                              <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
+                              <span className="text-[10px] text-blue-400 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeStagedFile(idx)}
+                              className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
+                </div>
+              )}
+
+              {/* SUB-TAB 2: RULES DOCUMENTS UPLOAD */}
+              {modalFileTab === "rules" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      Upload Bot Behavior Rules Documents
+                    </label>
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      fileCategory: "rules"
+                    </span>
+                  </div>
+
+                  <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-amber-500/50" : "border-slate-300 bg-slate-50 hover:border-amber-500/50"}`}>
+                    <FiUpload className="text-3xl text-amber-500 mx-auto mb-2" />
+                    <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                      Upload System Rules & Policy Constraints
+                    </p>
+                    <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
+                      TXT, PDF, DOCX, JSON, or Markdown (.md)
+                    </p>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.txt,.docx,.md,.json"
+                      onChange={(e) => handleFileUpload(e, "rules")}
+                      className="hidden"
+                      id="modal-rules-file-upload"
+                    />
+                    <label
+                      htmlFor="modal-rules-file-upload"
+                      className="mt-3 inline-block bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-amber-500/20"
+                    >
+                      Browse Rules Files
+                    </label>
+                  </div>
+
+                  {/* Staged Rules Files List */}
+                  {stagedFiles.filter(f => f.fileCategory === "rules").length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        Staged Rules Documents ({stagedFiles.filter(f => f.fileCategory === "rules").length})
+                      </h4>
+                      {stagedFiles.map((file, idx) => {
+                        if (file.fileCategory !== "rules") return null;
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}
+                          >
+                            <div className="flex items-center gap-2.5 truncate">
+                              <FiLayers className="text-amber-500 shrink-0" />
+                              <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
+                              <span className="text-[10px] text-amber-400 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeStagedFile(idx)}
+                              className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

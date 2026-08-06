@@ -131,6 +131,12 @@ const BotDetailPage = () => {
               <FiFileText className="text-blue-500" />
               <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
             </span>
+            {bot.rulesConfig?.rulesCount !== undefined && (
+              <span className="flex items-center gap-1">
+                <span className="text-amber-400">📜</span>
+                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.rulesConfig.rulesCount}</strong> Rules
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <FiCode className="text-indigo-500" />
               <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.apiCount || 0}</strong> APIs
