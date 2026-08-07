@@ -140,7 +140,7 @@ export async function backEndCallGet(route) {
       const cachedEntry = await localDataService.getEtag(route);
       if (cachedEntry?.data) {
         console.warn(
-          `[Allvion Network] Network failed for ${route}. Falling back to offline cache.`
+          `[Bot Network] Network failed for ${route}. Falling back to offline cache.`
         );
         return {
           ...cachedEntry.data,

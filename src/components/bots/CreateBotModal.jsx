@@ -54,9 +54,13 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   // Step 2: Model
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
 
-  // Step 3: Files (Two sub-tabs: 1. Knowledge Base, 2. Rules)
+  // Step 3: Files (Knowledge Base Tab vs Rules Tab)
   const [stagedFiles, setStagedFiles] = useState([]);
   const [modalFileTab, setModalFileTab] = useState("knowledge"); // "knowledge" | "rules"
+  
+  // Step 3 Rules Inner Sub-Tabs: 1. "document" (Upload File), 2. "editor" (Object/JSON Text Editor)
+  const [rulesInnerTab, setRulesInnerTab] = useState("document");
+  const [rulesEditorContent, setRulesEditorContent] = useState("");
 
   // Step 4: APIs (Two Option Segments: 1. Postman Upload, 2. Add Manually)
   const [apiOptionTab, setApiOptionTab] = useState("postman"); // "postman" | "manual"
@@ -121,7 +125,10 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        const base64 = event.target.result.split(",")[1];
+        const fileContent = event.target.result;
+        const base64 = typeof fileContent === "string" && fileContent.includes(",") ? fileContent.split(",")[1] : "";
+        const rawTextVal = ["txt", "md", "json"].includes(ext) ? fileContent : "";
+
         setStagedFiles((prev) => [
           ...prev,
           {
@@ -130,9 +137,15 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             fileCategory: category,
             fileSize: file.size,
             fileContentBase64: base64,
-            rawText: ["txt", "md", "json"].includes(ext) ? event.target.result : ""
+            rawText: rawTextVal
           }
         ]);
+
+        // Auto replace & populate Rules Editor content if a text/json file is uploaded under Rules!
+        if (category === "rules" && rawTextVal) {
+          setRulesEditorContent(rawTextVal);
+          setRulesInnerTab("editor");
+        }
       };
       if (["txt", "md", "json"].includes(ext)) {
         reader.readAsText(file);
@@ -141,6 +154,33 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
       }
     });
     e.target.value = "";
+  };
+
+  const handleRulesEditorChange = (newText) => {
+    setRulesEditorContent(newText);
+    setStagedFiles((prev) => {
+      const filtered = prev.filter((f) => f.fileName !== "custom_rules.txt");
+      if (!newText.trim()) return filtered;
+
+      let base64Val = "";
+      try {
+        base64Val = btoa(unescape(encodeURIComponent(newText)));
+      } catch (e) {
+        base64Val = "";
+      }
+
+      return [
+        ...filtered,
+        {
+          fileName: "custom_rules.txt",
+          fileType: "txt",
+          fileCategory: "rules",
+          fileSize: newText.length,
+          fileContentBase64: base64Val,
+          rawText: newText
+        }
+      ];
+    });
   };
 
   const removeStagedFile = (index) => {
@@ -260,11 +300,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
       setError("Please provide a Bot Name.");
       return;
     }
-    if (currentStep === 3 && stagedFiles.length === 0) {
-      setError("Knowledge PDF document is mandatory to create a Bot. Please upload at least one PDF file.");
+    const knowledgeFiles = stagedFiles.filter((f) => f.fileCategory === "knowledge" || !f.fileCategory);
+    if (currentStep === 3 && knowledgeFiles.length === 0) {
+      setError("Knowledge Base document is mandatory to create a Bot. Please upload at least one Knowledge Base document.");
       return;
     }
-    setCurrentStep((prev) => Math.min(prev + 1, 5));
+    setCurrentStep((prev) => Math.min(prev + 1, 6));
   };
 
   const handleTestApiExecution = async (apiItem) => {
@@ -333,7 +374,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                 Create AI Agent Wizard
               </h2>
               <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                5-Step True RAG & Tool Calling Bot Builder
+                6-Step True RAG & Tool Calling Bot Builder
               </p>
             </div>
           </div>
@@ -347,14 +388,15 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
         </div>
 
         {/* Step Stepper Navigation */}
-        <div className={`grid grid-cols-5 text-center text-xs font-semibold border-b select-none ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-100/50"
+        <div className={`grid grid-cols-6 text-center text-xs font-semibold border-b select-none ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-100/50"
           }`}>
           {[
             { num: 1, label: "1. Info" },
             { num: 2, label: "2. Model" },
-            { num: 3, label: "3. Knowledge & Rules *" },
-            { num: 4, label: "4. Integrations" },
-            { num: 5, label: "5. Actions" }
+            { num: 3, label: "3. Knowledge *" },
+            { num: 4, label: "4. Rules" },
+            { num: 5, label: "5. Integrations" },
+            { num: 6, label: "6. Actions" }
           ].map((s) => (
             <div
               key={s.num}
@@ -446,109 +488,111 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             </div>
           )}
 
-          {/* STEP 3: KNOWLEDGE & RULES FILES (TWO SEPARATE SUB-TABS & INPUTS) */}
+          {/* STEP 3: KNOWLEDGE BASE UPLOAD */}
           {currentStep === 3 && (
             <div className="space-y-4">
-              {/* Step 3 Sub-tab Selector */}
-              <div className={`grid grid-cols-2 p-1 rounded-xl border ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"}`}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                    Upload Knowledge Base Documents <span className="text-rose-500">* (Mandatory Field)</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                    fileCategory: "knowledge"
+                  </span>
+                </div>
+
+                <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
+                  <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
+                  <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                    Upload Knowledge Documents
+                  </p>
+                  <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
+                    PDF, DOCX, TXT, JSON, or Markdown (.md)
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.txt,.docx,.md,.json"
+                    onChange={(e) => handleFileUpload(e, "knowledge")}
+                    className="hidden"
+                    id="modal-knowledge-file-upload"
+                  />
+                  <label
+                    htmlFor="modal-knowledge-file-upload"
+                    className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+                  >
+                    Browse Knowledge Files
+                  </label>
+                </div>
+
+                {/* Staged Knowledge Files List */}
+                {stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                      Staged Knowledge Documents ({stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length})
+                    </h4>
+                    {stagedFiles.map((file, idx) => {
+                      if (file.fileCategory && file.fileCategory !== "knowledge") return null;
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate">
+                            <FiFileText className="text-blue-500 shrink-0" />
+                            <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
+                            <span className="text-[10px] text-blue-400 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeStagedFile(idx)}
+                            className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: BOT RULES (DOCUMENT UPLOAD & EDITABLE OBJECT EDITOR) */}
+          {currentStep === 4 && (
+            <div className="space-y-4">
+              {/* Inner Rules Sub-Tabs Header */}
+              <div className={`flex border-b text-xs font-semibold ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                 <button
                   type="button"
-                  onClick={() => setModalFileTab("knowledge")}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition ${
-                    modalFileTab === "knowledge"
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                      : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+                  onClick={() => setRulesInnerTab("document")}
+                  className={`flex items-center gap-2 px-4 py-2.5 font-bold border-b-2 transition cursor-pointer ${
+                    rulesInnerTab === "document"
+                      ? "border-amber-500 text-amber-500 bg-amber-500/10"
+                      : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <FiFileText />
-                  <span>Knowledge Base ({stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length})</span>
+                  <FiUploadCloud />
+                  <span>1. Upload Rules Document</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setModalFileTab("rules")}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition ${
-                    modalFileTab === "rules"
-                      ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
-                      : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-400 hover:text-slate-900"
+                  onClick={() => setRulesInnerTab("editor")}
+                  className={`flex items-center gap-2 px-4 py-2.5 font-bold border-b-2 transition cursor-pointer ${
+                    rulesInnerTab === "editor"
+                      ? "border-amber-500 text-amber-500 bg-amber-500/10"
+                      : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  <FiLayers />
-                  <span>Rules Documents ({stagedFiles.filter(f => f.fileCategory === "rules").length})</span>
+                  <FiCode />
+                  <span>2. Editable Rules Object / JSON {rulesEditorContent ? "•" : ""}</span>
                 </button>
               </div>
 
-              {/* SUB-TAB 1: KNOWLEDGE BASE UPLOAD */}
-              {modalFileTab === "knowledge" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                      Upload Knowledge Base Documents <span className="text-rose-500">* (Mandatory Field)</span>
-                    </label>
-                    <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                      fileCategory: "knowledge"
-                    </span>
-                  </div>
-
-                  <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
-                    <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
-                    <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-                      Upload Knowledge Documents
-                    </p>
-                    <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
-                      PDF, DOCX, TXT, JSON, or Markdown (.md)
-                    </p>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.txt,.docx,.md,.json"
-                      onChange={(e) => handleFileUpload(e, "knowledge")}
-                      className="hidden"
-                      id="modal-knowledge-file-upload"
-                    />
-                    <label
-                      htmlFor="modal-knowledge-file-upload"
-                      className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
-                    >
-                      Browse Knowledge Files
-                    </label>
-                  </div>
-
-                  {/* Staged Knowledge Files List */}
-                  {stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        Staged Knowledge Documents ({stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length})
-                      </h4>
-                      {stagedFiles.map((file, idx) => {
-                        if (file.fileCategory && file.fileCategory !== "knowledge") return null;
-                        return (
-                          <div
-                            key={idx}
-                            className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}
-                          >
-                            <div className="flex items-center gap-2.5 truncate">
-                              <FiFileText className="text-blue-500 shrink-0" />
-                              <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
-                              <span className="text-[10px] text-blue-400 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeStagedFile(idx)}
-                              className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* SUB-TAB 2: RULES DOCUMENTS UPLOAD */}
-              {modalFileTab === "rules" && (
+              {/* RULES INNER TAB 1: DOCUMENT UPLOAD */}
+              {rulesInnerTab === "document" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
@@ -615,18 +659,81 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   )}
                 </div>
               )}
+
+              {/* RULES INNER TAB 2: EDITABLE OBJECT / TEXT EDITOR */}
+              {rulesInnerTab === "editor" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      Interactive System Rules Object Editor
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        Auto-syncs with payload
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const parsed = JSON.parse(rulesEditorContent);
+                            handleRulesEditorChange(JSON.stringify(parsed, null, 2));
+                          } catch (e) {
+                            alert("Invalid JSON format! Please verify syntax before formatting.");
+                          }
+                        }}
+                        className={`text-[10px] px-2.5 py-1 rounded-lg border font-semibold transition ${
+                          isDark
+                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
+                            : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        Format JSON
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <textarea
+                      rows={9}
+                      placeholder={`Enter custom rules object or text here...\nExample:\n{\n  "role": "Customer Support Agent",\n  "prohibited_actions": ["disclose secret keys", "use foul language"],\n  "tone": "empathic and professional"\n}`}
+                      value={rulesEditorContent}
+                      onChange={(e) => handleRulesEditorChange(e.target.value)}
+                      className={`w-full border rounded-2xl p-4 text-xs font-mono leading-relaxed focus:outline-none focus:border-amber-500 transition custom-scrollbar ${
+                        isDark
+                          ? "bg-slate-950 border-slate-800 text-amber-300 placeholder:text-slate-600"
+                          : "bg-slate-900 border-slate-800 text-amber-300 placeholder:text-slate-500"
+                      }`}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className={isDark ? "text-slate-400" : "text-slate-500"}>
+                      {rulesEditorContent.length} characters • {rulesEditorContent.split("\n").filter(Boolean).length} lines
+                    </span>
+                    {rulesEditorContent && (
+                      <button
+                        type="button"
+                        onClick={() => handleRulesEditorChange("")}
+                        className="text-rose-400 hover:underline font-semibold"
+                      >
+                        Clear Rules Editor
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* STEP 4: INTEGRATIONS (TWO OPTION SEGMENT TABS) */}
-          {currentStep === 4 && (
+          {/* STEP 5: INTEGRATIONS (TWO OPTION SEGMENT TABS) */}
+          {currentStep === 5 && (
             <div className="space-y-4">
               <div>
                 <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   Configure API Integrations
                 </label>
 
-                {/* TWO OPTION TABS IN STEP 4 */}
+                {/* TWO OPTION TABS IN STEP 5 */}
                 <div className={`flex border-b mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                   <button
                     type="button"
@@ -837,8 +944,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             </div>
           )}
 
-          {/* STEP 5: ACTION MAPPING & API EXECUTION TEST */}
-          {currentStep === 5 && (
+          {/* STEP 6: ACTION MAPPING & API EXECUTION TEST */}
+          {currentStep === 6 && (
             <div className="space-y-4">
               <div>
                 <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
@@ -914,7 +1021,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             <FiArrowLeft /> Back
           </button>
 
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <button
               onClick={handleNextStep}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition cursor-pointer"

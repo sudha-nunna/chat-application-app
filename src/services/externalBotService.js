@@ -30,7 +30,8 @@ export function toCapitalized(str) {
  */
 export function formatMarkdownBreaks(text) {
   if (!text || typeof text !== "string") return text;
-  return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
+  let normalized = text.replace(/^[ \t]*•[ \t]*/gm, "* ");
+  return normalized.replace(/([^\n])\n(?![*#\-\d|]|  \n)([^\n])/g, "$1  \n$2");
 }
 
 /**
@@ -133,12 +134,13 @@ export function getResponseFormat(msg) {
 /**
  * Advanced SSE Stream Service Method supporting both positional and object options
  */
-export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetadataCb, signalOrDone) {
+export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetadataCb, signalOrDone, conversationIdParam) {
   let message = "";
   let onChunk = onChunkCb;
   let onMetadata = onMetadataCb;
   let onDone = null;
   let signal = null;
+  let conversationId = conversationIdParam || null;
 
   if (typeof promptOrOptions === "object" && promptOrOptions !== null) {
     message = promptOrOptions.message || promptOrOptions.prompt || "";
@@ -146,6 +148,7 @@ export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetada
     onMetadata = promptOrOptions.onMetadata || onMetadataCb;
     onDone = promptOrOptions.onDone;
     signal = promptOrOptions.signal;
+    conversationId = promptOrOptions.conversationId || conversationIdParam || null;
   } else {
     message = promptOrOptions || "";
     if (signalOrDone instanceof AbortSignal) {
@@ -155,6 +158,11 @@ export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetada
     }
   }
 
+  const payload = {
+    message,
+    ...(conversationId ? { conversationId } : {})
+  };
+
   const response = await fetch(API_ENDPOINT, {
     method: "POST",
     headers: {
@@ -163,7 +171,7 @@ export async function streamExternalChatApi(promptOrOptions, onChunkCb, onMetada
       "X-Bot-Api-Key": BOT_API_KEY,
       "X-Bot-Secret-Key": BOT_SECRET_KEY
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify(payload),
     signal
   });
 

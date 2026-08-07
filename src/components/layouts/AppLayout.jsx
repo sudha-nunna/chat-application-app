@@ -110,7 +110,7 @@ const AppLayout = ({ children }) => {
             <FiCpu className="text-xl" />
           </div>
           <div>
-            <h1 className={`font-bold text-sm tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Allvion Platform</h1>
+            <h1 className={`font-bold text-sm tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>Bot Platform</h1>
             <p className={`text-[11px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Multi-Tenant AI Agents</p>
           </div>
         </div>
@@ -257,7 +257,7 @@ const AppLayout = ({ children }) => {
               <p className="text-xs font-semibold truncate">{user?.name || "Member"}</p>
               <PlanBadge showPriority={false} />
             </div>
-            <p className="text-[10px] text-slate-400 truncate">{user?.email || "user@allvion.io"}</p>
+            <p className="text-[10px] text-slate-400 truncate">{user?.email || "user@bot.io"}</p>
           </div>
         </div>
 
@@ -303,7 +303,7 @@ const AppLayout = ({ children }) => {
             <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
               <FiCpu />
             </div>
-            <span className="font-bold text-xs tracking-tight">Allvion AI</span>
+            <span className="font-bold text-xs tracking-tight">Bot AI</span>
           </div>
         </div>
         <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30">

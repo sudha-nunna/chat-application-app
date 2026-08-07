@@ -9,7 +9,9 @@ import {
   FiRefreshCw,
   FiSquare,
   FiZap,
-  FiMove
+  FiMove,
+  FiCalendar,
+  FiPhoneCall
 } from "react-icons/fi";
 import {
   streamExternalChatApi,
@@ -32,6 +34,32 @@ const createMessageObj = (role, content, extra = {}) => ({
   ...extra
 });
 
+const isLiveAgentRequested = (msg) => {
+  if (!msg || msg.role === "user") return false;
+  const meta = msg.metadata;
+  if (meta) {
+    if (
+      meta.responseType === "live_agent" ||
+      meta.liveAgent === true ||
+      meta.live_agent === true ||
+      meta.action === "live_agent" ||
+      meta.type === "live_agent" ||
+      meta.tool === "live_agent" ||
+      meta.hasLiveAgent
+    ) {
+      return true;
+    }
+  }
+  const content = (msg.content || "").toLowerCase();
+  return (
+    content.includes("live_agent") ||
+    content.includes("live agent") ||
+    content.includes("schedule_call") ||
+    content.includes("schedule call") ||
+    content.includes("discovery call")
+  );
+};
+
 /**
  * Main Floating External Bot Widget Component
  */
@@ -40,6 +68,11 @@ const FloatingExternalBotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Single Chat Session State Management using sessionStorage exclusively
+  const [activeConvId, setActiveConvId] = useState(() => {
+    return sessionStorage.getItem("external_bot_conv_id") || null;
+  });
+
   const [messages, setMessages] = useState([
     createMessageObj("assistant", "Hello! I am your AI Assistant powered by External Bot Stream APIs. Ask me anything!")
   ]);
@@ -188,6 +221,8 @@ const FloatingExternalBotWidget = () => {
     try {
       await streamExternalChatApi({
         message: formattedPrompt,
+        conversationId: activeConvId,
+        signal: controller.signal,
         onChunk: (chunkText) => {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -198,15 +233,29 @@ const FloatingExternalBotWidget = () => {
           );
         },
         onMetadata: (metaObj) => {
+          const convId = metaObj?.conversationId || metaObj?.chatId || metaObj?._id;
+          if (convId) {
+            setActiveConvId(convId);
+            sessionStorage.setItem("external_bot_conv_id", convId);
+          }
           setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === botPlaceholderId
-                ? { ...msg, metadata: metaObj }
-                : msg
-            )
+            prev.map((msg) => {
+              if (msg.id === botPlaceholderId) {
+                const prevMeta = msg.metadata || {};
+                const mergedMeta = {
+                  ...prevMeta,
+                  ...metaObj,
+                  responseType: (metaObj?.responseType === "live_agent" || prevMeta?.responseType === "live_agent")
+                    ? "live_agent"
+                    : (metaObj?.responseType || prevMeta?.responseType),
+                  liveAgent: metaObj?.liveAgent || metaObj?.live_agent || prevMeta?.liveAgent || prevMeta?.live_agent || false
+                };
+                return { ...msg, metadata: mergedMeta };
+              }
+              return msg;
+            })
           );
-        },
-        signal: controller.signal
+        }
       });
     } catch (err) {
       if (err.name !== "AbortError") {
@@ -235,6 +284,8 @@ const FloatingExternalBotWidget = () => {
 
   const handleClearHistory = () => {
     if (loading) handleStopStream();
+    setActiveConvId(null);
+    sessionStorage.removeItem("external_bot_conv_id");
     setMessages([
       createMessageObj("assistant", "Hello! Chat history cleared. How can I assist you today?")
     ]);
@@ -260,11 +311,10 @@ const FloatingExternalBotWidget = () => {
     ),
     strong: ({ node, ...props }) => (
       <strong
-        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${
-          isDark
-            ? "text-amber-300 bg-amber-500/20 border border-amber-500/40"
-            : "text-indigo-700 bg-indigo-100 border border-indigo-300"
-        }`}
+        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${isDark
+          ? "text-amber-300 bg-amber-500/20 border border-amber-500/40"
+          : "text-indigo-700 bg-indigo-100 border border-indigo-300"
+          }`}
         {...props}
       />
     ),
@@ -287,7 +337,16 @@ const FloatingExternalBotWidget = () => {
     ),
     tr: ({ node, ...props }) => (
       <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"}`} {...props} />
-    )
+    ),
+    ul: ({ node, ...props }) => (
+      <ul className="list-disc list-outside my-2 space-y-1 pl-4" {...props} />
+    ),
+    ol: ({ node, ...props }) => (
+      <ol className="list-decimal list-outside my-2 space-y-1 pl-4" {...props} />
+    ),
+    li: ({ node, ...props }) => (
+      <li className="leading-relaxed marker:text-blue-500 font-normal pl-0.5" {...props} />
+    ),
   };
 
   return (
@@ -305,15 +364,13 @@ const FloatingExternalBotWidget = () => {
       >
         <button
           onClick={handleFabClick}
-          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${
-            isDragging ? "ring-4 ring-blue-500/40 scale-110" : ""
-          } ${
-            isOpen
+          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${isDragging ? "ring-4 ring-blue-500/40 scale-110" : ""
+            } ${isOpen
               ? "bg-rose-600 text-white border-rose-500 shadow-rose-600/30 rotate-90"
               : isDark
                 ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-500/50 shadow-blue-600/40"
                 : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-400 shadow-blue-500/30"
-          }`}
+            }`}
           title={isOpen ? "Close Assistant (Drag to Move)" : "Open External AI Chatbot Widget (Drag to Move)"}
         >
           {isOpen ? (
@@ -337,19 +394,17 @@ const FloatingExternalBotWidget = () => {
             left: `${modalLeft}px`,
             top: `${modalTop}px`
           }}
-          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${
-            isDark
-              ? "bg-slate-900/95 border-slate-800 text-slate-100 backdrop-blur-xl"
-              : "bg-white/95 border-slate-200 text-slate-900 backdrop-blur-xl shadow-slate-300/60"
-          }`}
+          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${isDark
+            ? "bg-slate-900/95 border-slate-800 text-slate-100 backdrop-blur-xl"
+            : "bg-white/95 border-slate-200 text-slate-900 backdrop-blur-xl shadow-slate-300/60"
+            }`}
         >
           {/* Header - Draggable Drag Handle */}
           <div
             onMouseDown={handlePointerDown}
             onTouchStart={handlePointerDown}
-            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${
-              isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}
+            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+              }`}
             title="Drag Header to Move Chat Widget"
           >
             <div className="flex items-center gap-3">
@@ -372,9 +427,8 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={handleClearHistory}
-                className={`p-1.5 rounded-lg text-xs transition ${
-                  isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
-                }`}
+                className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                  }`}
                 title="Clear Chat History"
               >
                 <FiRefreshCw />
@@ -382,9 +436,8 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className={`p-1.5 rounded-lg text-xs transition ${
-                  isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
-                }`}
+                className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                  }`}
                 title="Minimize Widget"
               >
                 <FiX className="text-base" />
@@ -402,13 +455,12 @@ const FloatingExternalBotWidget = () => {
                   className={`flex flex-col w-full ${isUser ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
-                      isUser
-                        ? "bg-blue-600 text-white rounded-br-xs shadow-md shadow-blue-600/10 font-medium"
-                        : isDark
-                          ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs"
-                          : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
-                    }`}
+                    className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${isUser
+                      ? "bg-blue-600 text-white rounded-br-xs shadow-md shadow-blue-600/10 font-medium"
+                      : isDark
+                        ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs"
+                        : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
+                      }`}
                   >
                     {isUser ? (
                       <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</span>
@@ -427,6 +479,27 @@ const FloatingExternalBotWidget = () => {
 
                     {msg.isStreaming && msg.content && (
                       <span className="inline-block w-1.5 h-3 bg-blue-400 ml-1 animate-pulse" />
+                    )}
+
+                    {!isUser && isLiveAgentRequested(msg) && (
+                      <div className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 ${isDark ? "bg-slate-950/90 border-amber-500/30" : "bg-amber-50/90 border-amber-200 shadow-sm"
+                        }`}>
+                        <div className="flex items-center gap-2 text-xs font-bold text-amber-500">
+                          <FiCalendar className="text-sm shrink-0" />
+                          <span>Live Agent Handoff</span>
+                        </div>
+                        <p className={`text-[11px] leading-tight ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                          A live support representative is requested. Would you like to schedule a call?
+                        </p>
+                        <button
+                          type="button"
+                          onClick={(e) => handleSendMessage(e, "I would like to schedule a call with a live agent")}
+                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs py-2 rounded-lg shadow-md transition cursor-pointer"
+                        >
+                          <FiPhoneCall />
+                          <span>Schedule Call Now</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -448,11 +521,10 @@ const FloatingExternalBotWidget = () => {
                     key={i}
                     type="button"
                     onClick={(e) => handleSendMessage(e, promptText)}
-                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${
-                      isDark
-                        ? "bg-slate-800/70 border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-700/80"
-                        : "bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200"
-                    }`}
+                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${isDark
+                      ? "bg-slate-800/70 border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-700/80"
+                      : "bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200"
+                      }`}
                   >
                     {promptText}
                   </button>
@@ -464,9 +536,8 @@ const FloatingExternalBotWidget = () => {
           {/* Footer Input Form */}
           <form
             onSubmit={handleSendMessage}
-            className={`p-3 border-t flex items-center gap-2 shrink-0 ${
-              isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}
+            className={`p-3 border-t flex items-center gap-2 shrink-0 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+              }`}
           >
             <input
               type="text"
@@ -474,11 +545,10 @@ const FloatingExternalBotWidget = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition ${
-                isDark
-                  ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500"
-                  : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400"
-              }`}
+              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition ${isDark
+                ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500"
+                : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400"
+                }`}
             />
 
             {loading ? (

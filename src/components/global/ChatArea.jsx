@@ -25,11 +25,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const messagesContainerRef = useRef(null);
   const currentStreamingTextRef = useRef("");
 
-  // useEffect(() => {
-  //   fetchClusterStatus();
-  //   const interval = setInterval(fetchClusterStatus, 12000);
-  //   return () => clearInterval(interval);
-  // }, []);
+  useEffect(() => {
+    fetchClusterStatus();
+    const interval = setInterval(fetchClusterStatus, 12000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

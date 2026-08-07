@@ -290,7 +290,7 @@ const BotChatTab = ({ bot }) => {
   };
 
   // Shared Markdown Components Styling
-  const markdownComponents = (isUser) => ({
+  const markdownComponents = {
     p: ({ node, ...props }) => (
       <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
     ),
@@ -299,14 +299,16 @@ const BotChatTab = ({ bot }) => {
     ),
     strong: ({ node, ...props }) => (
       <strong
-        className={`font-extrabold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-2xs ${isUser
-          ? "text-white bg-blue-700/80 border border-blue-400/30"
-          : isDark
+        className={`font-extrabold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-2xs ${
+          isDark
             ? "text-amber-300 bg-amber-500/20 border border-amber-500/30 font-extrabold"
             : "text-indigo-700 bg-indigo-100 border border-indigo-300 font-extrabold"
           }`}
         {...props}
       />
+    ),
+    em: ({ node, ...props }) => (
+      <em className={`italic font-medium ${isDark ? "text-amber-200" : "text-indigo-600"}`} {...props} />
     ),
     table: ({ node, ...props }) => (
       <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${isDark ? "border-slate-800" : "border-slate-300"}`}>
@@ -324,8 +326,17 @@ const BotChatTab = ({ bot }) => {
     ),
     tr: ({ node, ...props }) => (
       <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"}`} {...props} />
-    )
-  });
+    ),
+    ul: ({ node, ...props }) => (
+      <ul className="list-disc list-outside my-2 space-y-1 pl-4" {...props} />
+    ),
+    ol: ({ node, ...props }) => (
+      <ol className="list-decimal list-outside my-2 space-y-1 pl-4" {...props} />
+    ),
+    li: ({ node, ...props }) => (
+      <li className="leading-relaxed marker:text-blue-500 font-normal pl-0.5" {...props} />
+    ),
+  };
 
   return (
     <div className="flex-1 flex h-full min-h-0 overflow-hidden relative">
@@ -466,7 +477,7 @@ const BotChatTab = ({ bot }) => {
                       {isUser ? (
                         <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
                       ) : (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents(isUser)}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                           {formatMarkdownBreaks(msg.content) || "Thinking..."}
                         </ReactMarkdown>
                       )}

@@ -28,6 +28,7 @@ const ApiModal = ({ bot, onClose, onApiUpdated }) => {
   const [activeSubTab, setActiveSubTab] = useState("keys"); // "keys" | "guide" | "generate"
   const [generatedKey, setGeneratedKey] = useState(null);
   const [generatedSecretKey, setGeneratedSecretKey] = useState(null);
+  const [generatedChatUrl, setGeneratedChatUrl] = useState(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -48,7 +49,8 @@ const ApiModal = ({ bot, onClose, onApiUpdated }) => {
   // TanStack Query: Initial GET route to check keys status
   const {
     data: apiResponse = null,
-    isLoading: isFetchingApis
+    isLoading: isFetchingApis,
+    refetch
   } = useQuery({
     queryKey: ["bot-apis", bot?._id],
     queryFn: async () => {
@@ -76,7 +78,10 @@ const ApiModal = ({ bot, onClose, onApiUpdated }) => {
 
   // API Endpoint URLs & Specs
   const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  const fullEndpointUrl = `${apiBaseUrl}/api/v1/external/bots/chat`;
+  const fullEndpointUrl =
+    generatedChatUrl ||
+    apiResponse?.chatUrl ||
+    `${apiBaseUrl}/api/v1/external/bots/chat`;
   const apiKeyPlaceholder = activeApiKey;
   const secretKeyPlaceholder = activeSecretKey;
 
@@ -88,7 +93,8 @@ const ApiModal = ({ bot, onClose, onApiUpdated }) => {
   -H "X-Bot-Api-Key: ${apiKeyPlaceholder}" \\
   -H "X-Bot-Secret-Key: ${secretKeyPlaceholder}" \\
   -d '{
-    "message": "Explain React Hooks in detail with examples"
+    "message": "Explain React Hooks in detail with examples",
+    "conversationId": "6a7471e2c7c97ebb992ba481"
   }'`;
     }
 
@@ -103,7 +109,8 @@ const response = await fetch("${fullEndpointUrl}", {
     "X-Bot-Secret-Key": "${secretKeyPlaceholder}"
   },
   body: JSON.stringify({
-    message: "Explain React Hooks in detail with examples"
+    message: "Explain React Hooks in detail with examples",
+    conversationId: "6a7471e2c7c97ebb992ba481" // Pass null on 1st message, then pass conversationId on follow-ups
   })
 });
 
@@ -128,7 +135,12 @@ headers = {
     "X-Bot-Secret-Key": "${secretKeyPlaceholder}"
 }
 
-response = requests.post(url, json={"message": "Explain React Hooks"}, headers=headers, stream=True)
+payload = {
+    "message": "Explain React Hooks",
+    "conversationId": "6a7471e2c7c97ebb992ba481"  # Pass None/null for 1st message, then conversationId for follow-ups
+}
+
+response = requests.post(url, json=payload, headers=headers, stream=True)
 for chunk in response.iter_content(chunk_size=1024):
     if chunk:
         print(chunk.decode('utf-8'), end='')`;
@@ -136,6 +148,31 @@ for chunk in response.iter_content(chunk_size=1024):
 
     return "";
   };
+
+  // TanStack Mutation: Revoke / Delete API Keys
+  const deleteApiKeysMutation = useMutation({
+    mutationFn: async () => {
+      setErrorMsg("");
+      return await NobackEndCallObj(`/bots/${bot._id}/keys`, {}, "delete");
+    },
+    onSuccess: () => {
+      // Invalidate and refetch the GET route immediately after delete call
+      queryClient.invalidateQueries({ queryKey: ["bot-apis", bot?._id] });
+      refetch();
+
+      setGeneratedKey(null);
+      setGeneratedSecretKey(null);
+      setGeneratedChatUrl(null);
+      setActiveSubTab("keys");
+
+      if (onApiUpdated) onApiUpdated();
+    },
+    onError: (err) => {
+      setErrorMsg(
+        err?.error || err?.message || "Failed to delete API Keys. Please try again."
+      );
+    }
+  });
 
   // TanStack Mutation: Generate API Key using authService (NobackEndCallObj POST)
   const generateApiMutation = useMutation({
@@ -145,13 +182,18 @@ for chunk in response.iter_content(chunk_size=1024):
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bot-apis", bot?._id] });
+      refetch();
 
       const newApiKey = data?.apiKey || data?.key || data?.api?.apiKey;
       const newSecretKey = data?.secretKey || data?.secret || data?.api?.secretKey;
+      const newChatUrl = data?.chatUrl || data?.url || data?.api?.chatUrl;
 
       setGeneratedKey(newApiKey);
       if (newSecretKey) {
         setGeneratedSecretKey(newSecretKey);
+      }
+      if (newChatUrl) {
+        setGeneratedChatUrl(newChatUrl);
       }
 
       setActiveSubTab("keys");
@@ -411,8 +453,22 @@ for chunk in response.iter_content(chunk_size=1024):
                     )}
                   </div>
 
-                  {/* Navigation Shortcut to Guide */}
-                  <div className="flex items-center justify-end">
+                  {/* Action Bar (Revoke / Guide) */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to revoke and delete your API Keys?")) {
+                          deleteApiKeysMutation.mutate();
+                        }
+                      }}
+                      disabled={deleteApiKeysMutation.isPending}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                    >
+                      <FiTrash2 className="text-xs" />
+                      <span>{deleteApiKeysMutation.isPending ? "Revoking Keys..." : "Revoke / Delete Keys"}</span>
+                    </button>
+
                     <button
                       onClick={() => setActiveSubTab("guide")}
                       className="text-[11px] text-indigo-400 hover:underline font-semibold flex items-center gap-1"
@@ -448,6 +504,7 @@ for chunk in response.iter_content(chunk_size=1024):
                       <p><strong className="text-indigo-400">X-Bot-Api-Key:</strong> <span className="text-emerald-400 select-all">{apiKeyPlaceholder}</span></p>
                       <p><strong className="text-indigo-400">X-Bot-Secret-Key:</strong> <span className="text-emerald-400 select-all">{secretKeyPlaceholder}</span></p>
                       <p><strong className="text-slate-400">Content-Type:</strong> application/json | <strong className="text-slate-400">Accept:</strong> text/event-stream</p>
+                      <p><strong className="text-amber-400">Payload:</strong> <code className="text-slate-300">{"{"} "message": "...", "conversationId": "..." {"}"}</code> <span className="text-slate-500 font-sans">(conversationId is null for 1st message)</span></p>
                     </div>
                   </div>
 
