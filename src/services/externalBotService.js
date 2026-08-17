@@ -267,3 +267,81 @@ function parseAndDispatchSSEBlock(block, { onChunk, onMetadata, onDone }) {
     }
   }
 }
+
+/**
+ * Reads existing Avatar conversationId from sessionStorage for a given botId
+ */
+export function getAvatarConversationId(botId) {
+  if (!botId) return null;
+  return sessionStorage.getItem(`avatar_conversation_${botId}`) || null;
+}
+
+/**
+ * Clears Avatar conversationId from sessionStorage for a given botId
+ */
+export function clearAvatarConversationSession(botId) {
+  if (botId) {
+    sessionStorage.removeItem(`avatar_conversation_${botId}`);
+  }
+}
+
+/**
+ * Sends a message to the dedicated Avatar Chat API endpoint
+ * POST /api/v1/avatar/chat
+ */
+export async function sendAvatarChatMessage(botId, conversationIdParam, message, audioBlob = null) {
+  const token = localStorage.getItem("token");
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  const conversationId =
+    conversationIdParam ||
+    getAvatarConversationId(botId) ||
+    null;
+
+  let reqOptions = {};
+
+  if (audioBlob) {
+    const formData = new FormData();
+    if (botId) formData.append("botId", botId);
+    if (conversationId) formData.append("conversationId", conversationId);
+    if (message) formData.append("message", message);
+
+    const mime = audioBlob.type || "audio/wav";
+    const ext = mime.includes("webm") ? "webm" : mime.includes("mp4") ? "mp4" : "wav";
+    formData.append("audio", audioBlob, `user_voice_${Date.now()}.${ext}`);
+
+    reqOptions = {
+      method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ""
+      },
+      body: formData
+    };
+  } else {
+    reqOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : ""
+      },
+      body: JSON.stringify({
+        botId,
+        conversationId,
+        message
+      })
+    };
+  }
+
+  const res = await fetch(`${baseUrl}/bots/avatar/chat`, reqOptions);
+
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(errJson.error || `Avatar Chat failed (${res.status})`);
+  }
+
+  const data = await res.json();
+  if (data?.conversationId) {
+    sessionStorage.setItem(`avatar_conversation_${botId}`, data.conversationId);
+  }
+  return data;
+}

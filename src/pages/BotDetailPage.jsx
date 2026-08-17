@@ -13,6 +13,7 @@ import { NobackEndCall, backEndCallObjDel } from "../services/authService";
 import BotChatTab from "../components/bots/BotChatTab";
 import BotApiTab from "../components/bots/BotApiTab";
 import BotKnowledgeTab from "../components/bots/BotKnowledgeTab";
+import BotAvatarTab from "../components/bots/BotAvatarTab";
 import EditBotModal from "../components/bots/EditBotModal";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -42,6 +43,13 @@ const BotDetailPage = () => {
     },
     { enabled: !!botId }
   );
+
+  // Auto-set default active tab to primary Studio Chat experience for all bot types
+  useEffect(() => {
+    if (bot?.botType) {
+      setActiveTab("chat");
+    }
+  }, [bot?._id, bot?.botType]);
 
   // 2. DELETE Route: Delete bot mutation using authService & useTanStackMutation
   const deleteBotMutation = useTanStackMutation({
@@ -89,6 +97,8 @@ const BotDetailPage = () => {
     );
   }
 
+  const currentBotType = bot?.botType || "HYBRID";
+
   return (
     <div className={`flex-1 flex flex-col h-full overflow-hidden ${isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}>
@@ -117,6 +127,18 @@ const BotDetailPage = () => {
                 }`}>
                 {bot.model}
               </span>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                currentBotType === "VOICE" ? "bg-purple-500/10 text-purple-400 border-purple-500/30" :
+                currentBotType === "ACTION" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
+                currentBotType === "AVATAR" ? "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30" :
+                currentBotType === "CHAT" ? "bg-blue-500/10 text-blue-400 border-blue-500/30" :
+                "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              }`}>
+                {currentBotType === "VOICE" ? "🎙️ Voice Agent" :
+                 currentBotType === "ACTION" ? "⚡ Action Agent" :
+                 currentBotType === "AVATAR" ? "🎭 Avatar Agent" :
+                 currentBotType === "CHAT" ? "💬 Knowledge Chatbot" : "🌐 Hybrid Assistant"}
+              </span>
             </div>
             <p className={`text-xs truncate max-w-md mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               {bot.description || "Isolated multi-tenant RAG bot with dedicated knowledge base."}
@@ -127,29 +149,44 @@ const BotDetailPage = () => {
         <div className="flex items-center gap-3">
           <div className={`flex items-center gap-3 text-xs px-3 py-1.5 rounded-lg border ${isDark ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-slate-100 border-slate-200"
             }`}>
-            <span className="flex items-center gap-1">
-              <FiFileText className="text-blue-500" />
-              <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
-            </span>
+            {(["CHAT", "HYBRID"].includes(currentBotType)) && (
+              <span className="flex items-center gap-1">
+                <FiFileText className="text-blue-500" />
+                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
+              </span>
+            )}
+
+            {(["ACTION", "HYBRID"].includes(currentBotType)) && (
+              <span className="flex items-center gap-1">
+                <FiCode className="text-indigo-500" />
+                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.apiCount || 0}</strong> APIs
+              </span>
+            )}
+
+            {(["AVATAR", "VOICE"].includes(currentBotType)) && (
+              <span className="flex items-center gap-1">
+                <span className="text-fuchsia-400">🎭</span>
+                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>
+                  {currentBotType === "AVATAR" ? (bot.avatarProvider || "3D VRM Canvas") : (bot.voiceProfile?.voiceId || "Voice Enabled")}
+                </strong>
+              </span>
+            )}
+
             {bot.rulesConfig?.rulesCount !== undefined && (
               <span className="flex items-center gap-1">
                 <span className="text-amber-400">📜</span>
                 <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.rulesConfig.rulesCount}</strong> Rules
               </span>
             )}
-            <span className="flex items-center gap-1">
-              <FiCode className="text-indigo-500" />
-              <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.apiCount || 0}</strong> APIs
-            </span>
           </div>
 
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className={`p-2 rounded-lg transition ${isDark ? "text-slate-400 hover:text-blue-400 hover:bg-slate-800" : "text-slate-500 hover:text-blue-600 hover:bg-slate-100"
-              }`}
-            title="Edit Bot Settings"
+            className="flex items-center gap-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
+            title="Upgrade Agent Capabilities (Enable Voice, Avatar, REST Actions)"
           >
-            <FiEdit2 className="text-base" />
+            <FiEdit2 className="text-xs" />
+            <span>Upgrade Capabilities</span>
           </button>
 
           <button
@@ -172,9 +209,10 @@ const BotDetailPage = () => {
         />
       )}
 
-      {/* TAB NAVIGATION BAR */}
+      {/* TAB NAVIGATION BAR (Dynamic based on botType) */}
       <div className={`flex border-b px-4 ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-100/60"
         }`}>
+        {/* Primary Studio Chat Tab */}
         <button
           onClick={() => setActiveTab("chat")}
           className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "chat"
@@ -183,37 +221,63 @@ const BotDetailPage = () => {
             }`}
         >
           <FiMessageSquare />
-          <span>Chat</span>
+          <span>
+            {currentBotType === "AVATAR" ? "🎭 3D Avatar Chat Studio" :
+             currentBotType === "VOICE" ? "🎙️ Voice Chat Studio" :
+             currentBotType === "ACTION" ? "⚡ Action Tool Studio" :
+             currentBotType === "CHAT" ? "💬 Knowledge Chat" : "🌐 Assistant Chat"}
+          </span>
         </button>
 
-        <button
-          onClick={() => setActiveTab("knowledge")}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "knowledge"
-              ? "border-blue-500 text-blue-500 bg-blue-500/10"
-              : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-        >
-          <FiFileText />
-          <span>Knowledge ({bot.fileCount || 0})</span>
-        </button>
+        {/* Avatar & Voice Settings Tab */}
+        {(["AVATAR", "VOICE", "HYBRID"].includes(currentBotType)) && (
+          <button
+            onClick={() => setActiveTab("avatar")}
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "avatar"
+                ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+          >
+            <FiCpu />
+            <span>{currentBotType === "VOICE" ? "Voice Settings" : "Avatar & Voice Config"}</span>
+          </button>
+        )}
 
-        <button
-          onClick={() => setActiveTab("apis")}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "apis"
-              ? "border-blue-500 text-blue-500 bg-blue-500/10"
-              : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-        >
-          <FiCode />
-          <span>APIs ({bot.apiCount || 0})</span>
-        </button>
+        {/* Knowledge Tab (Only for Chat & Hybrid Bots) */}
+        {(["CHAT", "HYBRID"].includes(currentBotType)) && (
+          <button
+            onClick={() => setActiveTab("knowledge")}
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "knowledge"
+                ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+          >
+            <FiFileText />
+            <span>Knowledge Base ({bot.fileCount || 0})</span>
+          </button>
+        )}
+
+        {/* APIs Tab (Only for Action & Hybrid Bots) */}
+        {(["ACTION", "HYBRID"].includes(currentBotType)) && (
+          <button
+            onClick={() => setActiveTab("apis")}
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "apis"
+                ? "border-blue-500 text-blue-500 bg-blue-500/10"
+                : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+          >
+            <FiCode />
+            <span>API Tools ({bot.apiCount || 0})</span>
+          </button>
+        )}
       </div>
 
       {/* TAB BODY */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden flex flex-col overflow-y-auto">
         {activeTab === "chat" && <BotChatTab bot={bot} />}
         {activeTab === "knowledge" && <BotKnowledgeTab bot={bot} />}
         {activeTab === "apis" && <BotApiTab bot={bot} />}
+        {activeTab === "avatar" && <BotAvatarTab bot={bot} onBotUpdated={() => fetchBotDetails()} />}
       </div>
 
     </div>

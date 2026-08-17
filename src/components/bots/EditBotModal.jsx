@@ -53,9 +53,8 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
       <div
-        className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${
-          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-        }`}
+        className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+          }`}
       >
         {/* Modal Header */}
         <div className={`p-4 md:p-5 border-b flex items-center justify-between ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-100 bg-slate-50/50"}`}>
@@ -98,9 +97,8 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Codegene Assistant"
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-blue-500 ${
-                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-blue-500 ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                }`}
             />
           </div>
 
@@ -110,9 +108,8 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-blue-500 ${
-                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-blue-500 ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                }`}
             >
               {MODELS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -127,9 +124,8 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
             <button
               type="button"
               onClick={onClose}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition ${
-                isDark ? "border-slate-800 hover:bg-slate-800 text-slate-300" : "border-slate-300 hover:bg-slate-100 text-slate-700"
-              }`}
+              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition ${isDark ? "border-slate-800 hover:bg-slate-800 text-slate-300" : "border-slate-300 hover:bg-slate-100 text-slate-700"
+                }`}
             >
               Cancel
             </button>

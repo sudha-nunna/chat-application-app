@@ -456,6 +456,32 @@ export async function testBackendcall(type) {
   });
 }
 
+// Avatar & Voice Asset Management Calls
+export async function getUserAvatars() {
+  return await backEndCallGet("/auth/avatars");
+}
+
+export async function selectUserAvatar(avatarId) {
+  return await backEndCallObjPut(`/auth/avatars/${avatarId}/select`, {});
+}
+
+export async function deleteUserAvatar(avatarId) {
+  return await backEndCallObjDel("/auth/avatars", avatarId);
+}
+
+export async function getUserVoiceSamples(type = "voice") {
+  const endpoint = type === "avatar" ? "/auth/voice-sample?type=avatar" : "/auth/voice-sample";
+  return await backEndCallGet(endpoint);
+}
+
+export async function selectUserVoiceSample(sampleId) {
+  return await backEndCallObjPut(`/auth/voice-sample/${sampleId}/select`, {});
+}
+
+export async function deleteUserVoiceSample(sampleId) {
+  return await backEndCallObjDel("/auth/voice-sample", sampleId);
+}
+
 const exportedObject = {
   backEndCall,
   backEndCallObj,
@@ -476,6 +502,12 @@ const exportedObject = {
   backEndCallObjPut,
   backEndCallPatch,
   backEndCallObjDel,
+  getUserAvatars,
+  selectUserAvatar,
+  deleteUserAvatar,
+  getUserVoiceSamples,
+  selectUserVoiceSample,
+  deleteUserVoiceSample,
   testBackendcall,
 };
 

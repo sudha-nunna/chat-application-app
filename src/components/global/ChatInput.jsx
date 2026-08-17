@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import { VoiceRecorder } from "../../utils/voiceRecorder";
 
 const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const [text, setText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const voiceRecorderRef = useRef(new VoiceRecorder());
   const { isDark } = useTheme();
 
   // Initialize Speech Recognition on component mount
@@ -25,12 +27,19 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
       };
 
       rec.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setText((prevText) => (prevText ? `${prevText} ${transcript}` : transcript));
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript && transcript.trim()) {
+          setText(transcript);
+        }
       };
 
       rec.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
+        if (event.error !== "no-speech" && event.error !== "aborted") {
+          console.warn("Speech recognition warning:", event.error);
+        }
         setIsListening(false);
       };
 
@@ -38,16 +47,33 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
     }
   }, []);
 
-  const handleVoiceClick = () => {
-    if (!recognition) {
-      alert("Speech recognition is not supported in this browser. Please try Google Chrome.");
-      return;
-    }
-
-    if (isListening) {
-      recognition.stop();
-    } else {
-      recognition.start();
+  const handleVoiceClick = async () => {
+    try {
+      if (isListening) {
+        setIsListening(false);
+        if (recognition) {
+          try { recognition.stop(); } catch (e) {}
+        }
+        const audioBlob = await voiceRecorderRef.current.stopRecording().catch(() => null);
+        if (audioBlob && onSend) {
+          onSend(text, audioBlob);
+          setText("");
+        }
+      } else {
+        await voiceRecorderRef.current.startRecording().catch((err) => {
+          console.warn("MediaRecorder start notice:", err.message);
+        });
+        if (recognition) {
+          try {
+            recognition.abort();
+            setTimeout(() => recognition.start(), 50);
+          } catch (e) {}
+        }
+        setIsListening(true);
+      }
+    } catch (err) {
+      console.warn("Voice toggle error:", err);
+      setIsListening(false);
     }
   };
 
