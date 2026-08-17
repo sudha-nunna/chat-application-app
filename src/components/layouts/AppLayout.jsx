@@ -58,6 +58,14 @@ const AppLayout = ({ children }) => {
 
       if (currentToken) {
         queryClient.invalidateQueries({ queryKey: ["bots"] });
+        backEndCallGet("/auth/me")
+          .then((res) => {
+            if (res?.success && res?.user) {
+              setUser(res.user);
+              localStorage.setItem("user", JSON.stringify(res.user));
+            }
+          })
+          .catch(() => {});
       }
     };
 

@@ -25,41 +25,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const messagesContainerRef = useRef(null);
   const currentStreamingTextRef = useRef("");
 
-  useEffect(() => {
-    fetchClusterStatus();
-    const interval = setInterval(fetchClusterStatus, 12000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (statusModalRef.current && !statusModalRef.current.contains(event.target)) {
-        setShowStatusModal(false);
-      }
-    };
-    if (showStatusModal) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showStatusModal]);
-
-  const fetchClusterStatus = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/cluster-status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.nodes) setClusterNodes(data.nodes);
-      }
-    } catch (e) {
-    } finally {
-      setIsClusterLoading(false);
-    }
-  };
+  // Health check polling removed as requested
 
   const audioQueueRef = useRef([]);
   const isPlayingRef = useRef(false);

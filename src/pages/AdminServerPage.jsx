@@ -166,7 +166,7 @@ const AdminServerPage = () => {
       hasError = true;
     } else {
       let urlToTest = formData.url.trim();
-      const isApiKeyInput = /^(AQ\.Ab|AIzaSy|sk-proj-|sk-|gsk_)/i.test(urlToTest);
+      const isApiKeyInput = /^(AQ\.Ab|AIzaSy|sk-proj-|sk-|gsk_|nvapi-)/i.test(urlToTest) || formData.format === "glm" || formData.format === "gemini";
 
       if (!isApiKeyInput) {
         if (!urlToTest.startsWith("http://") && !urlToTest.startsWith("https://")) {
@@ -313,12 +313,16 @@ const AdminServerPage = () => {
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
                           node.format === "gemini" || (node.url && node.url.includes("googleapis.com"))
                             ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            : node.format === "glm" || (node.url && node.url.includes("integrate.api.nvidia.com"))
+                            ? "bg-teal-500/20 text-teal-400 border border-teal-500/30"
                             : node.format === "openai"
                             ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
                             : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                           }`}>
                           {node.format === "gemini" || (node.url && node.url.includes("googleapis.com"))
                             ? "Google Gemini API"
+                            : node.format === "glm" || (node.url && node.url.includes("integrate.api.nvidia.com"))
+                            ? "NVIDIA GLM API"
                             : node.format === "openai"
                             ? "vLLM / OpenAI API"
                             : "Ollama Native API"}
@@ -530,6 +534,7 @@ const AdminServerPage = () => {
                   >
                     <option value="openai">vLLM / LM Studio / OpenAI (/v1)</option>
                     <option value="gemini">Google Gemini API (Cloud)</option>
+                    <option value="glm">NVIDIA GLM API (Cloud)</option>
                     <option value="ollama">Ollama Native (/api/chat)</option>
                   </select>
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -11,7 +11,10 @@ import {
   FiZap,
   FiMove,
   FiCalendar,
-  FiPhoneCall
+  FiPhoneCall,
+  FiMic,
+  FiMicOff,
+  FiRadio
 } from "react-icons/fi";
 import {
   streamExternalChatApi,
@@ -19,6 +22,8 @@ import {
   toCapitalized
 } from "../../services/externalBotService";
 import { useTheme } from "../../context/ThemeContext";
+import VisemeAvatarPlayer from "./VisemeAvatarPlayer";
+import VoiceConversationManager from "../avatar/VoiceConversationManager";
 
 const SUGGESTED_PROMPTS = [
   "Explain React Hooks in detail with examples",
@@ -73,6 +78,12 @@ const FloatingExternalBotWidget = () => {
     return sessionStorage.getItem("external_bot_conv_id") || null;
   });
 
+  // Voice Conversation Mode State Management
+  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
+  const [voiceState, setVoiceState] = useState("IDLE");
+  const [sttInterimText, setSttInterimText] = useState("");
+  const voiceManagerRef = useRef(null);
+
   const [messages, setMessages] = useState([
     createMessageObj("assistant", "Hello! I am your AI Assistant powered by External Bot Stream APIs. Ask me anything!")
   ]);
@@ -85,6 +96,51 @@ const FloatingExternalBotWidget = () => {
 
   const messagesEndRef = useRef(null);
   const abortControllerRef = useRef(null);
+
+  // Initialize Voice Conversation Manager
+  useEffect(() => {
+    voiceManagerRef.current = new VoiceConversationManager({
+      onListeningStart: () => setVoiceState("LISTENING"),
+      onSpeechDetected: (text) => {
+        setSttInterimText(text);
+        setVoiceState("LISTENING");
+      },
+      onSpeechEnded: () => {},
+      onTranscriptComplete: (finalTranscript) => {
+        if (finalTranscript && finalTranscript.trim()) {
+          setSttInterimText("");
+          setVoiceState("THINKING");
+          handleSendMessage(null, finalTranscript);
+        }
+      },
+      onError: (err) => console.warn("Widget Voice Error:", err)
+    });
+
+    return () => {
+      if (voiceManagerRef.current) voiceManagerRef.current.stopListening();
+    };
+  }, []);
+
+  const toggleVoiceMode = () => {
+    if (isVoiceModeActive) {
+      setIsVoiceModeActive(false);
+      setVoiceState("IDLE");
+      if (voiceManagerRef.current) voiceManagerRef.current.stopListening();
+    } else {
+      setIsVoiceModeActive(true);
+      setVoiceState("LISTENING");
+      if (voiceManagerRef.current) voiceManagerRef.current.startListening("HANDS_FREE");
+    }
+  };
+
+  const handleAvatarSpeechEnd = useCallback(() => {
+    if (isVoiceModeActive && voiceManagerRef.current) {
+      setVoiceState("LISTENING");
+      voiceManagerRef.current.startListening("HANDS_FREE");
+    } else {
+      setVoiceState("IDLE");
+    }
+  }, [isVoiceModeActive]);
 
   // Default initial position anchored at bottom right corner
   useEffect(() => {
@@ -426,6 +482,21 @@ const FloatingExternalBotWidget = () => {
             <div className="flex items-center gap-1">
               <button
                 type="button"
+                onClick={toggleVoiceMode}
+                className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  isVoiceModeActive
+                    ? "bg-emerald-500 text-slate-950 animate-pulse"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                }`}
+                title="Toggle Live Hands-Free Voice Mode"
+              >
+                {isVoiceModeActive ? <FiRadio className="text-xs animate-spin" /> : <FiMic className="text-xs" />}
+              </button>
+
+              <button
+                type="button"
                 onClick={handleClearHistory}
                 className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
                   }`}
@@ -465,9 +536,26 @@ const FloatingExternalBotWidget = () => {
                     {isUser ? (
                       <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</span>
                     ) : (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                        {formatMarkdownBreaks(msg.content) || ""}
-                      </ReactMarkdown>
+                      <>
+                        {((msg.metadata?.botType === "AVATAR" || msg.metadata?.botType === "VIDEO_AVATAR" || msg.metadata?.botType === "HYBRID" || !msg.metadata?.botType) && (msg.speechData || msg.metadata?.speechData)) && (
+                          <div className="mb-3">
+                            <VisemeAvatarPlayer
+                              speechData={msg.speechData || msg.metadata?.speechData}
+                              onSpeechEnd={handleAvatarSpeechEnd}
+                              avatarConfig={msg.avatarConfig || msg.metadata?.avatarConfig || {
+                                avatarProvider: msg.metadata?.avatarProvider || (msg.metadata?.avatar3DModel ? "THREE_3D" : "LOCAL_VISEME"),
+                                faceModelUrl: msg.metadata?.avatar3DModel,
+                                avatar3DModel: msg.metadata?.avatar3DModel,
+                                faceImageUrl: msg.metadata?.avatarImage,
+                                faceVideoUrl: msg.metadata?.avatarVideo
+                              }}
+                            />
+                          </div>
+                        )}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                          {formatMarkdownBreaks(msg.content) || ""}
+                        </ReactMarkdown>
+                      </>
                     )}
 
                     {msg.isStreaming && !msg.content && (
@@ -536,20 +624,47 @@ const FloatingExternalBotWidget = () => {
           {/* Footer Input Form */}
           <form
             onSubmit={handleSendMessage}
-            className={`p-3 border-t flex items-center gap-2 shrink-0 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+            className={`p-3 border-t flex flex-col gap-2 shrink-0 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
               }`}
           >
-            <input
-              type="text"
-              placeholder="Ask external bot anything..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition ${isDark
-                ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500"
-                : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400"
+            {isVoiceModeActive && (
+              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-[11px] text-emerald-400 animate-pulse">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                  <span className="font-bold uppercase text-[9px]">{voiceState}:</span>
+                  <span className="italic text-slate-300 truncate">{sttInterimText || "Listening..."}</span>
+                </div>
+                <button type="button" onClick={toggleVoiceMode} className="text-[9px] font-bold underline shrink-0">Exit</button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 w-full">
+              <button
+                type="button"
+                onClick={toggleVoiceMode}
+                className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center shrink-0 cursor-pointer ${
+                  isVoiceModeActive
+                    ? "bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30 animate-pulse"
+                    : isDark
+                    ? "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    : "bg-white border-slate-300 text-slate-600 hover:text-slate-900 shadow-xs"
                 }`}
-            />
+                title="Toggle Live Hands-Free Voice Mode"
+              >
+                {isVoiceModeActive ? <FiMicOff /> : <FiMic />}
+              </button>
+
+              <input
+                type="text"
+                placeholder="Ask external bot anything..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={loading}
+                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition ${isDark
+                  ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500"
+                  : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400"
+                  }`}
+              />
 
             {loading ? (
               <button
@@ -570,6 +685,7 @@ const FloatingExternalBotWidget = () => {
                 <FiSend className="text-xs" />
               </button>
             )}
+            </div>
           </form>
         </div>
       )}

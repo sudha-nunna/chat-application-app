@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FiX,
   FiCpu,
@@ -15,11 +15,18 @@ import {
   FiAlertCircle,
   FiUploadCloud,
   FiDatabase,
-  FiLayers
+  FiLayers,
+  FiUser,
+  FiVolume2,
+  FiZap,
+  FiSliders,
+  FiGlobe
 } from "react-icons/fi";
-import { NobackEndCallObj } from "../../services/authService";
+import { NobackEndCall, NobackEndCallObj } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
 import { useTanStackMutation, useTanStackQueryClient } from "../../hooks/useTanStackData";
+import VisemeAvatarPlayer from "../global/VisemeAvatarPlayer";
+import ThreeVisemeAvatar from "../global/ThreeVisemeAvatar";
 
 const MODELS = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", badge: "Recommended" },
@@ -31,15 +38,98 @@ const MODELS = [
   { id: "custom-model", name: "Custom Model", provider: "Enterprise", badge: "Self-Hosted" }
 ];
 
-const ACTION_TYPES = [
-  { id: "CREATE_CONTACT", label: "Create Contact (POST /contacts)" },
-  { id: "UPDATE_CONTACT", label: "Update Contact (PUT /contacts/:id)" },
-  { id: "DELETE_CONTACT", label: "Delete Contact (DELETE /contacts/:id)" },
-  { id: "SEARCH_CONTACT", label: "Search Contact (GET /contacts)" },
-  { id: "CREATE_TICKET", label: "Create Support Ticket (POST /tickets)" },
-  { id: "CREATE_LEAD", label: "Create Lead (POST /leads)" },
-  { id: "GENERIC", label: "Generic REST Action" }
+const BOT_PURPOSES = [
+  {
+    id: "CHAT",
+    title: "💬 Knowledge Chatbot",
+    subtitle: "Fast Q&A chatbot with PDF, DOCX, TXT & Knowledge RAG search",
+    badge: "Knowledge & RAG",
+    requiredFields: ["Bot Name", "AI Model", "System Prompt"],
+    recommendedFiles: "PDF, DOCX, TXT, MD, JSON",
+    steps: [
+      { id: "purpose", label: "1. Purpose & Type" },
+      { id: "model", label: "2. AI Model" },
+      { id: "knowledge", label: "3. Knowledge Files (Required/Recommended)" },
+      { id: "rules", label: "4. System Rules" },
+      { id: "publish", label: "5. Publish Agent" }
+    ]
+  },
+  {
+    id: "VOICE",
+    title: "🎙️ Voice Bot",
+    subtitle: "Speech-enabled voice agent with audio synthesis & hands-free mic interaction",
+    badge: "Voice Synthesis",
+    requiredFields: ["Bot Name", "AI Model", "Voice Profile"],
+    recommendedFiles: "Audio Samples (.mp3, .wav) for voice cloning",
+    steps: [
+      { id: "purpose", label: "1. Purpose & Type" },
+      { id: "voice", label: "2. Voice Setup (Required)" },
+      { id: "model", label: "3. AI Model" },
+      { id: "rules", label: "4. System Rules (Optional)" },
+      { id: "publish", label: "5. Publish Agent" }
+    ]
+  },
+  {
+    id: "ACTION",
+    title: "⚡ Action / API Bot",
+    subtitle: "Tool calling agent executing REST APIs & workflows (0ms RAG overhead)",
+    badge: "REST Tool Calling",
+    requiredFields: ["Bot Name", "AI Model", "At least 1 API Tool / Postman File"],
+    recommendedFiles: "Postman Collection (.json)",
+    steps: [
+      { id: "purpose", label: "1. Purpose & Type" },
+      { id: "model", label: "2. AI Model" },
+      { id: "apis", label: "3. API Tools & Postman (Required)" },
+      { id: "rules", label: "4. System Rules (Optional)" },
+      { id: "publish", label: "5. Publish Agent" }
+    ]
+  },
+  {
+    id: "AVATAR",
+    title: "🎭 Avatar Bot",
+    subtitle: "Digital human talking avatar with natural voice & 3D viseme lip sync",
+    badge: "3D Talking Head",
+    requiredFields: ["Bot Name", "AI Model", "3D Model / Face Photo", "Voice Profile"],
+    recommendedFiles: "3D Model (.vrm, .glb) or Face Photo (.png, .jpg)",
+    steps: [
+      { id: "purpose", label: "1. Purpose & Type" },
+      { id: "avatar", label: "2. 3D Avatar (Required)" },
+      { id: "voice", label: "3. Voice Setup (Required)" },
+      { id: "model", label: "4. AI Model" },
+      { id: "publish", label: "5. Publish Agent" }
+    ]
+  },
+  {
+    id: "HYBRID",
+    title: "🌐 Hybrid Assistant",
+    subtitle: "All-in-one agent combining Chat, Voice, Avatar, Knowledge RAG, and APIs",
+    badge: "All Capabilities",
+    requiredFields: ["Bot Name", "AI Model", "System Rules"],
+    recommendedFiles: "PDFs, Postman Collections, 3D VRM Models, Voice Samples",
+    steps: [
+      { id: "purpose", label: "1. Purpose & Type" },
+      { id: "model", label: "2. AI Model" },
+      { id: "knowledge", label: "3. Knowledge Base" },
+      { id: "apis", label: "4. API Integrations" },
+      { id: "rules", label: "5. Rules & Policies" },
+      { id: "voice_avatar", label: "6. Voice & Avatar" },
+      { id: "publish", label: "7. Publish Agent" }
+    ]
+  }
 ];
+
+const PRESET_VOICES = [
+  { id: "default-en", name: "Sarah (Warm Female)", language: "English (US)" },
+  { id: "energetic-male", name: "Alex (Energetic Male)", language: "English (US)" },
+  { id: "professional-female", name: "Emily (Professional Female)", language: "English (UK)" },
+  { id: "casual-male", name: "Michael (Casual Male)", language: "English (AU)" }
+];
+
+const PRESET_3D_MODELS = [
+  { id: "viverse-vrm", name: "Enterprise Viverse VRM AI Agent", presetKey: "/models/viverse_avatar_model_210287.vrm" }
+];
+
+const DEFAULT_AVATAR_PRESET = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
 
 const CreateBotModal = ({ onClose, onBotCreated }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -47,46 +137,68 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   const { isDark } = useTheme();
   const queryClient = useTanStackQueryClient();
 
-  // Step 1: Info
+  // Basic Info & Purpose
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [botType, setBotType] = useState("AVATAR");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectsList, setProjectsList] = useState([]);
 
-  // Step 2: Model
+  // Avatar & Voice State
+  const [avatarProvider, setAvatarProvider] = useState("THREE_3D");
+  const [selected3DPresetId, setSelected3DPresetId] = useState("viverse-vrm");
+  const [selected3DModelUrl, setSelected3DModelUrl] = useState("/models/viverse_avatar_model_210287.vrm");
+  const [avatarImageBase64, setAvatarImageBase64] = useState("");
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(DEFAULT_AVATAR_PRESET);
+  const [selectedVoiceId, setSelectedVoiceId] = useState("default-en");
+
+  // Model State
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
 
-  // Step 3: Files (Knowledge Base Tab vs Rules Tab)
+  // Knowledge Base State
   const [stagedFiles, setStagedFiles] = useState([]);
-  const [modalFileTab, setModalFileTab] = useState("knowledge"); // "knowledge" | "rules"
-  
-  // Step 3 Rules Inner Sub-Tabs: 1. "document" (Upload File), 2. "editor" (Object/JSON Text Editor)
-  const [rulesInnerTab, setRulesInnerTab] = useState("document");
+
+  // Rules State
+  const [rulesInnerTab, setRulesInnerTab] = useState("editor");
   const [rulesEditorContent, setRulesEditorContent] = useState("");
 
-  // Step 4: APIs (Two Option Segments: 1. Postman Upload, 2. Add Manually)
-  const [apiOptionTab, setApiOptionTab] = useState("postman"); // "postman" | "manual"
+  // API Integrations State
   const [stagedApis, setStagedApis] = useState([]);
-
-  // Manual API Form State
+  const [apiOptionTab, setApiOptionTab] = useState("manual");
   const [apiName, setApiName] = useState("");
   const [apiUrl, setApiUrl] = useState("");
   const [apiMethod, setApiMethod] = useState("GET");
   const [apiActionType, setApiActionType] = useState("GENERIC");
   const [apiAuthType, setApiAuthType] = useState("none");
   const [apiKey, setApiKey] = useState("");
-
-  // Postman Import State inside Wizard
   const [postmanJsonText, setPostmanJsonText] = useState("");
   const [postmanFileName, setPostmanFileName] = useState("");
-  const [parsedPostmanPreview, setParsedPostmanPreview] = useState(null);
 
-  // Step 5: Test Execution
-  const [testResult, setTestResult] = useState(null);
-  const [testLoading, setTestLoading] = useState(false);
+  useEffect(() => {
+    NobackEndCall("/projects")
+      .then((res) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setProjectsList(list);
+      })
+      .catch(() => { });
+  }, []);
+
+  const activePurposeObj = BOT_PURPOSES.find((p) => p.id === botType) || BOT_PURPOSES[0];
+  const activeSteps = activePurposeObj.steps;
+  const currentStepObj = activeSteps[currentStep - 1] || activeSteps[0];
+
+  const handlePurposeChange = (newType) => {
+    setBotType(newType);
+    setCurrentStep(1);
+    setError("");
+  };
 
   // TanStack Mutation for complete Bot Creation
   const createBotMutation = useTanStackMutation({
     mutationFn: async (payload) => {
       const newBot = await NobackEndCallObj("/bots", payload, "post");
+
+      // Upload knowledge/rules files if staged
       if (stagedFiles.length > 0 && newBot?._id) {
         for (const file of stagedFiles) {
           const uploadPayload = {
@@ -100,6 +212,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           await NobackEndCallObj(`/bots/${newBot._id}/upload`, uploadPayload, "post");
         }
       }
+
+      // Upload avatar face photo if staged
+      if (avatarImageBase64 && newBot?._id) {
+        await NobackEndCallObj(`/bots/${newBot._id}/avatar`, { fileData: avatarImageBase64 }, "post");
+      }
+
       return newBot;
     },
     onSuccess: (newBot) => {
@@ -113,6 +231,26 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   });
 
   const loading = createBotMutation.isPending;
+
+  const handleAvatarFileSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split(".").pop().toLowerCase();
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target.result;
+      if (["glb", "gltf"].includes(ext)) {
+        setSelected3DPresetId("custom");
+        setSelected3DModelUrl(base64Data);
+        setAvatarProvider("THREE_3D");
+      } else {
+        setAvatarImageBase64(base64Data);
+        setAvatarPreviewUrl(base64Data);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleFileUpload = (e, category = "knowledge") => {
     const files = Array.from(e.target.files);
@@ -140,46 +278,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             rawText: rawTextVal
           }
         ]);
-
-        // Auto replace & populate Rules Editor content if a text/json file is uploaded under Rules!
-        if (category === "rules" && rawTextVal) {
-          setRulesEditorContent(rawTextVal);
-          setRulesInnerTab("editor");
-        }
       };
-      if (["txt", "md", "json"].includes(ext)) {
-        reader.readAsText(file);
-      } else {
-        reader.readAsDataURL(file);
-      }
-    });
-    e.target.value = "";
-  };
-
-  const handleRulesEditorChange = (newText) => {
-    setRulesEditorContent(newText);
-    setStagedFiles((prev) => {
-      const filtered = prev.filter((f) => f.fileName !== "custom_rules.txt");
-      if (!newText.trim()) return filtered;
-
-      let base64Val = "";
-      try {
-        base64Val = btoa(unescape(encodeURIComponent(newText)));
-      } catch (e) {
-        base64Val = "";
-      }
-
-      return [
-        ...filtered,
-        {
-          fileName: "custom_rules.txt",
-          fileType: "txt",
-          fileCategory: "rules",
-          fileSize: newText.length,
-          fileContentBase64: base64Val,
-          rawText: newText
-        }
-      ];
+      reader.readAsDataURL(file);
     });
   };
 
@@ -187,148 +287,81 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
     setStagedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const addStagedApi = () => {
-    if (!apiName.trim() || !apiUrl.trim()) {
-      alert("Please provide an API Name and Endpoint URL.");
-      return;
-    }
-
-    setStagedApis((prev) => [
-      ...prev,
-      {
-        name: apiName.trim(),
-        url: apiUrl.trim(),
-        method: apiMethod,
-        actionType: apiActionType,
-        authType: apiAuthType,
-        apiKey
-      }
-    ]);
-
-    setApiName("");
-    setApiUrl("");
-    setApiKey("");
-    setApiMethod("GET");
-    setApiActionType("GENERIC");
-    setApiAuthType("none");
-  };
-
-  const handlePostmanFileChange = (e) => {
-    const file = e.target.files[0];
+  const handlePostmanFileImport = (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     setPostmanFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
-      const content = event.target.result;
-      setPostmanJsonText(content);
-      parsePreviewPostmanJson(content);
+      try {
+        const text = event.target.result;
+        const jsonObj = JSON.parse(text);
+        const parsedApis = [];
+
+        const extractRequests = (items) => {
+          if (!Array.isArray(items)) return;
+          items.forEach((item) => {
+            if (item.request) {
+              const req = item.request;
+              let urlStr = "";
+              if (typeof req.url === "string") {
+                urlStr = req.url;
+              } else if (req.url?.raw) {
+                urlStr = req.url.raw;
+              } else if (req.url?.host && Array.isArray(req.url.host)) {
+                urlStr = (req.url.protocol ? req.url.protocol + "://" : "https://") + req.url.host.join(".") + (req.url.path ? "/" + req.url.path.join("/") : "");
+              }
+              if (urlStr) {
+                parsedApis.push({
+                  name: item.name || "Imported Postman Tool",
+                  url: urlStr,
+                  method: (req.method || "GET").toUpperCase(),
+                  actionType: "POSTMAN",
+                  authType: req.auth?.type || "none",
+                  apiKey: ""
+                });
+              }
+            }
+            if (item.item) extractRequests(item.item);
+          });
+        };
+
+        extractRequests(jsonObj.item || jsonObj.items || [jsonObj]);
+
+        if (parsedApis.length > 0) {
+          setStagedApis((prev) => [...prev, ...parsedApis]);
+          alert(`Successfully imported ${parsedApis.length} API tool endpoints from ${file.name}!`);
+        } else {
+          alert("No valid request endpoints found in the provided Postman collection JSON file.");
+        }
+      } catch (err) {
+        alert("Failed to parse Postman JSON file. Please ensure it is a valid Postman v2/v2.1 collection file.");
+      }
     };
     reader.readAsText(file);
   };
 
-  const handlePostmanTextChange = (e) => {
-    const val = e.target.value;
-    setPostmanJsonText(val);
-    parsePreviewPostmanJson(val);
-  };
-
-  const parsePreviewPostmanJson = (jsonStr) => {
-    try {
-      const data = JSON.parse(jsonStr);
-      const items = data.item || [];
-      const collectionName = data.info?.name || "Postman Collection";
-
-      const endpoints = [];
-      const extractRecursive = (list) => {
-        if (!Array.isArray(list)) return;
-        for (const item of list) {
-          if (item.item) {
-            extractRecursive(item.item);
-          } else if (item.request) {
-            const req = item.request;
-            endpoints.push({
-              name: item.name || "Endpoint",
-              method: (req.method || "GET").toUpperCase(),
-              url: typeof req.url === "string" ? req.url : req.url?.raw || ""
-            });
-          }
-        }
-      };
-      extractRecursive(items);
-
-      setParsedPostmanPreview({
-        valid: true,
-        collectionName,
-        count: endpoints.length,
-        endpoints
-      });
-    } catch (err) {
-      setParsedPostmanPreview({ valid: false, error: "Invalid JSON format." });
-    }
-  };
-
-  const addStagedPostmanCollection = () => {
-    if (!parsedPostmanPreview || !parsedPostmanPreview.valid || parsedPostmanPreview.endpoints.length === 0) {
-      alert("Please provide a valid Postman Collection JSON.");
-      return;
-    }
-
-    const newStaged = parsedPostmanPreview.endpoints.map(ep => ({
-      name: ep.name,
-      url: ep.url,
-      method: ep.method,
-      actionType: "GENERIC",
-      authType: "none",
-      collectionName: parsedPostmanPreview.collectionName
-    }));
-
-    setStagedApis((prev) => [...prev, ...newStaged]);
-    setPostmanJsonText("");
-    setPostmanFileName("");
-    setParsedPostmanPreview(null);
-    alert(`Successfully added ${newStaged.length} Postman API endpoints to staged integrations!`);
-  };
-
-  const removeStagedApi = (index) => {
-    setStagedApis((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const handleNextStep = () => {
     setError("");
-    if (currentStep === 1 && !name.trim()) {
+    if (currentStepObj.id === "purpose" && !name.trim()) {
       setError("Please provide a Bot Name.");
       return;
     }
-    const knowledgeFiles = stagedFiles.filter((f) => f.fileCategory === "knowledge" || !f.fileCategory);
-    if (currentStep === 3 && knowledgeFiles.length === 0) {
-      setError("Knowledge Base document is mandatory to create a Bot. Please upload at least one Knowledge Base document.");
-      return;
+    if (currentStepObj.id === "apis" && botType === "ACTION" && stagedApis.length === 0) {
+      if (!window.confirm("Action Bots perform REST tool calls. You haven't added any API tools yet. Do you want to proceed anyway?")) {
+        return;
+      }
     }
-    setCurrentStep((prev) => Math.min(prev + 1, 6));
+    if (currentStep < activeSteps.length) {
+      setCurrentStep((prev) => prev + 1);
+    }
   };
 
-  const handleTestApiExecution = async (apiItem) => {
-    setTestLoading(true);
-    setTestResult(null);
-    try {
-      setTestResult({
-        success: true,
-        message: `Successfully validated ${apiItem.name} endpoint parameters.`,
-        data: {
-          endpoint: apiItem.url,
-          method: apiItem.method,
-          status: 200,
-          latency: "45ms"
-        }
-      });
-    } catch (err) {
-      setTestResult({
-        success: false,
-        message: "Endpoint connection check failed."
-      });
-    } finally {
-      setTestLoading(false);
+  const handlePrevStep = () => {
+    setError("");
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
@@ -339,602 +372,411 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
       return;
     }
 
-    if (stagedFiles.length === 0) {
-      setError("Knowledge PDF document is mandatory to create a Bot. Please upload at least one PDF document.");
-      setCurrentStep(3);
-      return;
-    }
-
     setError("");
     createBotMutation.mutate({
       name: name.trim(),
       description: description ? description.trim() : "",
       model: selectedModel,
-      systemPrompt: `You are a specialized AI Knowledge & Tool Agent named ${name}.`,
+      botType,
+      capabilities: {
+        enableRag: ["CHAT", "VOICE", "AVATAR", "HYBRID"].includes(botType),
+        enableActions: ["ACTION", "HYBRID"].includes(botType),
+        enableVoice: ["VOICE", "AVATAR", "HYBRID"].includes(botType),
+        enableAvatar: ["AVATAR", "HYBRID"].includes(botType)
+      },
+      projectId: selectedProjectId || null,
+      avatarImage: avatarImageBase64 || "",
+      avatar3DModel: selected3DModelUrl || "",
+      avatarProvider: avatarProvider || "THREE_3D",
+      avatarConfig: {
+        avatarProvider: avatarProvider || "THREE_3D",
+        faceModelUrl: selected3DModelUrl,
+        avatar3DModel: selected3DModelUrl,
+        faceImageUrl: avatarImageBase64 || ""
+      },
+      voiceProfile: { voiceId: selectedVoiceId, voiceType: "PRESET" },
+      voiceConfig: { voiceId: selectedVoiceId },
+      rulesText: rulesEditorContent,
+      botSpecificRules: rulesEditorContent,
+      systemPrompt: rulesEditorContent || `You are a specialized ${activePurposeObj.title} AI assistant.`,
       initialApis: stagedApis,
       stagedFiles
     });
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4 ${isDark ? "bg-black/80" : "bg-slate-900/50"
-      }`}>
-      <div className={`border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-        }`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4 sm:p-6 ${isDark ? "bg-black/80" : "bg-slate-900/60"}`}>
+      <div className={`border rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] max-h-[800px] ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"}`}>
 
         {/* Header */}
-        <div className={`p-5 border-b flex justify-between items-center ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
-          }`}>
+        <div className={`p-4 sm:p-5 border-b flex justify-between items-center shrink-0 ${isDark ? "border-slate-800 bg-slate-950/70" : "border-slate-200 bg-slate-50"}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20">
               <FiCpu className="text-xl" />
             </div>
             <div>
-              <h2 className={`text-base font-bold ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+              <h2 className={`text-base font-bold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>
                 Create AI Agent Wizard
               </h2>
               <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                6-Step True RAG & Tool Calling Bot Builder
+                Capability-Based Dynamic Builder &mdash; <span className="font-semibold text-blue-400">{activePurposeObj.title}</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className={`p-2 rounded-xl transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-              }`}
+            className={`p-2 rounded-xl transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
           >
             <FiX className="text-lg" />
           </button>
         </div>
 
-        {/* Step Stepper Navigation */}
-        <div className={`grid grid-cols-6 text-center text-xs font-semibold border-b select-none ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-100/50"
-          }`}>
-          {[
-            { num: 1, label: "1. Info" },
-            { num: 2, label: "2. Model" },
-            { num: 3, label: "3. Knowledge *" },
-            { num: 4, label: "4. Rules" },
-            { num: 5, label: "5. Integrations" },
-            { num: 6, label: "6. Actions" }
-          ].map((s) => (
-            <div
-              key={s.num}
-              onClick={() => {
-                if (s.num < currentStep) setCurrentStep(s.num);
-              }}
-              className={`py-3 transition border-b-2 cursor-pointer ${currentStep === s.num
+        {/* Dynamic Stepper Navigation */}
+        <div className={`flex items-center text-center text-xs font-semibold border-b overflow-x-auto select-none custom-scrollbar shrink-0 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-100/60"}`}>
+          {activeSteps.map((s, idx) => {
+            const stepNum = idx + 1;
+            const isCurrent = currentStep === stepNum;
+            const isDone = currentStep > stepNum;
+
+            return (
+              <div
+                key={s.id}
+                onClick={() => {
+                  if (stepNum < currentStep) setCurrentStep(stepNum);
+                }}
+                className={`py-3 px-4 transition border-b-2 shrink-0 cursor-pointer flex items-center gap-1.5 ${isCurrent
                   ? "border-blue-500 text-blue-500 font-bold bg-blue-500/10"
-                  : currentStep > s.num
-                    ? "border-emerald-500 text-emerald-500"
-                    : isDark ? "border-transparent text-slate-500" : "border-transparent text-slate-400"
-                }`}
-            >
-              {s.label}
-            </div>
-          ))}
+                  : isDone
+                    ? "border-emerald-500 text-emerald-500 font-medium"
+                    : isDark ? "border-transparent text-slate-500 hover:text-slate-400" : "border-transparent text-slate-400 hover:text-slate-600"
+                  }`}
+              >
+                <span className={`w-4 h-4 rounded-full text-[10px] inline-flex items-center justify-center font-bold ${
+                  isCurrent ? "bg-blue-500 text-white" : isDone ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400"
+                }`}>
+                  {stepNum}
+                </span>
+                <span>{s.label.replace(/^\d+\.\s*/, '')}</span>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Modal Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        {/* Body Content */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar space-y-6">
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 font-medium">
               <FiAlertCircle className="shrink-0 text-sm" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* STEP 1: INFO */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
+          {/* STEP: PURPOSE & BASIC INFO */}
+          {currentStepObj.id === "purpose" && (
+            <div className="space-y-6">
               <div>
-                <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  1. Choose Bot Purpose & Primary Capability <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {BOT_PURPOSES.map((purpose) => (
+                    <div
+                      key={purpose.id}
+                      onClick={() => handlePurposeChange(purpose.id)}
+                      className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${botType === purpose.id
+                        ? "bg-blue-600/15 border-blue-500 text-blue-400 ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/10 font-semibold"
+                        : isDark
+                          ? "bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900/50"
+                          : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-white"
+                        }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold">{purpose.title}</span>
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20 shrink-0 font-semibold">
+                            {purpose.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] opacity-80 mt-1.5 leading-relaxed">{purpose.subtitle}</p>
+                      </div>
+
+                      <div className="mt-3.5 pt-2.5 border-t border-slate-800/40 text-[10px] space-y-1.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-slate-400 font-medium">Required Setup:</span>
+                          <span className="font-semibold text-amber-400">{purpose.requiredFields.join(", ")}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-slate-400 font-medium">Supported Formats:</span>
+                          <span className="font-mono text-emerald-400">{purpose.recommendedFiles}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                   Bot Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Technical Documentation Assistant"
+                  placeholder="e.g. Sales Assistant / CRM Action Bot / Support Voice Agent"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400"
-                    }`}
+                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900"}`}
                 />
               </div>
 
+              {projectsList.length > 0 && (
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                    Select Project / Brand (Optional)
+                  </label>
+                  <select
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                  >
+                    <option value="">No Project (Standalone Bot)</option>
+                    {projectsList.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name} (Shared Knowledge)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  Description
+                  Description (Optional)
                 </label>
                 <textarea
-                  rows={3}
-                  placeholder="Describe what this bot does, its scope, and primary audience..."
+                  rows={2}
+                  placeholder="Describe what this bot does and its main goal..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full border rounded-xl p-4 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400"
-                    }`}
+                  className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900"}`}
                 />
               </div>
             </div>
           )}
 
-          {/* STEP 2: MODEL */}
-          {currentStep === 2 && (
-            <div className="space-y-3">
-              <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                Select Underlying LLM Engine
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {MODELS.map((m) => (
-                  <div
-                    key={m.id}
-                    onClick={() => setSelectedModel(m.id)}
-                    className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${selectedModel === m.id
-                        ? "bg-blue-600/10 border-blue-500 text-blue-500 shadow-md shadow-blue-500/10"
+          {/* STEP: AVATAR SETUP */}
+          {currentStepObj.id === "avatar" && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs flex items-center justify-between">
+                <span>🎭 <strong>3D Avatar Setup</strong> (Required for Avatar Agent)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono font-bold">
+                  Files: .vrm, .glb, .png, .jpg
+                </span>
+              </div>
+
+              {/* Avatar Engine Mode Selector */}
+              <div className="space-y-1.5">
+                <label className={`block text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-700"}`}>Avatar Engine Mode</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "THREE_3D", label: "🎭 3D Model Canvas" },
+                    { id: "LOCAL_VISEME", label: "🖼️ 2D Photo Visemes" },
+                    { id: "VIDEO_AVATAR", label: "📹 Video Avatar" }
+                  ].map((prov) => (
+                    <button
+                      key={prov.id}
+                      type="button"
+                      onClick={() => setAvatarProvider(prov.id)}
+                      className={`p-2.5 rounded-xl border text-center text-xs font-semibold transition ${avatarProvider === prov.id
+                        ? "bg-blue-600/20 border-blue-500 text-blue-400 ring-1 ring-blue-500/30"
                         : isDark
-                          ? "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
-                          : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700"
+                          ? "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
+                        }`}
+                    >
+                      {prov.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3D Presets Selection */}
+              {avatarProvider === "THREE_3D" && (
+                <div className="space-y-1.5">
+                  <label className={`block text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-700"}`}>Select Realistic 3D Avatar Preset</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PRESET_3D_MODELS.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          setSelected3DPresetId(m.id);
+                          setSelected3DModelUrl(m.presetKey);
+                        }}
+                        className={`p-2.5 rounded-xl border text-left text-xs transition ${selected3DPresetId === m.id
+                          ? "bg-blue-600/20 border-blue-500 text-blue-400 font-bold ring-1 ring-blue-500/30"
+                          : isDark
+                            ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
+                            : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                          }`}
+                      >
+                        <div className="truncate font-semibold">{m.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className={`border-2 border-dashed rounded-2xl p-5 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
+                  <FiUser className="text-3xl text-blue-500 mx-auto mb-2" />
+                  <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                    Upload Custom 3D Model or Photo
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1">.glb, .gltf, .png, or .jpg</p>
+                  <input
+                    type="file"
+                    accept="image/*,video/*,.glb,.gltf"
+                    onChange={handleAvatarFileSelected}
+                    className="hidden"
+                    id="wizard-avatar-upload"
+                  />
+                  <label
+                    htmlFor="wizard-avatar-upload"
+                    className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+                  >
+                    Select File
+                  </label>
+                </div>
+
+                <div className="flex flex-col items-center justify-center p-3 border rounded-2xl bg-slate-950/50 border-slate-800 h-44 overflow-hidden relative">
+                  {avatarProvider === "THREE_3D" ? (
+                    <div className="w-full h-32 rounded-xl overflow-hidden">
+                      <ThreeVisemeAvatar
+                        modelUrl={selected3DModelUrl}
+                        isPlaying={false}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-md">
+                      <img src={avatarPreviewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <span className="text-[10px] font-bold text-blue-400 mt-1">Active Avatar Preview</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP: VOICE SETUP */}
+          {currentStepObj.id === "voice" && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs flex items-center justify-between">
+                <span>🎙️ <strong>Voice Selection</strong> (Required for Speech Output)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono font-bold">
+                  Audio: Natural Voice Synthesis
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {PRESET_VOICES.map((v) => (
+                  <div
+                    key={v.id}
+                    onClick={() => setSelectedVoiceId(v.id)}
+                    className={`p-3.5 rounded-xl border transition cursor-pointer flex items-center justify-between ${selectedVoiceId === v.id
+                      ? "bg-purple-600/15 border-purple-500 text-purple-400 font-semibold ring-2 ring-purple-500/20"
+                      : isDark
+                        ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
+                        : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
                       }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs">{m.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-blue-500/20 text-blue-500 border border-blue-500/30">
-                        {m.badge}
-                      </span>
+                    <div>
+                      <div className="text-xs font-bold">{v.name}</div>
+                      <div className="text-[10px] opacity-75 mt-0.5">{v.language}</div>
                     </div>
-                    <p className="text-[11px] opacity-75 mt-2 font-mono">Provider: {m.provider}</p>
+                    <FiVolume2 className="text-base shrink-0" />
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* STEP 3: KNOWLEDGE BASE UPLOAD */}
-          {currentStep === 3 && (
+          {/* STEP: AI MODEL SELECTION */}
+          {currentStepObj.id === "model" && (
             <div className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                    Upload Knowledge Base Documents <span className="text-rose-500">* (Mandatory Field)</span>
-                  </label>
-                  <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                    fileCategory: "knowledge"
-                  </span>
-                </div>
-
-                <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
-                  <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
-                  <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-                    Upload Knowledge Documents
-                  </p>
-                  <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
-                    PDF, DOCX, TXT, JSON, or Markdown (.md)
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.txt,.docx,.md,.json"
-                    onChange={(e) => handleFileUpload(e, "knowledge")}
-                    className="hidden"
-                    id="modal-knowledge-file-upload"
-                  />
-                  <label
-                    htmlFor="modal-knowledge-file-upload"
-                    className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {MODELS.map((m) => (
+                  <div
+                    key={m.id}
+                    onClick={() => setSelectedModel(m.id)}
+                    className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${selectedModel === m.id
+                      ? "bg-blue-600/15 border-blue-500 text-blue-400 ring-2 ring-blue-500/20 font-semibold"
+                      : isDark
+                        ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
+                        : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                      }`}
                   >
-                    Browse Knowledge Files
-                  </label>
-                </div>
-
-                {/* Staged Knowledge Files List */}
-                {stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                      Staged Knowledge Documents ({stagedFiles.filter(f => f.fileCategory === "knowledge" || !f.fileCategory).length})
-                    </h4>
-                    {stagedFiles.map((file, idx) => {
-                      if (file.fileCategory && file.fileCategory !== "knowledge") return null;
-                      return (
-                        <div
-                          key={idx}
-                          className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}
-                        >
-                          <div className="flex items-center gap-2.5 truncate">
-                            <FiFileText className="text-blue-500 shrink-0" />
-                            <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
-                            <span className="text-[10px] text-blue-400 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeStagedFile(idx)}
-                            className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: BOT RULES (DOCUMENT UPLOAD & EDITABLE OBJECT EDITOR) */}
-          {currentStep === 4 && (
-            <div className="space-y-4">
-              {/* Inner Rules Sub-Tabs Header */}
-              <div className={`flex border-b text-xs font-semibold ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                <button
-                  type="button"
-                  onClick={() => setRulesInnerTab("document")}
-                  className={`flex items-center gap-2 px-4 py-2.5 font-bold border-b-2 transition cursor-pointer ${
-                    rulesInnerTab === "document"
-                      ? "border-amber-500 text-amber-500 bg-amber-500/10"
-                      : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <FiUploadCloud />
-                  <span>1. Upload Rules Document</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setRulesInnerTab("editor")}
-                  className={`flex items-center gap-2 px-4 py-2.5 font-bold border-b-2 transition cursor-pointer ${
-                    rulesInnerTab === "editor"
-                      ? "border-amber-500 text-amber-500 bg-amber-500/10"
-                      : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <FiCode />
-                  <span>2. Editable Rules Object / JSON {rulesEditorContent ? "•" : ""}</span>
-                </button>
-              </div>
-
-              {/* RULES INNER TAB 1: DOCUMENT UPLOAD */}
-              {rulesInnerTab === "document" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                      Upload Bot Behavior Rules Documents
-                    </label>
-                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                      fileCategory: "rules"
-                    </span>
-                  </div>
-
-                  <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-amber-500/50" : "border-slate-300 bg-slate-50 hover:border-amber-500/50"}`}>
-                    <FiUpload className="text-3xl text-amber-500 mx-auto mb-2" />
-                    <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-                      Upload System Rules & Policy Constraints
-                    </p>
-                    <p className={`text-[11px] mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
-                      TXT, PDF, DOCX, JSON, or Markdown (.md)
-                    </p>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.txt,.docx,.md,.json"
-                      onChange={(e) => handleFileUpload(e, "rules")}
-                      className="hidden"
-                      id="modal-rules-file-upload"
-                    />
-                    <label
-                      htmlFor="modal-rules-file-upload"
-                      className="mt-3 inline-block bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-amber-500/20"
-                    >
-                      Browse Rules Files
-                    </label>
-                  </div>
-
-                  {/* Staged Rules Files List */}
-                  {stagedFiles.filter(f => f.fileCategory === "rules").length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        Staged Rules Documents ({stagedFiles.filter(f => f.fileCategory === "rules").length})
-                      </h4>
-                      {stagedFiles.map((file, idx) => {
-                        if (file.fileCategory !== "rules") return null;
-                        return (
-                          <div
-                            key={idx}
-                            className={`flex items-center justify-between p-3 border rounded-xl text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}
-                          >
-                            <div className="flex items-center gap-2.5 truncate">
-                              <FiLayers className="text-amber-500 shrink-0" />
-                              <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{file.fileName}</span>
-                              <span className="text-[10px] text-amber-400 font-mono">({(file.fileSize / 1024).toFixed(1)} KB)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeStagedFile(idx)}
-                              className={`p-1 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* RULES INNER TAB 2: EDITABLE OBJECT / TEXT EDITOR */}
-              {rulesInnerTab === "editor" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                      Interactive System Rules Object Editor
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                        Auto-syncs with payload
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold">{m.name}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20">
+                        {m.badge}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          try {
-                            const parsed = JSON.parse(rulesEditorContent);
-                            handleRulesEditorChange(JSON.stringify(parsed, null, 2));
-                          } catch (e) {
-                            alert("Invalid JSON format! Please verify syntax before formatting.");
-                          }
-                        }}
-                        className={`text-[10px] px-2.5 py-1 rounded-lg border font-semibold transition ${
-                          isDark
-                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
-                            : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        Format JSON
-                      </button>
                     </div>
+                    <p className="text-[10px] opacity-75 mt-2 font-mono">Provider: {m.provider}</p>
                   </div>
-
-                  <div className="relative">
-                    <textarea
-                      rows={9}
-                      placeholder={`Enter custom rules object or text here...\nExample:\n{\n  "role": "Customer Support Agent",\n  "prohibited_actions": ["disclose secret keys", "use foul language"],\n  "tone": "empathic and professional"\n}`}
-                      value={rulesEditorContent}
-                      onChange={(e) => handleRulesEditorChange(e.target.value)}
-                      className={`w-full border rounded-2xl p-4 text-xs font-mono leading-relaxed focus:outline-none focus:border-amber-500 transition custom-scrollbar ${
-                        isDark
-                          ? "bg-slate-950 border-slate-800 text-amber-300 placeholder:text-slate-600"
-                          : "bg-slate-900 border-slate-800 text-amber-300 placeholder:text-slate-500"
-                      }`}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className={isDark ? "text-slate-400" : "text-slate-500"}>
-                      {rulesEditorContent.length} characters • {rulesEditorContent.split("\n").filter(Boolean).length} lines
-                    </span>
-                    {rulesEditorContent && (
-                      <button
-                        type="button"
-                        onClick={() => handleRulesEditorChange("")}
-                        className="text-rose-400 hover:underline font-semibold"
-                      >
-                        Clear Rules Editor
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
 
-          {/* STEP 5: INTEGRATIONS (TWO OPTION SEGMENT TABS) */}
-          {currentStep === 5 && (
+          {/* STEP: KNOWLEDGE BASE UPLOAD */}
+          {currentStepObj.id === "knowledge" && (
             <div className="space-y-4">
-              <div>
-                <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  Configure API Integrations
-                </label>
-
-                {/* TWO OPTION TABS IN STEP 5 */}
-                <div className={`flex border-b mb-3 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                  <button
-                    type="button"
-                    onClick={() => setApiOptionTab("postman")}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${apiOptionTab === "postman"
-                        ? "border-amber-500 text-amber-500"
-                        : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-                      }`}
-                  >
-                    <FiUploadCloud />
-                    <span>Option 1: Upload Postman Collection</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setApiOptionTab("manual")}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${apiOptionTab === "manual"
-                        ? "border-blue-500 text-blue-500"
-                        : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
-                      }`}
-                  >
-                    <FiLayers />
-                    <span>Option 2: Add API Manually</span>
-                  </button>
-                </div>
-
-                {/* OPTION 1 FORM */}
-                {apiOptionTab === "manual" && (
-                  <div className={`p-4 border rounded-xl space-y-3 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                    }`}>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        placeholder="API Name (e.g. Create Contact API)"
-                        value={apiName}
-                        onChange={(e) => setApiName(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                      />
-                      <select
-                        value={apiMethod}
-                        onChange={(e) => setApiMethod(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                      >
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                        <option value="PUT">PUT</option>
-                        <option value="PATCH">PATCH</option>
-                        <option value="DELETE">DELETE</option>
-                      </select>
-                    </div>
-
-                    <input
-                      type="text"
-                      placeholder="API Endpoint URL (e.g. https://api.example.com/v1/contacts)"
-                      value={apiUrl}
-                      onChange={(e) => setApiUrl(e.target.value)}
-                      className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                        }`}
-                    />
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <select
-                        value={apiActionType}
-                        onChange={(e) => setApiActionType(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                      >
-                        {ACTION_TYPES.map(a => (
-                          <option key={a.id} value={a.id}>{a.label}</option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={apiAuthType}
-                        onChange={(e) => setApiAuthType(e.target.value)}
-                        className={`border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                      >
-                        <option value="none">No Auth</option>
-                        <option value="apiKey">API Key (x-api-key)</option>
-                        <option value="bearerToken">Bearer Token</option>
-                      </select>
-                    </div>
-
-                    {apiAuthType !== "none" && (
-                      <input
-                        type="password"
-                        placeholder="API Key / Token Value"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                      />
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={addStagedApi}
-                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-lg transition cursor-pointer shadow-md shadow-blue-500/20"
-                    >
-                      <FiPlus /> Add Single API Integration
-                    </button>
-                  </div>
-                )}
-
-                {/* OPTION 2 FORM: POSTMAN UPLOAD IN WIZARD */}
-                {apiOptionTab === "postman" && (
-                  <div className={`p-4 border rounded-xl space-y-3 ${isDark ? "bg-slate-950 border-amber-500/30" : "bg-amber-50/50 border-amber-200"
-                    }`}>
-                    <div>
-                      <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        Upload Postman Collection File (.json)
-                      </label>
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={handlePostmanFileChange}
-                        className={`w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer ${isDark ? "text-slate-300" : "text-slate-700"
-                          }`}
-                      />
-                      {postmanFileName && (
-                        <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-                          <FiFileText /> Loaded: {postmanFileName}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className={`block text-[11px] font-semibold uppercase mb-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        OR Paste Postman JSON Content
-                      </label>
-                      <textarea
-                        rows={3}
-                        placeholder="Paste Postman Collection JSON schema here..."
-                        value={postmanJsonText}
-                        onChange={handlePostmanTextChange}
-                        className={`w-full border rounded-lg p-2.5 text-xs font-mono focus:outline-none focus:border-amber-500 ${isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                      />
-                    </div>
-
-                    {parsedPostmanPreview && (
-                      <div className={`p-3 rounded-lg border text-xs ${parsedPostmanPreview.valid
-                          ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
-                          : "bg-rose-500/10 border-rose-500/30 text-rose-300"
-                        }`}>
-                        {parsedPostmanPreview.valid ? (
-                          <div className="flex items-center justify-between font-semibold">
-                            <span>Collection: {parsedPostmanPreview.collectionName}</span>
-                            <span className="bg-amber-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-bold">
-                              {parsedPostmanPreview.count} Endpoint(s) Found
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="text-rose-400">⚠️ {parsedPostmanPreview.error}</p>
-                        )}
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      disabled={!parsedPostmanPreview?.valid}
-                      onClick={addStagedPostmanCollection}
-                      className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2.5 rounded-lg transition cursor-pointer disabled:opacity-50 shadow-md shadow-amber-500/20"
-                    >
-                      <FiDatabase /> Parse & Stage Collection APIs
-                    </button>
-                  </div>
-                )}
+              <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
+                botType === "CHAT"
+                  ? "bg-blue-500/15 border-blue-500/40 text-blue-300"
+                  : "bg-slate-800/40 border-slate-700 text-slate-400"
+              }`}>
+                <span>
+                  {botType === "CHAT" ? "📘 REQUIRED / HIGHLY RECOMMENDED FOR RAG SEARCH:" : "ℹ️ OPTIONAL KNOWLEDGE DOCUMENTS:"}{" "}
+                  Upload files to build your bot's custom memory bank.
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                  PDF, DOCX, TXT, JSON, MD
+                </span>
               </div>
 
-              {/* STAGED APIS LIST */}
-              {stagedApis.length > 0 && (
+              <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
+                <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
+                <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                  Upload Knowledge Base Documents
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">PDF, DOCX, TXT, JSON, or Markdown (.md)</p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.txt,.docx,.md,.json"
+                  onChange={(e) => handleFileUpload(e, "knowledge")}
+                  className="hidden"
+                  id="modal-knowledge-file-upload"
+                />
+                <label
+                  htmlFor="modal-knowledge-file-upload"
+                  className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+                >
+                  Browse Knowledge Files
+                </label>
+              </div>
+
+              {stagedFiles.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                    Configured Staged API Integrations ({stagedApis.length})
-                  </h4>
-                  {stagedApis.map((apiItem, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-center justify-between p-3 border rounded-lg text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                        }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <span className="font-mono text-[10px] bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded font-bold">
-                          {apiItem.method}
-                        </span>
-                        <span className={`font-semibold truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>{apiItem.name}</span>
-                        {apiItem.collectionName && (
-                          <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">
-                            {apiItem.collectionName}
-                          </span>
-                        )}
+                  <h4 className="text-xs font-semibold text-slate-400">Staged Documents ({stagedFiles.length})</h4>
+                  {stagedFiles.map((file, idx) => (
+                    <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                      <div className="flex items-center gap-2">
+                        <FiFileText className="text-blue-500" />
+                        <span className="font-medium">{file.fileName}</span>
                       </div>
-                      <button
-                        onClick={() => removeStagedApi(idx)}
-                        className={`p-1 transition cursor-pointer ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"}`}
-                        title="Remove Staged API"
-                      >
+                      <button onClick={() => removeStagedFile(idx)} className="text-rose-400 hover:text-rose-300">
                         <FiTrash2 />
                       </button>
                     </div>
@@ -944,102 +786,302 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             </div>
           )}
 
-          {/* STEP 6: ACTION MAPPING & API EXECUTION TEST */}
-          {currentStep === 6 && (
+          {/* STEP: API INTEGRATIONS */}
+          {currentStepObj.id === "apis" && (
             <div className="space-y-4">
+              <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
+                botType === "ACTION"
+                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                  : "bg-slate-800/40 border-slate-700 text-slate-400"
+              }`}>
+                <span>
+                  {botType === "ACTION" ? "⚡ REQUIRED FOR TOOL CALLING:" : "ℹ️ OPTIONAL API INTEGRATIONS:"}{" "}
+                  Add REST endpoints or import a Postman Collection JSON.
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                  Postman Collection .json
+                </span>
+              </div>
+
+              {/* POSTMAN COLLECTION UPLOAD BOX */}
+              <div className={`border-2 border-dashed rounded-2xl p-4 text-center transition ${isDark ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60" : "border-amber-300 bg-amber-50 hover:border-amber-400"}`}>
+                <FiCode className="text-2xl text-amber-500 mx-auto mb-1" />
+                <p className="text-xs font-semibold text-amber-400">Import Postman Collection (.json)</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Automatically parses API requests & endpoints</p>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handlePostmanFileImport}
+                  className="hidden"
+                  id="wizard-postman-upload"
+                />
+                <label
+                  htmlFor="wizard-postman-upload"
+                  className="mt-2 inline-block bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition cursor-pointer shadow-md"
+                >
+                  Select Postman File
+                </label>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">or Add API Manually</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="API Name (e.g. Check Order Status)"
+                  value={apiName}
+                  onChange={(e) => setApiName(e.target.value)}
+                  className={`w-full border rounded-xl px-3 py-2 text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-300"}`}
+                />
+                <div className="flex gap-2">
+                  <select
+                    value={apiMethod}
+                    onChange={(e) => setApiMethod(e.target.value)}
+                    className={`border rounded-xl px-3 py-2 text-xs font-bold outline-none ${isDark ? "bg-slate-950 border-slate-800 text-amber-400" : "bg-slate-50 border-slate-300 text-amber-600"}`}
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Endpoint URL (https://api.example.com/orders)"
+                    value={apiUrl}
+                    onChange={(e) => setApiUrl(e.target.value)}
+                    className={`flex-1 border rounded-xl px-3 py-2 text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-300"}`}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!apiName.trim() || !apiUrl.trim()) {
+                      alert("API Name and Endpoint URL are required.");
+                      return;
+                    }
+                    setStagedApis((prev) => [
+                      ...prev,
+                      {
+                        name: apiName.trim(),
+                        url: apiUrl.trim(),
+                        method: apiMethod,
+                        actionType: apiActionType,
+                        authType: apiAuthType,
+                        apiKey: apiKey.trim()
+                      }
+                    ]);
+                    setApiName("");
+                    setApiUrl("");
+                    setApiKey("");
+                  }}
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                >
+                  Add API Tool
+                </button>
+
+                {stagedApis.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    <h4 className="text-xs font-semibold text-slate-400">Staged APIs ({stagedApis.length})</h4>
+                    {stagedApis.map((api, idx) => (
+                      <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                        <div>
+                          <span className="font-bold text-amber-400 mr-2">[{api.method}]</span>
+                          <span className="font-medium">{api.name}</span>
+                          <div className="text-[10px] opacity-75 font-mono">{api.url}</div>
+                        </div>
+                        <button onClick={() => removeStagedApi(idx)} className="text-rose-400 hover:text-rose-300">
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STEP: RULES & POLICIES */}
+          {currentStepObj.id === "rules" && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs">
+                📜 <strong>System Rules</strong>: Enter specific system instructions & policy constraints. Optional at creation time!
+              </div>
+
+              <textarea
+                rows={5}
+                placeholder="e.g. Speak politely, answer concisely, never hallucinate pricing info..."
+                value={rulesEditorContent}
+                onChange={(e) => setRulesEditorContent(e.target.value)}
+                className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500 transition font-mono ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+              />
+            </div>
+          )}
+
+          {/* STEP: VOICE & AVATAR (VOICE / AVATAR / HYBRID BOTS) */}
+          {currentStepObj.id === "voice_avatar" && (
+            <div className="space-y-5">
+              <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium flex items-center justify-between">
+                <span>🎙️ <strong>Neural Voice Synthesis & Custom Voice Cloning</strong>: Choose a neural voice or upload a custom audio recording to clone.</span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">Studio Engine</span>
+              </div>
+
+              {/* Voice Profile Cards Grid */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">1. Select Voice Profile</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {PRESET_VOICES.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVoiceId(v.id)}
+                      className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                        selectedVoiceId === v.id
+                          ? "bg-purple-600/20 border-purple-500 text-purple-300 ring-2 ring-purple-500/30 font-semibold"
+                          : isDark
+                          ? "bg-slate-950/70 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                      }`}
+                    >
+                      <div className="text-xs font-bold truncate">{v.name}</div>
+                      <div className="text-[10px] opacity-75 mt-1 font-mono">{v.id === "custom-clone" ? "✨ AI Voice Clone" : "Neural TTS"}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Avatar Face Photo & Custom Voice Cloning Dropzone Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Custom Voice Cloning Dropzone */}
+                <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <FiVolume2 className="text-purple-400" />
+                      <span>Custom Voice Clone (.mp3)</span>
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">Instant Clone</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Upload a 10–30 sec clear audio recording sample. The neural engine extracts vocal timbres for real-time speech cloning.
+                  </p>
+                  <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl cursor-pointer bg-purple-500/5 hover:bg-purple-500/10 transition text-center group">
+                    <FiUpload className="text-sm text-purple-400 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-semibold text-purple-300">Upload Voice Sample</span>
+                    <input type="file" accept="audio/*" className="hidden" />
+                  </label>
+                </div>
+
+                {/* Avatar Portrait Photo Upload */}
+                <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <FiUser className="text-blue-400" />
+                      <span>Avatar Portrait Photo</span>
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Upload a front-facing portrait photo or 3D VRM model file for real-time lip-synced avatar generation.
+                  </p>
+                  <div>
+                    <input type="file" accept="image/*,.glb,.vrm" onChange={handleAvatarFileSelected} className="hidden" id="hybrid-avatar-upload" />
+                    <label htmlFor="hybrid-avatar-upload" className="flex items-center justify-center gap-2 p-3 border border-dashed border-blue-500/40 hover:border-blue-400 rounded-xl cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition text-center group">
+                      <FiUpload className="text-sm text-blue-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-blue-300">Select Portrait / 3D Model</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP: PUBLISH & FINISH */}
+          {currentStepObj.id === "publish" && (
+            <div className="space-y-4 text-center py-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/20 animate-pulse">
+                <FiCheckCircle />
+              </div>
               <div>
-                <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  Action Mapping & Tool Calling Preview
-                </h3>
-                <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                  Verify tool action bindings and test execution before launching your AI Agent.
+                <h3 className="text-base font-bold text-emerald-400">Ready to Publish AI Agent</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                  Your <strong>{name}</strong> agent will be published with dynamic capability architecture.
                 </p>
               </div>
 
-              {stagedApis.length === 0 ? (
-                <div className={`p-4 rounded-xl border border-dashed text-center text-xs ${isDark ? "bg-slate-950 border-slate-800 text-slate-500" : "bg-slate-50 border-slate-300 text-slate-500"
-                  }`}>
-                  No custom Tool APIs configured. The bot will operate in Strict RAG Knowledge Mode.
+              <div className={`p-4 rounded-2xl border text-left space-y-2 max-w-md mx-auto ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">Bot Type:</span>
+                  <span className="font-bold text-blue-400">{activePurposeObj.title}</span>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {stagedApis.map((apiItem, idx) => (
-                    <div key={idx} className={`p-4 rounded-xl border space-y-2 text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                      }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded">
-                            {apiItem.method}
-                          </span>
-                          <span className={`font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{apiItem.name}</span>
-                        </div>
-                        <button
-                          onClick={() => handleTestApiExecution(apiItem)}
-                          disabled={testLoading}
-                          className="flex items-center gap-1.5 bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer"
-                        >
-                          <FiPlay className="text-xs" />
-                          <span>Validate Binding</span>
-                        </button>
-                      </div>
-                      <p className={`font-mono text-[11px] truncate ${isDark ? "text-slate-500" : "text-slate-500"}`}>{apiItem.url}</p>
-                    </div>
-                  ))}
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">AI Model:</span>
+                  <span className="font-bold text-slate-200">{selectedModel}</span>
                 </div>
-              )}
-
-              {testResult && (
-                <div className={`p-4 border rounded-xl space-y-2 text-xs ${testResult.success
-                    ? isDark ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-300 text-emerald-900"
-                    : isDark ? "bg-rose-500/10 border-rose-500/30 text-rose-400" : "bg-rose-50 border-rose-300 text-rose-900"
-                  }`}>
-                  <div className="flex items-center gap-2 font-bold">
-                    <FiCheckCircle />
-                    <span>{testResult.message}</span>
-                  </div>
-                  {testResult.data && (
-                    <pre className={`p-2.5 rounded font-mono text-[10px] overflow-x-auto ${isDark ? "bg-slate-900 text-slate-300" : "bg-white text-slate-800"
-                      }`}>
-                      {JSON.stringify(testResult.data, null, 2)}
-                    </pre>
-                  )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">Knowledge Files Staged:</span>
+                  <span className="font-bold text-emerald-400">{stagedFiles.length} files</span>
                 </div>
-              )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">API Tools Staged:</span>
+                  <span className="font-bold text-amber-400">{stagedApis.length} APIs</span>
+                </div>
+              </div>
             </div>
           )}
+
         </div>
 
-        {/* Footer Action Buttons */}
-        <div className={`p-4 border-t flex justify-between items-center ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
-          }`}>
+        {/* Footer Navigation */}
+        <div className={`p-4 border-t flex justify-between items-center shrink-0 ${isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-slate-50"}`}>
           <button
-            onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 1))}
+            type="button"
+            onClick={handlePrevStep}
             disabled={currentStep === 1 || loading}
-            className={`flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer disabled:opacity-40 ${isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200" : "bg-slate-200 hover:bg-slate-300 text-slate-800"
+            className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${currentStep === 1 || loading
+              ? "opacity-40 cursor-not-allowed border border-transparent"
+              : isDark
+                ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                : "bg-slate-200 text-slate-800 hover:bg-slate-300"
               }`}
           >
-            <FiArrowLeft /> Back
+            <FiArrowLeft />
+            <span>Previous</span>
           </button>
 
-          {currentStep < 6 ? (
+          {currentStepObj.id !== "publish" ? (
             <button
+              type="button"
               onClick={handleNextStep}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-blue-600/20 cursor-pointer"
             >
               <span>Next</span>
               <FiArrowRight />
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleCompleteBotCreation}
               disabled={loading}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition cursor-pointer disabled:opacity-50"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
             >
-              <FiCheck />
-              <span>{loading ? "Launching Agent..." : "Launch AI Agent"}</span>
+              {loading ? (
+                <>
+                  <FiCpu className="animate-spin text-sm" />
+                  <span>Publishing Agent...</span>
+                </>
+              ) : (
+                <>
+                  <FiCheckCircle className="text-sm" />
+                  <span>Publish & Complete</span>
+                </>
+              )}
             </button>
           )}
         </div>
+
       </div>
     </div>
   );

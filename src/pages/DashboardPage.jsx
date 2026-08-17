@@ -72,49 +72,80 @@ const DashboardPage = () => {
       }`}>
 
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">AI Agent Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Multi-Agent AI Applications</h1>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">
+              Production Architecture
+            </span>
+          </div>
           <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            Manage multi-tenant isolated AI agents, RAG knowledge bases, and API integrations.
+            Application Workspaces &mdash; Shared Knowledge Base, Shared APIs & Specialized Agents (<span className="font-semibold text-blue-400">Chat, Voice, Avatar, Action, Hybrid</span>).
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition active:scale-[0.98]"
-        >
-          <FiPlus className="text-sm" />
-          <span>Create Bot</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition active:scale-[0.98] cursor-pointer"
+          >
+            <FiPlus className="text-sm" />
+            <span>Create Agent / Application</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Shared Application Architecture Overview Banner */}
+      <div className={`mb-6 p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl font-bold shrink-0">
+            <FiLayers />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-slate-200">Application Workspace Shared Resources</h4>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Agents inside the same application automatically share PDFs, vector embeddings, system rules & REST APIs without duplicate uploads.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 text-xs shrink-0 font-mono">
+          <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-blue-400 font-semibold">
+            {bots.length} Active Agents
+          </span>
+          <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 font-semibold">
+            Shared Memory Active
+          </span>
+        </div>
       </div>
 
       {/* Main Content View */}
       {loading ? (
         <div className={`flex items-center justify-center h-64 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-          Loading AI Agents...
+          Loading Multi-Agent Applications...
         </div>
       ) : bots.length === 0 ? (
-        /* EMPTY STATE: "No Bots Found" */
+        /* EMPTY STATE: "No Applications / Agents Found" */
         <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-300 bg-white"
           }`}>
           <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-500 text-3xl mb-4">
             <FiCpu />
           </div>
-          <h3 className={`text-lg font-bold ${isDark ? "text-slate-100" : "text-slate-900"}`}>No Bots Found</h3>
+          <h3 className={`text-lg font-bold ${isDark ? "text-slate-100" : "text-slate-900"}`}>No AI Applications Found</h3>
           <p className={`text-xs max-w-sm mt-1 mb-6 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            You haven't created any AI Agents yet. Create your first isolated agent with custom knowledge files and API integrations.
+            Create your first application workspace with shared knowledge bases, REST API tools, and specialized AI agents.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-3 rounded-xl shadow-lg shadow-blue-500/20 transition"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-3 rounded-xl shadow-lg shadow-blue-500/20 transition cursor-pointer"
           >
             <FiPlus className="text-base" />
-            <span>Create Your First Bot</span>
+            <span>Create Your First Agent</span>
           </button>
         </div>
       ) : (
-        /* BOTS GRID */
+        /* AGENTS & APPLICATIONS GRID */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {bots.map((bot) => (
             <div
@@ -136,10 +167,24 @@ const DashboardPage = () => {
                         }`}>
                         {bot.name}
                       </h3>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-600"
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-600"
+                          }`}>
+                          {bot.model}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                          bot.botType === "VOICE" ? "bg-purple-500/10 text-purple-400 border-purple-500/30" :
+                          bot.botType === "ACTION" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
+                          bot.botType === "AVATAR" ? "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30" :
+                          bot.botType === "CHAT" ? "bg-blue-500/10 text-blue-400 border-blue-500/30" :
+                          "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                         }`}>
-                        {bot.model}
-                      </span>
+                          {bot.botType === "VOICE" ? "🎙️ Voice Agent" :
+                           bot.botType === "ACTION" ? "⚡ Action Agent" :
+                           bot.botType === "AVATAR" ? "🎭 Avatar Agent" :
+                           bot.botType === "CHAT" ? "💬 Chat Agent" : "🌐 Hybrid Agent"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -148,7 +193,7 @@ const DashboardPage = () => {
                       onClick={(e) => handleEditBot(e, bot)}
                       className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-blue-400" : "text-slate-400 hover:text-blue-600"
                         }`}
-                      title="Edit Bot Settings"
+                      title="Edit Agent Capabilities & Settings"
                     >
                       <FiEdit2 className="text-sm" />
                     </button>
@@ -158,7 +203,7 @@ const DashboardPage = () => {
                       disabled={deleteBotMutation.isPending}
                       className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
                         }`}
-                      title="Delete Bot"
+                      title="Delete Agent"
                     >
                       <FiTrash2 className="text-sm" />
                     </button>
@@ -166,28 +211,35 @@ const DashboardPage = () => {
                 </div>
 
                 <p className={`text-xs line-clamp-2 mb-4 h-8 capitalize ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                  {bot.description || "Isolated multi-tenant RAG agent with dedicated knowledge base."}
+                  {bot.description || "Specialized AI agent sharing application knowledge base & API tools."}
                 </p>
               </div>
 
               <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-slate-800/80" : "border-slate-100"
                 }`}>
                 <div className={`flex items-center gap-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                  <span className="flex items-center gap-1">
-                    <FiFileText className="text-blue-500" />
-                    <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
-                  </span>
+                  {(["CHAT", "HYBRID"].includes(bot.botType || "HYBRID")) && (
+                    <span className="flex items-center gap-1">
+                      <FiFileText className="text-blue-500" />
+                      <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
+                    </span>
+                  )}
 
-                  <button
-                    className="flex items-center gap-1 text-xs font-semibold hover:text-indigo-500 hover:underline transition cursor-pointer"
-                    title="Manage APIs"
-                  >
-                    <FiCode className="text-indigo-500" />
-                    <strong className={isDark ? "text-slate-200" : "text-slate-800"}>
-                      {bot.apiCount || bot.apis?.length || 0}
-                    </strong>{" "}
-                    {(bot.apiCount || bot.apis?.length || 0) === 1 ? "API" : "APIs"}
-                  </button>
+                  {(["ACTION", "HYBRID"].includes(bot.botType || "HYBRID")) && (
+                    <span className="flex items-center gap-1">
+                      <FiCode className="text-indigo-500" />
+                      <strong className={isDark ? "text-slate-200" : "text-slate-800"}>
+                        {bot.apiCount || bot.apis?.length || 0}
+                      </strong>{" "}
+                      {(bot.apiCount || bot.apis?.length || 0) === 1 ? "API" : "APIs"}
+                    </span>
+                  )}
+
+                  {(["AVATAR", "VOICE"].includes(bot.botType)) && (
+                    <span className="flex items-center gap-1 font-semibold text-fuchsia-400">
+                      <span>🎭</span> {bot.botType === "AVATAR" ? "3D Talking Head" : "Voice Audio"}
+                    </span>
+                  )}
                 </div>
 
                 <button
