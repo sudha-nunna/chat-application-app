@@ -1,0 +1,245 @@
+551: [Depth 0]     if (!isMobile && activeSidebarTab !== "chat" &
+552: [Depth 0] 
+553: [Depth 0]     return (
+554: [Depth 0]       <>
+555: [Depth 0]         {activePopover && (
+556: [Depth 1]           <div 
+557: [Depth 1]             className="fixed inset-0 z-10"
+558: [Depth 1]             onClick={(e) => {
+559: [Depth 1]               e.stopPropagation();
+560: [Depth 1]               setActivePopover(null);
+561: [Depth 1]             }}
+562: [Depth 1]           />
+563: [Depth 1]         )}
+564: [Depth 2]         <div className={`flex flex-col h-full over
+565: [Depth 2]         
+566: [Depth 2]         {isMobile ? (
+567: [Depth 3]           <div className="p-4 border-b border-bord
+568: [Depth 3]             <button onClick={() => setIsMobileMenu
+569: [Depth 3]               <FiChevronLeft className="text-xl" /
+570: [Depth 3]             </button>
+571: [Depth 4]             <div className="flex items-center gap-
+572: [Depth 4]               {user?.image ? (
+573: [Depth 4]                 <img src={user.image} alt={user.na
+574: [Depth 4]               ) : (
+575: [Depth 5]                 <div className="w-8 h-8 rounded-fu
+576: [Depth 5]                   {user?.name ? user.name.slice(0,
+577: [Depth 4]                 </div>
+578: [Depth 4]               )}
+579: [Depth 5]               <div className="flex flex-col">
+580: [Depth 5]                 <span className="text-[13px] font-
+581: [Depth 5]                 <span className="text-[11px] text-
+582: [Depth 4]               </div>
+583: [Depth 3]             </div>
+584: [Depth 2]           </div>
+585: [Depth 2]         ) : (
+586: [Depth 3]           <div className={`p-4 border-b border-bor
+587: [Depth 3]             {!isSidebarCollapsed && <span classNam
+588: [Depth 4]             <div className="flex gap-1">
+589: [Depth 4]                <button onClick={() => setIsSidebar
+590: [Depth 4]                  <FiSidebar className="text-sm" />
+591: [Depth 4]                </button>
+592: [Depth 3]             </div>
+593: [Depth 2]           </div>
+594: [Depth 2]         )}
+595: [Depth 2] 
+596: [Depth 2]         {(activeSidebarTab === "chat" || activeSid
+597: [Depth 3]           <div className="flex-1 overflow-y-auto c
+598: [Depth 3]           
+599: [Depth 4]           <div className={`pt-3 pb-2 flex ${isSide
+600: [Depth 4]             <button 
+601: [Depth 4]                onClick={() => activeSidebarTab ===
+602: [Depth 4]                title="New chat"
+603: [Depth 4]                className={`w-full bg-surface-secon
+604: [Depth 4]             >
+605: [Depth 4]                <FiPlus className="text-base shrink
+606: [Depth 4]             </button>
+607: [Depth 3]           </div>
+608: [Depth 3] 
+609: [Depth 4]           <div className={`pt-4 pb-32 space-y-6 cu
+610: [Depth 4]           {activeSidebarTab === "chat" && pinnedCh
+611: [Depth 5]             <div>
+612: [Depth 6]               {!isSidebarCollapsed && !isMobile &&
+613: [Depth 6]                 className="text-xs font-semibold t
+614: [Depth 6]                 onClick={() => setIsPinnedOpen(!is
+615: [Depth 6]               >
+616: [Depth 6]                 <span>Pinned</span>
+617: [Depth 6]                 {isPinnedOpen ? <FiChevronDown cla
+618: [Depth 5]               </div>}
+619: [Depth 5]               
+620: [Depth 5]               {isSidebarCollapsed && !isMobile ? (
+621: [Depth 6]                 <div className="relative group fle
+622: [Depth 6]                   <button 
+623: [Depth 6]                     onClick={() => setActivePopove
+624: [Depth 6]                     className={`w-10 h-10 rounded-
+625: [Depth 6]                     title="Pinned Chats"
+626: [Depth 6]                   >
+627: [Depth 6]                     <TbPin className="text-xl" />
+628: [Depth 6]                   </button>
+629: [Depth 6]                   {activePopover === "pinnedChats"
+630: [Depth 7]                     <div className="absolute left-
+631: [Depth 7]                       <div className="px-4 py-2 te
+632: [Depth 8]                       <div className="overflow-y-a
+633: [Depth 8]                         {pinnedChats.map(c => rend
+634: [Depth 7]                       </div>
+635: [Depth 6]                     </div>
+636: [Depth 6]                   )}
+637: [Depth 5]                 </div>
+638: [Depth 5]               ) : (
+639: [Depth 5]                 isPinnedOpen && (
+640: [Depth 6]                   <div className="space-y-0.5">
+641: [Depth 6]                     {pinnedChats.map(c => renderSi
+642: [Depth 5]                   </div>
+643: [Depth 5]                 )
+644: [Depth 5]               )}
+645: [Depth 4]             </div>
+646: [Depth 4]           )}
+647: [Depth 4] 
+648: [Depth 4]           {activeSidebarTab === "agents" && pinned
+649: [Depth 5]             <div>
+650: [Depth 6]               {!isSidebarCollapsed && !isMobile &&
+651: [Depth 6]                 className="text-xs font-semibold t
+652: [Depth 6]                 onClick={() => setIsPinnedOpen(!is
+653: [Depth 6]               >
+654: [Depth 6]                 <span>Pinned</span>
+655: [Depth 6]                 {isPinnedOpen ? <FiChevronDown cla
+656: [Depth 5]               </div>}
+657: [Depth 5] 
+658: [Depth 5]               {isSidebarCollapsed && !isMobile ? (
+659: [Depth 6]                 <div className="relative group fle
+660: [Depth 6]                   <button 
+661: [Depth 6]                     onClick={() => setActivePopove
+662: [Depth 6]                     className={`w-10 h-10 rounded-
+663: [Depth 6]                     title="Pinned Agents"
+664: [Depth 6]                   >
+665: [Depth 6]                     <TbPin className="text-xl" />
+666: [Depth 6]                   </button>
+667: [Depth 6]                   {activePopover === "pinnedBots" 
+668: [Depth 7]                     <div className="absolute left-
+669: [Depth 7]                       <div className="px-4 py-2 te
+670: [Depth 8]                       <div className="overflow-y-a
+671: [Depth 8]                         {pinnedBots.map(b => rende
+672: [Depth 7]                       </div>
+673: [Depth 6]                     </div>
+674: [Depth 6]                   )}
+675: [Depth 5]                 </div>
+676: [Depth 5]               ) : (
+677: [Depth 5]                 isPinnedOpen && (
+678: [Depth 6]                   <div className="space-y-0.5">
+679: [Depth 6]                     {pinnedBots.map(b => renderSid
+680: [Depth 5]                   </div>
+681: [Depth 5]                 )
+682: [Depth 5]               )}
+683: [Depth 4]             </div>
+684: [Depth 4]           )}
+685: [Depth 4] 
+686: [Depth 4]           {activeSidebarTab === "chat" && (
+687: [Depth 5]             <div>
+688: [Depth 6]               {!isSidebarCollapsed && !isMobile &&
+689: [Depth 6]                 className="text-xs font-semibold t
+690: [Depth 6]                 onClick={() => setIsRecentsOpen(!i
+691: [Depth 6]               >
+692: [Depth 6]                 <span>Recents</span>
+693: [Depth 6]                 {isRecentsOpen ? <FiChevronDown cl
+694: [Depth 5]               </div>}
+695: [Depth 5] 
+696: [Depth 5]               {isSidebarCollapsed && !isMobile ? (
+697: [Depth 6]                 <div className="relative group fle
+698: [Depth 6]                   <button 
+699: [Depth 6]                     onClick={() => setActivePopove
+700: [Depth 6]                     className={`w-10 h-10 rounded-
+701: [Depth 6]                     title="Recent Chats"
+702: [Depth 6]                   >
+703: [Depth 6]                     <FiMessageCircle className="te
+704: [Depth 6]                   </button>
+705: [Depth 6]                   {activePopover === "recentChats"
+706: [Depth 7]                     <div className="absolute left-
+707: [Depth 7]                       <div className="px-4 py-2 te
+708: [Depth 8]                       <div className="overflow-y-a
+709: [Depth 8]                         {recentChats.length === 0 
+710: [Depth 8]                           <div className="text-xs 
+711: [Depth 8]                         ) : (
+712: [Depth 8]                           recentChats.map(c => ren
+713: [Depth 8]                         )}
+714: [Depth 7]                       </div>
+715: [Depth 6]                     </div>
+716: [Depth 6]                   )}
+717: [Depth 5]                 </div>
+718: [Depth 5]               ) : (
+719: [Depth 5]                 isRecentsOpen && (
+720: [Depth 6]                   <div className="space-y-0.5">
+721: [Depth 6]                     {recentChats.length === 0 ? (
+722: [Depth 6]                       <div className="text-xs text
+723: [Depth 6]                     ) : (
+724: [Depth 6]                       recentChats.map(c => renderS
+725: [Depth 6]                     )}
+726: [Depth 5]                   </div>
+727: [Depth 5]                 )
+728: [Depth 5]               )}
+729: [Depth 4]             </div>
+730: [Depth 4]           )}
+731: [Depth 4] 
+732: [Depth 4]           {activeSidebarTab === "agents" && (
+733: [Depth 5]             <div>
+734: [Depth 6]               {!isSidebarCollapsed && !isMobile &&
+735: [Depth 6]                 className="text-xs font-semibold t
+736: [Depth 6]                 onClick={() => setIsAgentsOpen(!is
+737: [Depth 6]               >
+738: [Depth 6]                 <span>My AI Agents</span>
+739: [Depth 6]                 {isAgentsOpen ? <FiChevronDown cla
+740: [Depth 5]               </div>}
+741: [Depth 5] 
+742: [Depth 5]               {isSidebarCollapsed && !isMobile ? (
+743: [Depth 6]                 <div className="relative group fle
+744: [Depth 6]                   <button 
+745: [Depth 6]                     onClick={() => setActivePopove
+746: [Depth 6]                     className={`w-10 h-10 rounded-
+747: [Depth 6]                     title="My AI Agents"
+748: [Depth 6]                   >
+749: [Depth 6]                     <TbRobotFace className="text-x
+750: [Depth 6]                   </button>
+751: [Depth 6]                   {activePopover === "otherBots" &
+752: [Depth 7]                     <div className="absolute left-
+753: [Depth 7]                       <div className="px-4 py-2 te
+754: [Depth 8]                       <div className="overflow-y-a
+755: [Depth 8]                         {otherBots.length === 0 ? 
+756: [Depth 8]                           <div className="text-xs 
+757: [Depth 8]                         ) : (
+758: [Depth 8]                           otherBots.map(b => rende
+759: [Depth 8]                         )}
+760: [Depth 7]                       </div>
+761: [Depth 6]                     </div>
+762: [Depth 6]                   )}
+763: [Depth 5]                 </div>
+764: [Depth 5]               ) : (
+765: [Depth 5]                 isAgentsOpen && (
+766: [Depth 6]                   <div className="space-y-0.5">
+767: [Depth 6]                     {otherBots.length === 0 ? (
+768: [Depth 6]                       <div className="text-xs text
+769: [Depth 6]                     ) : (
+770: [Depth 6]                       otherBots.map(b => renderSid
+771: [Depth 6]                     )}
+772: [Depth 5]                   </div>
+773: [Depth 5]                 )
+774: [Depth 5]               )}
+775: [Depth 4]             </div>
+776: [Depth 4]           )}
+777: [Depth 3]         </div>
+778: [Depth 2]       </div>
+779: [Depth 2]     ) : (
+780: [Depth 3]           <div className="flex-1 flex flex-col ite
+781: [Depth 3]             <span className="text-sm">Content avai
+782: [Depth 3]             <button onClick={() => setIsMobileMenu
+783: [Depth 2]           </div>
+784: [Depth 2]         )}
+785: [Depth 1]       </div>
+786: [Depth 1]     );
+787: [Depth 1]   };
+788: [Depth 1] 
+789: [Depth 1]   if (location.pathname === "/") {
+790: [Depth 1]     return <>{children}</>;
+791: [Depth 1]   }
+792: [Depth 1] 
+793: [Depth 1]   return (
+794: [Depth 2]     <div className={`flex flex-col md:flex-row h-s
+795: [Depth 2]       {!isAuthenticated && !isGoogleCallbackRoute 
