@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchAllPlans } from "../services/planService";
+import { ConstantColorFactor } from "three";
 
 export const usePlans = () => {
   const [plans, setPlans] = useState([]);
@@ -13,6 +14,7 @@ export const usePlans = () => {
       const data = await fetchAllPlans();
       if (data?.success && data?.plans) {
         setPlans(data.plans);
+        console.log("=======>>>>>", data.plans);
       } else {
         setError("Failed to load plans");
       }

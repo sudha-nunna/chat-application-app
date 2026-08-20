@@ -665,7 +665,7 @@ const AppLayout = ({ children }) => {
               <FiChevronLeft className="text-xl" />
             </button>
             <div 
-              className="flex items-center justify-between w-full cursor-pointer group"
+              className="profile-btn flex items-center justify-between w-full cursor-pointer group"
               onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(!isProfileDropdownOpen); }}
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -934,10 +934,13 @@ const AppLayout = ({ children }) => {
         </div>
       </div>
     ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-text-muted p-6 text-center">
+          <>
+          <span></span>
+          {/* <div className="flex-1 flex flex-col items-center justify-center text-text-muted p-6 text-center">
             <span className="text-sm">Content available on {activeSidebarTab === "dashboard" ? "Dashboard" : "Servers"} page.</span>
             <button onClick={() => setIsMobileMenuOpen(false)} className="mt-4 px-4 py-2 bg-surface-secondary hover:bg-interactive-active/40 text-text-primary rounded-lg text-sm transition">Close Menu</button>
-          </div>
+          </div> */}
+           </>
         )}
       </div>
       </>
