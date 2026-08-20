@@ -213,7 +213,7 @@ const BotKnowledgeTab = ({ bot }) => {
   };
 
   return (
-    <div className={`p-6 rounded-2xl border space-y-6 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+    <div className={`p-6 rounded-2xl border space-y-6 ${"bg-white border-border-primary dark:bg-interactive-active dark:border-border-primary"}`}>
       
       {/* HIDDEN DEDICATED FILE INPUTS FOR KNOWLEDGE AND RULES */}
       <input
@@ -248,7 +248,7 @@ const BotKnowledgeTab = ({ bot }) => {
       />
 
       {/* PROMINENT SUB-TAB SELECTOR (KNOWLEDGE BASE vs SYSTEM RULES) */}
-      <div className={`grid grid-cols-2 p-1.5 rounded-2xl border ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"}`}>
+      <div className={`grid grid-cols-2 p-1.5 rounded-2xl border ${"bg-surface-secondary border-border-primary dark:bg-interactive-base dark:border-border-primary"}`}>
         <button
           onClick={() => {
             setActiveSubTab("knowledge");
@@ -257,16 +257,14 @@ const BotKnowledgeTab = ({ bot }) => {
           }}
           className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === "knowledge"
-              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-[1.01]"
-              : isDark
-              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white"
+              ? "bg-interactive-base text-text-primary dark:text-white shadow-lg shadow-black/10/30 scale-[1.01]"
+              : "text-text-primary hover:text-text-primary hover:bg-white dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active/60"
           }`}
         >
           <FiBookOpen className="text-base" />
           <span>Knowledge Documents</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-            activeSubTab === "knowledge" ? "bg-white/20 text-white" : isDark ? "bg-slate-800 text-indigo-400" : "bg-indigo-100 text-indigo-700"
+            activeSubTab === "knowledge" ? "bg-white/20 text-white" : "bg-surface-secondary text-text-primary dark:bg-interactive-active dark:text-text-primary"
           }`}>
             {knowledgeFiles.length}
           </span>
@@ -281,20 +279,18 @@ const BotKnowledgeTab = ({ bot }) => {
           className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === "rules"
               ? "bg-amber-600 text-white shadow-lg shadow-amber-600/30 scale-[1.01]"
-              : isDark
-              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white"
+              : "text-text-primary hover:text-text-primary hover:bg-white dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active/60"
           }`}
         >
           <FiShield className="text-base" />
           <span>Rules Documents</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-            activeSubTab === "rules" ? "bg-white/20 text-white" : isDark ? "bg-slate-800 text-amber-400" : "bg-amber-100 text-amber-700"
+            activeSubTab === "rules" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700 dark:bg-interactive-active dark:text-amber-800"
           }`}>
             {rulesFiles.length}
           </span>
           {rulesCount > 0 && (
-            <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] rounded-full bg-amber-400/20 text-amber-300 font-extrabold border border-amber-400/30">
+            <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] rounded-full bg-amber-400/20 text-amber-600 font-extrabold border border-amber-400/30">
               {rulesCount} Rules
             </span>
           )}
@@ -303,14 +299,14 @@ const BotKnowledgeTab = ({ bot }) => {
 
       {/* NOTIFICATIONS */}
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2 animate-in fade-in">
+        <div className="p-3.5 rounded-xl bg-interactive-base/10 border border-border-primary/20 text-text-primary text-xs flex items-center gap-2 animate-in fade-in">
           <FiAlertCircle className="shrink-0 text-base" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in">
+        <div className="p-3.5 rounded-xl bg-interactive-base/10 border border-border-primary/20 text-text-primary text-xs flex items-center gap-2 animate-in fade-in">
           <FiCheckCircle className="shrink-0 text-base" />
           <span>{success}</span>
         </div>
@@ -322,21 +318,21 @@ const BotKnowledgeTab = ({ bot }) => {
       {activeSubTab === "knowledge" && (
         <div className="space-y-5">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/40">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-primary/40">
             <div>
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
-                <FiBookOpen className="text-indigo-500" />
+                <FiBookOpen className="text-text-primary" />
                 <span>RAG Knowledge Documents</span>
               </h3>
-              <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                Upload knowledge files (PDF, TXT, DOCX, MD) with <code className="text-indigo-400 font-mono">fileCategory="knowledge"</code> to build dedicated vector embeddings.
+              <p className={`text-xs mt-0.5 ${"text-text-primary"}`}>
+                Upload knowledge files (PDF, TXT, DOCX, MD) with <code className="text-text-primary font-mono">fileCategory="knowledge"</code> to build dedicated vector embeddings.
               </p>
             </div>
 
             <button
               onClick={() => knowledgeFileInputRef.current?.click()}
               disabled={saving}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-indigo-600/20 transition cursor-pointer"
+              className="flex items-center gap-2 bg-interactive-base hover:bg-interactive-base disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-black/10/20 transition cursor-pointer"
             >
               {saving ? <FiRefreshCw className="animate-spin text-xs" /> : <FiUpload className="text-xs" />}
               <span>{saving ? "Uploading..." : "Upload Knowledge Document"}</span>
@@ -345,20 +341,20 @@ const BotKnowledgeTab = ({ bot }) => {
 
           {/* Files List */}
           {loading ? (
-            <div className={`flex items-center justify-center h-48 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              <FiRefreshCw className="animate-spin text-lg text-indigo-500 mr-2" />
+            <div className={`flex items-center justify-center h-48 text-xs font-medium ${"text-text-primary"}`}>
+              <FiRefreshCw className="animate-spin text-lg text-text-primary mr-2" />
               <span>Loading Knowledge Base Files...</span>
             </div>
           ) : knowledgeFiles.length === 0 ? (
-            <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
-              <FiBookOpen className="text-4xl text-indigo-400 mx-auto mb-2" />
+            <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/30"}`}>
+              <FiBookOpen className="text-4xl text-text-primary mx-auto mb-2" />
               <h4 className="text-xs font-bold mb-1">No Knowledge Base Files Attached</h4>
-              <p className={`text-[11px] max-w-xs mx-auto mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <p className={`text-[11px] max-w-xs mx-auto mb-4 ${"text-text-primary"}`}>
                 Upload PDF documents or text files to train this bot's knowledge base.
               </p>
               <button
                 onClick={() => knowledgeFileInputRef.current?.click()}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                className="bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
               >
                 Upload First Knowledge File
               </button>
@@ -369,19 +365,19 @@ const BotKnowledgeTab = ({ bot }) => {
                 <div
                   key={file._id}
                   className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
-                    isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"
+                    "bg-interactive-base dark:bg-interactive-base/60 border-border-primary"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0 text-sm">
+                    <div className="w-9 h-9 rounded-lg bg-interactive-base/10 border border-border-primary/20 flex items-center justify-center text-text-primary font-bold shrink-0 text-sm">
                       <FiFileText />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs font-semibold truncate">{file.fileName}</h4>
-                      <div className={`flex items-center gap-2 text-[10px] font-mono mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                        <span className="uppercase font-bold text-indigo-400">{file.fileType || "doc"}</span>
+                      <div className={`flex items-center gap-2 text-[10px] font-mono mt-0.5 ${"text-text-primary"}`}>
+                        <span className="uppercase font-bold text-text-primary">{file.fileType || "doc"}</span>
                         <span>•</span>
-                        <span className="capitalize text-indigo-300 bg-indigo-500/10 px-1.5 py-0.2 rounded">knowledge</span>
+                        <span className="capitalize text-text-muted bg-interactive-base/10 px-1.5 py-0.2 rounded">knowledge</span>
                         <span>•</span>
                         <span>{(file.fileSize ? file.fileSize / 1024 : 0).toFixed(1)} KB</span>
                       </div>
@@ -396,7 +392,7 @@ const BotKnowledgeTab = ({ bot }) => {
                       }}
                       disabled={saving}
                       className={`p-1.5 rounded-lg text-xs transition ${
-                        isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                        "text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
                       }`}
                       title="Replace Knowledge File"
                     >
@@ -406,7 +402,7 @@ const BotKnowledgeTab = ({ bot }) => {
                     <button
                       onClick={() => handleDelete(file)}
                       disabled={saving}
-                      className="p-1.5 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 transition"
+                      className="p-1.5 rounded-lg text-xs text-text-primary hover:bg-interactive-base/10 transition"
                       title="Remove Knowledge File"
                     >
                       <FiTrash2 />
@@ -425,21 +421,21 @@ const BotKnowledgeTab = ({ bot }) => {
       {activeSubTab === "rules" && (
         <div className="space-y-5">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/40">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-primary/40">
             <div>
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
                 <FiShield className="text-amber-500" />
                 <span>Bot Behavior Rules Documents</span>
               </h3>
-              <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                Upload support rules & constraint files (TXT, PDF, MD) with <code className="text-amber-400 font-mono">fileCategory="rules"</code> to enforce system behavior.
+              <p className={`text-xs mt-0.5 ${"text-text-primary"}`}>
+                Upload support rules & constraint files (TXT, PDF, MD) with <code className="text-amber-800 font-mono">fileCategory="rules"</code> to enforce system behavior.
               </p>
             </div>
 
             <button
               onClick={() => rulesFileInputRef.current?.click()}
               disabled={saving}
-              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-amber-600/20 transition cursor-pointer"
+              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-900 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-amber-600/20 transition cursor-pointer"
             >
               {saving ? <FiRefreshCw className="animate-spin text-xs" /> : <FiUpload className="text-xs" />}
               <span>{saving ? "Uploading..." : "Upload Rules Document"}</span>
@@ -448,16 +444,16 @@ const BotKnowledgeTab = ({ bot }) => {
 
           {/* RULES CONFIG SUMMARY OVERVIEW BANNER */}
           <div className={`p-4 rounded-2xl border space-y-3 ${
-            isDark ? "bg-amber-950/20 border-amber-500/30 text-amber-200" : "bg-amber-50/70 border-amber-200 text-amber-900"
+            "bg-amber-50/70 border-amber-200 text-amber-900 dark:bg-amber-950/20 dark:border-amber-800/30 dark:text-amber-200"
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-bold text-xs">
-                <FiShield className="text-amber-400 text-base" />
+                <FiShield className="text-amber-800 text-base" />
                 <span>Parsed Rules Configuration (bot.rulesConfig)</span>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-300">
+                <span className="text-xs font-mono font-bold px-3 py-1 rounded-lg bg-amber-900/20 border border-amber-400/40 text-amber-600">
                   Total Active Rules: {rulesCount}
                 </span>
               </div>
@@ -466,14 +462,14 @@ const BotKnowledgeTab = ({ bot }) => {
             {/* Rules Source Files */}
             {sourceFiles.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                <span className="font-semibold text-amber-400 flex items-center gap-1">
+                <span className="font-semibold text-amber-800 flex items-center gap-1">
                   <FiPaperclip /> Source Files:
                 </span>
                 {sourceFiles.map((sf, idx) => (
                   <span
                     key={idx}
                     className={`px-2 py-0.5 rounded-md font-mono text-[10px] border ${
-                      isDark ? "bg-slate-900 border-amber-500/40 text-slate-300" : "bg-white border-amber-300 text-slate-700"
+                      "bg-white border-amber-300 text-text-primary dark:bg-interactive-active dark:border-amber-800/40 dark:text-text-muted"
                     }`}
                   >
                     📄 {sf}
@@ -485,21 +481,21 @@ const BotKnowledgeTab = ({ bot }) => {
             {/* Extracted Rules Checklist */}
             {rulesList.length > 0 ? (
               <div className={`mt-2 p-3.5 rounded-xl border space-y-2 max-h-56 overflow-y-auto custom-scrollbar ${
-                isDark ? "bg-slate-950/90 border-amber-500/30" : "bg-white border-amber-200 shadow-sm"
+                "bg-white border-amber-200 shadow-sm dark:bg-interactive-base/90 dark:border-amber-800/30"
               }`}>
-                <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5 mb-1">
+                <div className="text-[11px] font-bold text-amber-800 flex items-center gap-1.5 mb-1">
                   <FiList />
                   <span>Rules List ({rulesList.length}):</span>
                 </div>
                 {rulesList.map((rule, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-xs p-1.5 rounded-lg hover:bg-amber-500/10 transition">
-                    <FiCheckSquare className="text-amber-400 text-sm shrink-0 mt-0.5" />
-                    <span className={`leading-relaxed ${isDark ? "text-slate-200" : "text-slate-800"}`}>{rule}</span>
+                  <div key={idx} className="flex items-start gap-2.5 text-xs p-1.5 rounded-lg hover:bg-amber-900/10 transition">
+                    <FiCheckSquare className="text-amber-800 text-sm shrink-0 mt-0.5" />
+                    <span className={`leading-relaxed ${"text-text-primary dark:text-text-muted"}`}>{rule}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs italic text-amber-400/80">
+              <p className="text-xs italic text-amber-800/80">
                 No active system rules extracted. Upload a rules file (e.g. support_rules.txt) with <code className="font-mono">fileCategory="rules"</code> to calculate rulesConfig.
               </p>
             )}
@@ -507,20 +503,20 @@ const BotKnowledgeTab = ({ bot }) => {
 
           {/* Rules Files List */}
           {loading ? (
-            <div className={`flex items-center justify-center h-48 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <div className={`flex items-center justify-center h-48 text-xs font-medium ${"text-text-primary"}`}>
               <FiRefreshCw className="animate-spin text-lg text-amber-500 mr-2" />
               <span>Loading Rules Files...</span>
             </div>
           ) : rulesFiles.length === 0 ? (
-            <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
-              <FiShield className="text-4xl text-amber-400 mx-auto mb-2" />
+            <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/30"}`}>
+              <FiShield className="text-4xl text-amber-800 mx-auto mb-2" />
               <h4 className="text-xs font-bold mb-1">No Rules Files Attached</h4>
-              <p className={`text-[11px] max-w-xs mx-auto mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <p className={`text-[11px] max-w-xs mx-auto mb-4 ${"text-text-primary"}`}>
                 Upload support rules text/PDF files with <code className="font-mono">fileCategory="rules"</code> to enforce mandatory bot constraints.
               </p>
               <button
                 onClick={() => rulesFileInputRef.current?.click()}
-                className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                className="bg-amber-600 hover:bg-amber-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
               >
                 Upload First Rules File
               </button>
@@ -531,19 +527,19 @@ const BotKnowledgeTab = ({ bot }) => {
                 <div
                   key={file._id}
                   className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
-                    isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"
+                    "bg-interactive-base dark:bg-interactive-base/60 border-border-primary"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold shrink-0 text-sm">
+                    <div className="w-9 h-9 rounded-lg bg-amber-900/10 border border-amber-800/20 flex items-center justify-center text-amber-800 font-bold shrink-0 text-sm">
                       <FiShield />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs font-semibold truncate">{file.fileName}</h4>
-                      <div className={`flex items-center gap-2 text-[10px] font-mono mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                        <span className="uppercase font-bold text-amber-400">{file.fileType || "doc"}</span>
+                      <div className={`flex items-center gap-2 text-[10px] font-mono mt-0.5 ${"text-text-primary"}`}>
+                        <span className="uppercase font-bold text-amber-800">{file.fileType || "doc"}</span>
                         <span>•</span>
-                        <span className="capitalize text-amber-300 bg-amber-500/10 px-1.5 py-0.2 rounded font-bold">rules</span>
+                        <span className="capitalize text-amber-600 bg-amber-900/10 px-1.5 py-0.2 rounded font-bold">rules</span>
                         <span>•</span>
                         <span>{(file.fileSize ? file.fileSize / 1024 : 0).toFixed(1)} KB</span>
                       </div>
@@ -558,7 +554,7 @@ const BotKnowledgeTab = ({ bot }) => {
                       }}
                       disabled={saving}
                       className={`p-1.5 rounded-lg text-xs transition ${
-                        isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                        "text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
                       }`}
                       title="Replace Rules File"
                     >
@@ -568,7 +564,7 @@ const BotKnowledgeTab = ({ bot }) => {
                     <button
                       onClick={() => handleDelete(file)}
                       disabled={saving}
-                      className="p-1.5 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 transition"
+                      className="p-1.5 rounded-lg text-xs text-text-primary hover:bg-interactive-base/10 transition"
                       title="Remove Rules File"
                     >
                       <FiTrash2 />

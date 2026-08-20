@@ -1,15 +1,21 @@
 import { useState, useEffect } from "react";
-import Sidebar from "../components/layouts/Sidebar";
+import { useSearchParams } from "react-router-dom";
 import ChatArea from "../components/global/ChatArea";
 import AuthModal from "../components/auth/AuthModal";
 import { useTheme } from "../context/ThemeContext";
 
 const ChatPage = () => {
-  const [currentChatId, setCurrentChatId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlChatId = searchParams.get("chatId");
+
+  const [currentChatId, setCurrentChatId] = useState(urlChatId || null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { isDark } = useTheme();
+
+  useEffect(() => {
+    setCurrentChatId(urlChatId || null);
+  }, [urlChatId]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -20,51 +26,27 @@ const ChatPage = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
 
+  const handleSetCurrentChatId = (newId) => {
+    if (newId) {
+      setSearchParams({ chatId: newId });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   return (
     <div className={`flex flex-1 h-full w-full overflow-hidden relative ${
-      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+      "bg-transparent text-text-primary"
     }`}>
       {!isAuthenticated && (
         <AuthModal onAuthSuccess={triggerSidebarRefresh} />
       )}
 
-      {/* Desktop Threads Sidebar */}
-      <div className="hidden md:flex h-full shrink-0">
-        <Sidebar
-          currentChatId={currentChatId}
-          setCurrentChatId={setCurrentChatId}
-          refreshTrigger={refreshTrigger}
-          onChatUpdated={triggerSidebarRefresh}
-        />
-      </div>
-
-      {/* Mobile Threads Sidebar Drawer Overlay */}
-      {isMobileSidebarOpen && (
-        <div className="md:hidden fixed inset-0 z-40 flex">
-          <div
-            className={`fixed inset-0 backdrop-blur-sm ${
-              isDark ? "bg-slate-950/70" : "bg-slate-900/40"
-            }`}
-            onClick={() => setIsMobileSidebarOpen(false)}
-          />
-          <div className="relative w-72 max-w-[80vw] h-full z-10">
-            <Sidebar
-              currentChatId={currentChatId}
-              setCurrentChatId={setCurrentChatId}
-              refreshTrigger={refreshTrigger}
-              onChatUpdated={triggerSidebarRefresh}
-              onCloseMobile={() => setIsMobileSidebarOpen(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Chat Content Area */}
+      {/* Chat Content Area ONLY - Inner sidebar is now unified in AppLayout */}
       <ChatArea 
         currentChatId={currentChatId} 
-        setCurrentChatId={setCurrentChatId}
+        setCurrentChatId={handleSetCurrentChatId}
         onChatUpdated={triggerSidebarRefresh}
-        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
     </div>
   );

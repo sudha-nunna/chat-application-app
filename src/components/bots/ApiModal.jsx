@@ -239,35 +239,31 @@ for chunk in response.iter_content(chunk_size=1024):
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-interactive-base/75 backdrop-blur-xs animate-fadeIn">
       <div
-        className={`w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden transition-all flex flex-col max-h-[82vh] ${isDark
-          ? "bg-slate-900 border-slate-800 text-slate-100"
-          : "bg-white border-slate-200 text-slate-900"
+        className={`w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden transition-all flex flex-col max-h-[82vh] ${"bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"
           }`}
       >
         {/* Modal Header */}
         <div
-          className={`flex items-center justify-between p-3.5 px-4 border-b shrink-0 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50"
+          className={`flex items-center justify-between p-3.5 px-4 border-b shrink-0 ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/40"
             }`}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 text-base font-bold">
+            <div className="w-8 h-8 rounded-xl bg-interactive-base/10 border border-border-primary/20 flex items-center justify-center text-text-primary text-base font-bold">
               <FiKey />
             </div>
             <div>
               <h2 className="text-xs font-bold tracking-tight">API Key Manager & Integration</h2>
-              <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                Bot: <span className="font-semibold text-indigo-400">{bot?.name}</span>
+              <p className={`text-[10px] ${"text-text-primary dark:text-text-primary"}`}>
+                Bot: <span className="font-semibold text-text-primary">{bot?.name}</span>
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-xl transition ${isDark
-              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+            className={`p-1.5 rounded-xl transition ${"text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
               }`}
           >
             <FiX className="text-base" />
@@ -276,14 +272,12 @@ for chunk in response.iter_content(chunk_size=1024):
 
         {/* Sub-Tab Navigation Bar */}
         {!isFetchingApis && hasKeys && (
-          <div className={`flex items-center border-b px-3 pt-1 shrink-0 ${isDark ? "border-slate-800 bg-slate-950/20" : "border-slate-100 bg-slate-50/50"}`}>
+          <div className={`flex items-center border-b px-3 pt-1 shrink-0 ${"border-border-primary bg-interactive-base/50 dark:border-border-primary dark:bg-interactive-base/20"}`}>
             <button
               onClick={() => setActiveSubTab("keys")}
               className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${activeSubTab === "keys"
-                ? "border-indigo-500 text-indigo-500"
-                : isDark
-                  ? "border-transparent text-slate-400 hover:text-slate-200"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-border-primary text-text-primary"
+                : "border-transparent text-text-primary hover:text-text-primary dark:border-transparent dark:text-text-primary dark:hover:text-text-muted"
                 }`}
             >
               <FiShield className="text-xs" />
@@ -293,10 +287,8 @@ for chunk in response.iter_content(chunk_size=1024):
             <button
               onClick={() => setActiveSubTab("guide")}
               className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${activeSubTab === "guide"
-                ? "border-indigo-500 text-indigo-500"
-                : isDark
-                  ? "border-transparent text-slate-400 hover:text-slate-200"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-border-primary text-text-primary"
+                : "border-transparent text-text-primary hover:text-text-primary dark:border-transparent dark:text-text-primary dark:hover:text-text-muted"
                 }`}
             >
               <FiTerminal className="text-xs" />
@@ -306,10 +298,8 @@ for chunk in response.iter_content(chunk_size=1024):
             <button
               onClick={() => setActiveSubTab("generate")}
               className={`flex items-center gap-1.5 py-2 px-3 text-[11px] font-semibold border-b-2 transition ${activeSubTab === "generate"
-                ? "border-indigo-500 text-indigo-500"
-                : isDark
-                  ? "border-transparent text-slate-400 hover:text-slate-200"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-border-primary text-text-primary"
+                : "border-transparent text-text-primary hover:text-text-primary dark:border-transparent dark:text-text-primary dark:hover:text-text-muted"
                 }`}
             >
               <FiRefreshCw className="text-xs" />
@@ -321,7 +311,7 @@ for chunk in response.iter_content(chunk_size=1024):
         {/* Modal Body Area */}
         <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
           {errorMsg && (
-            <div className="mb-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2">
+            <div className="mb-3 p-2.5 rounded-xl bg-interactive-base/10 border border-border-primary/20 text-text-primary text-xs flex items-center gap-2">
               <FiAlertCircle className="shrink-0 text-base" />
               <span>{errorMsg}</span>
             </div>
@@ -330,27 +320,27 @@ for chunk in response.iter_content(chunk_size=1024):
           {/* 1. INITIAL LOADING STATE (GET ROUTE) */}
           {isFetchingApis ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <FiRefreshCw className="animate-spin text-2xl text-indigo-500 mb-2" />
+              <FiRefreshCw className="animate-spin text-2xl text-text-primary mb-2" />
               <p className="text-xs font-bold tracking-tight">Checking API Keys Status...</p>
-              <p className={`text-[10px] mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <p className={`text-[10px] mt-1 ${"text-text-primary dark:text-text-primary"}`}>
                 Fetching current bot credentials from backend
               </p>
             </div>
           ) : !hasKeys ? (
             /* 2. NO KEYS EXIST (hasKeys === false) */
             <div className="text-center py-5">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl mx-auto mb-2.5">
+              <div className="w-12 h-12 rounded-xl bg-interactive-base/10 border border-border-primary/20 flex items-center justify-center text-text-primary text-xl mx-auto mb-2.5">
                 <FiKey />
               </div>
               <h3 className="text-xs font-bold mb-1">No API Keys Generated</h3>
-              <p className={`text-[11px] max-w-xs mx-auto mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <p className={`text-[11px] max-w-xs mx-auto mb-4 ${"text-text-primary dark:text-text-primary"}`}>
                 {serverMessage}
               </p>
 
               <button
                 onClick={handleGenerateClick}
                 disabled={generateApiMutation.isPending}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition active:scale-[0.99]"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover disabled:opacity-50 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition active:scale-[0.99]"
               >
                 {generateApiMutation.isPending ? (
                   <>
@@ -371,14 +361,14 @@ for chunk in response.iter_content(chunk_size=1024):
               {/* TAB 1: ACTIVE KEYS */}
               {activeSubTab === "keys" && (
                 <div className="space-y-3">
-                  <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"
+                  <div className={`p-3.5 rounded-xl border ${"bg-interactive-base border-border-primary dark:bg-interactive-base/60 dark:border-border-primary"
                     }`}>
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-1.5">
-                        <FiShield className="text-emerald-400 text-xs" />
+                        <FiShield className="text-text-primary text-xs" />
                         <h4 className="text-xs font-bold tracking-tight">Active API Credentials</h4>
                       </div>
-                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono">
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-interactive-base/10 text-text-primary font-mono">
                         Active
                       </span>
                     </div>
@@ -386,17 +376,17 @@ for chunk in response.iter_content(chunk_size=1024):
                     {/* Public API Key */}
                     {activeApiKey && (
                       <div className="mb-2.5">
-                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? "text-slate-400" : "text-slate-500"
+                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${"text-text-primary dark:text-text-primary"
                           }`}>
                           Public API Key (apiKey)
                         </label>
-                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${isDark ? "bg-slate-900 border-slate-800 text-emerald-400" : "bg-white border-slate-300 text-emerald-700"
+                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${"bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-primary"
                           }`}>
                           <span className="truncate mr-2 select-all">{activeApiKey}</span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(activeApiKey, "apiKey")}
-                            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition shrink-0"
+                            className="flex items-center gap-1 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition shrink-0"
                           >
                             {copiedKey ? <FiCheck className="text-xs" /> : <FiCopy className="text-xs" />}
                             <span>{copiedKey ? "Copied" : "Copy Key"}</span>
@@ -408,11 +398,11 @@ for chunk in response.iter_content(chunk_size=1024):
                     {/* Secret Key */}
                     {activeSecretKey && (
                       <div>
-                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? "text-slate-400" : "text-slate-500"
+                        <label className={`block text-[9px] font-bold uppercase tracking-wider mb-1 ${"text-text-primary dark:text-text-primary"
                           }`}>
                           Secret Key (secretKey)
                         </label>
-                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${isDark ? "bg-slate-900 border-slate-800 text-indigo-400" : "bg-white border-slate-300 text-indigo-700"
+                        <div className={`flex items-center justify-between p-2 rounded-lg border font-mono text-xs ${"bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-primary"
                           }`}>
                           <span className="truncate mr-2 select-all tracking-wider font-mono">
                             {showSecret
@@ -425,9 +415,7 @@ for chunk in response.iter_content(chunk_size=1024):
                             <button
                               type="button"
                               onClick={() => setShowSecret(!showSecret)}
-                              className={`p-1 rounded-md transition ${isDark
-                                ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                                : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                              className={`p-1 rounded-md transition ${"text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
                                 }`}
                               title={showSecret ? "Hide Secret Key" : "Show Secret Key"}
                             >
@@ -436,7 +424,7 @@ for chunk in response.iter_content(chunk_size=1024):
                             <button
                               type="button"
                               onClick={() => copyToClipboard(activeSecretKey, "secretKey")}
-                              className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition"
+                              className="flex items-center gap-1 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition"
                             >
                               {copiedSecret ? <FiCheck className="text-xs" /> : <FiCopy className="text-xs" />}
                               <span>{copiedSecret ? "Copied" : "Copy Secret"}</span>
@@ -447,7 +435,7 @@ for chunk in response.iter_content(chunk_size=1024):
                     )}
 
                     {apiResponse?.keyCreatedAt && (
-                      <p className="text-[9px] text-slate-500 mt-2 pt-1.5 border-t border-slate-800/40 text-right font-mono">
+                      <p className="text-[9px] text-text-primary mt-2 pt-1.5 border-t border-border-primary/40 text-right font-mono">
                         Created: {new Date(apiResponse.keyCreatedAt).toLocaleString()}
                       </p>
                     )}
@@ -463,7 +451,7 @@ for chunk in response.iter_content(chunk_size=1024):
                         }
                       }}
                       disabled={deleteApiKeysMutation.isPending}
-                      className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                      className="text-[11px] text-text-primary hover:text-text-muted font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
                     >
                       <FiTrash2 className="text-xs" />
                       <span>{deleteApiKeysMutation.isPending ? "Revoking Keys..." : "Revoke / Delete Keys"}</span>
@@ -471,7 +459,7 @@ for chunk in response.iter_content(chunk_size=1024):
 
                     <button
                       onClick={() => setActiveSubTab("guide")}
-                      className="text-[11px] text-indigo-400 hover:underline font-semibold flex items-center gap-1"
+                      className="text-[11px] text-text-primary hover:underline font-semibold flex items-center gap-1"
                     >
                       <FiTerminal className="text-xs" />
                       <span>View Integration Guide →</span>
@@ -484,27 +472,27 @@ for chunk in response.iter_content(chunk_size=1024):
               {activeSubTab === "guide" && (
                 <div className="space-y-3">
                   {/* Endpoint & Headers Specs Box */}
-                  <div className={`p-3 rounded-xl border font-mono text-xs space-y-2 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+                  <div className={`p-3 rounded-xl border font-mono text-xs space-y-2 ${"bg-interactive-base border-border-primary dark:bg-interactive-base/80 dark:border-border-primary"
                     }`}>
-                    <div className="flex items-center justify-between border-b pb-1.5 border-slate-800/50">
+                    <div className="flex items-center justify-between border-b pb-1.5 border-border-primary/50">
                       <div className="flex items-center gap-1.5 truncate">
-                        <span className="font-bold text-indigo-400 text-[10px] px-1.5 py-0.5 bg-indigo-500/10 rounded">POST</span>
-                        <span className="truncate text-[11px] text-slate-200 font-semibold">{fullEndpointUrl}</span>
+                        <span className="font-bold text-text-primary text-[10px] px-1.5 py-0.5 bg-interactive-base/10 rounded">POST</span>
+                        <span className="truncate text-[11px] text-text-muted font-semibold">{fullEndpointUrl}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(fullEndpointUrl, "url")}
-                        className="text-[10px] font-bold text-indigo-400 hover:underline shrink-0"
+                        className="text-[10px] font-bold text-text-primary hover:underline shrink-0"
                       >
                         {copiedUrl ? "Copied" : "Copy URL"}
                       </button>
                     </div>
 
-                    <div className="text-[10px] space-y-1 text-slate-400 pt-0.5">
-                      <p><strong className="text-indigo-400">X-Bot-Api-Key:</strong> <span className="text-emerald-400 select-all">{apiKeyPlaceholder}</span></p>
-                      <p><strong className="text-indigo-400">X-Bot-Secret-Key:</strong> <span className="text-emerald-400 select-all">{secretKeyPlaceholder}</span></p>
-                      <p><strong className="text-slate-400">Content-Type:</strong> application/json | <strong className="text-slate-400">Accept:</strong> text/event-stream</p>
-                      <p><strong className="text-amber-400">Payload:</strong> <code className="text-slate-300">{"{"} "message": "...", "conversationId": "..." {"}"}</code> <span className="text-slate-500 font-sans">(conversationId is null for 1st message)</span></p>
+                    <div className="text-[10px] space-y-1 text-text-primary pt-0.5">
+                      <p><strong className="text-text-primary">X-Bot-Api-Key:</strong> <span className="text-text-primary select-all">{apiKeyPlaceholder}</span></p>
+                      <p><strong className="text-text-primary">X-Bot-Secret-Key:</strong> <span className="text-text-primary select-all">{secretKeyPlaceholder}</span></p>
+                      <p><strong className="text-text-primary">Content-Type:</strong> application/json | <strong className="text-text-primary">Accept:</strong> text/event-stream</p>
+                      <p><strong className="text-amber-800">Payload:</strong> <code className="text-text-muted">{"{"} "message": "...", "conversationId": "..." {"}"}</code> <span className="text-text-primary font-sans">(conversationId is null for 1st message)</span></p>
                     </div>
                   </div>
 
@@ -518,10 +506,8 @@ for chunk in response.iter_content(chunk_size=1024):
                             type="button"
                             onClick={() => setSelectedLang(lang)}
                             className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition ${selectedLang === lang
-                              ? "bg-indigo-600 text-white shadow-xs"
-                              : isDark
-                                ? "bg-slate-900 text-slate-400 hover:text-slate-200"
-                                : "bg-slate-200 text-slate-600 hover:text-slate-900"
+                              ? "bg-interactive-base text-text-primary dark:text-white shadow-xs"
+                              : "bg-surface-secondary text-text-primary hover:text-text-primary dark:bg-interactive-active dark:text-text-primary dark:hover:text-text-muted"
                               }`}
                           >
                             {lang === "javascript" ? "JS (fetch)" : lang}
@@ -532,15 +518,15 @@ for chunk in response.iter_content(chunk_size=1024):
                       <button
                         type="button"
                         onClick={() => copyToClipboard(getCodeSnippet(selectedLang), "snippet")}
-                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:underline"
+                        className="flex items-center gap-1 text-[10px] font-bold text-text-primary hover:underline"
                       >
-                        {copiedSnippet ? <FiCheck className="text-xs text-emerald-400" /> : <FiCopy className="text-xs" />}
+                        {copiedSnippet ? <FiCheck className="text-xs text-text-primary" /> : <FiCopy className="text-xs" />}
                         <span>{copiedSnippet ? "Copied Code" : "Copy Code"}</span>
                       </button>
                     </div>
 
                     {/* Compact Code Block */}
-                    <pre className={`p-2.5 rounded-xl border text-[11px] font-mono max-h-36 overflow-auto whitespace-pre custom-scrollbar ${isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-900 border-slate-800 text-slate-200"
+                    <pre className={`p-2.5 rounded-xl border text-[11px] font-mono max-h-36 overflow-auto whitespace-pre custom-scrollbar ${"bg-interactive-active border-border-primary text-text-muted dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"
                       }`}>
                       <code>{getCodeSnippet(selectedLang)}</code>
                     </pre>
@@ -550,14 +536,14 @@ for chunk in response.iter_content(chunk_size=1024):
 
               {/* TAB 3: REGENERATE KEYS */}
               {activeSubTab === "generate" && (
-                <div className={`p-4 rounded-xl border space-y-3 ${isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-200"
+                <div className={`p-4 rounded-xl border space-y-3 ${"bg-interactive-base border-border-primary dark:bg-interactive-base/40 dark:border-border-primary"
                   }`}>
                   <div className="flex items-center gap-2">
-                    <FiRefreshCw className="text-indigo-400 text-xs" />
+                    <FiRefreshCw className="text-text-primary text-xs" />
                     <h5 className="text-xs font-bold">Regenerate API Credentials</h5>
                   </div>
 
-                  <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-[11px] ${"text-text-primary dark:text-text-primary"}`}>
                     Generating new keys will instantly overwrite your current active API key and Secret key.
                   </p>
 
@@ -565,7 +551,7 @@ for chunk in response.iter_content(chunk_size=1024):
                     type="button"
                     onClick={handleGenerateClick}
                     disabled={generateApiMutation.isPending}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition active:scale-[0.99]"
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover disabled:opacity-50 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition active:scale-[0.99]"
                   >
                     {generateApiMutation.isPending ? (
                       <>

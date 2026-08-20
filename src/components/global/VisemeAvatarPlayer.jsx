@@ -198,9 +198,9 @@ const VisemeAvatarPlayer = ({ speechData, avatarConfig = {}, isAutoPlay = true, 
   const mouthTransform = getMouthTransform(currentViseme.shape);
 
   return (
-    <div className="relative w-full max-w-sm mx-auto overflow-hidden rounded-2xl bg-slate-900 border border-slate-700/60 shadow-xl group">
+    <div className="relative w-full max-w-sm mx-auto overflow-hidden rounded-2xl bg-interactive-active border border-border-primary/60 shadow-xl group">
       {/* Avatar Container */}
-      <div className="relative w-full h-56 bg-slate-950 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-56 bg-interactive-base flex items-center justify-center overflow-hidden">
         {is3DAvatar ? (
           <AvatarContainer
             modelUrl={model3DUrl}
@@ -245,8 +245,8 @@ const VisemeAvatarPlayer = ({ speechData, avatarConfig = {}, isAutoPlay = true, 
             >
               {isPlaying && currentViseme.shape !== "rest" && (
                 <>
-                  <div className="w-4/5 h-[3px] bg-slate-100/90 rounded-sm mb-0.5 shadow-sm" />
-                  <div className="w-3/5 h-[3px] bg-rose-600/80 rounded-full mt-auto" />
+                  <div className="w-4/5 h-[3px] bg-surface-secondary/90 rounded-sm mb-0.5 shadow-sm" />
+                  <div className="w-3/5 h-[3px] bg-interactive-base/80 rounded-full mt-auto" />
                 </>
               )}
             </div>
@@ -255,8 +255,8 @@ const VisemeAvatarPlayer = ({ speechData, avatarConfig = {}, isAutoPlay = true, 
 
         {/* Live Speaking Indicator Overlay */}
         {isPlaying && (
-          <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-red-500/85 backdrop-blur-md text-white text-xs font-semibold shadow-md animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+          <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-interactive-base/85 backdrop-blur-md text-text-primary dark:text-white text-xs font-semibold shadow-md animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-interactive-hover animate-ping" />
             <span>Speaking...</span>
           </div>
         )}
@@ -264,19 +264,19 @@ const VisemeAvatarPlayer = ({ speechData, avatarConfig = {}, isAutoPlay = true, 
         {/* Audio Waveform Animation when playing */}
         {isPlaying && (
           <div className="absolute bottom-3 right-3 flex items-end gap-1 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10">
-            <span className="w-1 bg-red-400 rounded-full animate-[bounce_0.8s_infinite_100ms]" style={{ height: "12px" }} />
-            <span className="w-1 bg-red-400 rounded-full animate-[bounce_0.8s_infinite_300ms]" style={{ height: "18px" }} />
-            <span className="w-1 bg-red-400 rounded-full animate-[bounce_0.8s_infinite_200ms]" style={{ height: "10px" }} />
-            <span className="w-1 bg-red-400 rounded-full animate-[bounce_0.8s_infinite_400ms]" style={{ height: "15px" }} />
+            <span className="w-1 bg-interactive-base rounded-full animate-[bounce_0.8s_infinite_100ms]" style={{ height: "12px" }} />
+            <span className="w-1 bg-interactive-base rounded-full animate-[bounce_0.8s_infinite_300ms]" style={{ height: "18px" }} />
+            <span className="w-1 bg-interactive-base rounded-full animate-[bounce_0.8s_infinite_200ms]" style={{ height: "10px" }} />
+            <span className="w-1 bg-interactive-base rounded-full animate-[bounce_0.8s_infinite_400ms]" style={{ height: "15px" }} />
           </div>
         )}
       </div>
 
       {/* Progress Bar & Audio Player Controls */}
-      <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-3">
+      <div className="p-3 bg-interactive-active border-t border-border-primary flex items-center gap-3">
         <button
           onClick={togglePlayPause}
-          className="p-2 rounded-full bg-red-600 hover:bg-red-500 text-white transition-transform active:scale-95 shadow-md flex items-center justify-center"
+          className="p-2 rounded-full bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white transition-transform active:scale-95 shadow-md flex items-center justify-center"
           title={isPlaying ? "Pause Speech" : "Play Speech"}
         >
           {isPlaying ? <FiPause size={16} /> : <FiPlay size={16} className="ml-0.5" />}
@@ -284,13 +284,13 @@ const VisemeAvatarPlayer = ({ speechData, avatarConfig = {}, isAutoPlay = true, 
 
         {/* Progress Bar */}
         <div className="flex-1 flex flex-col gap-1">
-          <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-interactive-active h-1.5 rounded-full overflow-hidden">
             <div
-              className="bg-gradient-to-r from-red-500 to-amber-500 h-full transition-all duration-100 ease-linear"
+              className="bg-gradient-to-r from-interactive-base to-amber-500 h-full transition-all duration-100 ease-linear"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="flex justify-between items-center text-[10px] text-slate-400">
+          <div className="flex justify-between items-center text-[10px] text-text-primary">
             <span>Viseme: {currentViseme.shape}</span>
             <span>{isPlaying ? "Playing" : "Paused"}</span>
           </div>
@@ -298,7 +298,7 @@ const VisemeAvatarPlayer = ({ speechData, avatarConfig = {}, isAutoPlay = true, 
 
         <button
           onClick={toggleMute}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          className="p-2 rounded-lg text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:hover:text-white dark:hover:bg-interactive-active transition-colors"
           title={isMuted ? "Unmute Audio" : "Mute Audio"}
         >
           {isMuted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}

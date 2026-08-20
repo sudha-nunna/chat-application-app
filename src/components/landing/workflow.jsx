@@ -106,7 +106,7 @@ const NodeComponent = ({ node, inView, isMobile }) => {
           )}
 
           <div className="relative mb-1.5 xl:mb-2 flex items-center justify-center">
-            <div className="relative z-10 p-1.5 rounded-full border border-neutral-800 bg-neutral-950/80">
+            <div className="relative z-10 p-1.5 rounded-full border border-border-primary bg-interactive-base/80">
               <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 ${iconColor}`} />
             </div>
             
@@ -126,7 +126,7 @@ const NodeComponent = ({ node, inView, isMobile }) => {
             )}
           </div>
 
-          <span className="text-[9px] sm:text-[10px] lg:text-[9px] xl:text-[10px] font-medium text-neutral-200 text-center leading-[1.2]">
+          <span className="text-[9px] sm:text-[10px] lg:text-[9px] xl:text-[10px] font-medium text-text-muted text-center leading-[1.2]">
             {node.label}
           </span>
         </div>

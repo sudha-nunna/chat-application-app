@@ -457,7 +457,7 @@ export function CtaSection() {
     >
       <div className="absolute inset-0 z-0 bg-[url('/footer-bg.png')] bg-cover bg-center bg-no-repeat opacity-30 mix-blend-screen pointer-events-none" />
       <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
-        <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-4">READY TO AUTOMATE?</div>
+        <div className="text-[11px] font-bold text-text-primary uppercase tracking-widest mb-4">READY TO AUTOMATE?</div>
         <h2 className="text-4xl sm:text-5xl md:text-7xl font-display tracking-tight font-medium mb-8">
           Build Your AI Workforce Today.
         </h2>

@@ -5,22 +5,82 @@
 @theme {
   --font-sans: "Plus Jakarta Sans", sans-serif;
   --font-display: "Outfit", sans-serif;
-  --color-surface: var(--body-bg);
-  
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-tertiary: var(--surface-tertiary);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+  --color-border-primary: var(--border-primary);
+  --color-border-secondary: var(--border-secondary);
+  --color-border-focus: var(--border-focus);
+  --color-interactive-base: var(--interactive-base);
+  --color-interactive-hover: var(--interactive-hover);
+  --color-interactive-active: var(--interactive-active);
+  --color-interactive-inverse: var(--interactive-inverse);
+  --color-interactive-inverse-hover: var(--interactive-inverse-hover);
+  --color-surface-dropdown: var(--surface-dropdown);
+  --color-interactive-selected: var(--interactive-selected);
+  --color-accent-primary: var(--accent-primary);
 }
 
 /* =========================================
    Theme Variables
    ========================================= */
 [data-theme="dark"] {
-  /* body */
-  --body-bg: #050505;
-  --text-primary: #f8fafc;
+  --body-bg: #121212;
+  --surface-primary: #121212;
+  --surface-secondary: #000000;
+  --surface-tertiary: #030303;
+  --surface-inverse: #ffffff;
+  
+  --text-primary: #ececec;
+  --text-secondary: #b4b4b4;
+  --text-muted: #9b9b9b;
+  --text-inverse: #121212;
+  
+  --border-primary: #151515;
+  --border-secondary: #0d0d0d;
+  --border-focus: #ececec;
+  
+  --interactive-base: #030303;
+  --interactive-hover: #424242;
+  --interactive-active: #050505;
+  --interactive-inverse: #ececec;
+  --interactive-inverse-hover: #ffffff;
+  
+  --surface-dropdown: #2f2f2f;
+  --interactive-selected: #181818;
+  --accent-primary: #146bea;
 }
 
 [data-theme="light"] {
-  --body-bg: #f8fafc;
-  --text-primary: #0f172a;
+  --body-bg: #ffffff;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f9f9f9;
+  --surface-tertiary: #f4f4f4;
+  --surface-inverse: #212121;
+  
+  --text-primary: #0d0d0d;
+  --text-secondary: #4d4d4d;
+  --text-muted: #7d7d7d;
+  --text-inverse: #ffffff;
+  
+  --border-primary: #e5e5e5;
+  --border-secondary: #f0f0f0;
+  --border-focus: #0d0d0d;
+  
+  --interactive-base: #f4f4f4;
+  --interactive-hover: #e5e5e5;
+  --interactive-active: #d1d1d1;
+  --interactive-inverse: #0d0d0d;
+  --interactive-inverse-hover: #212121;
+  
+  --surface-dropdown: #ffffff;
+  --interactive-selected: #f3f4f6;
+  --accent-primary: #276dd3;
 }
 
 /* =========================================
@@ -34,7 +94,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
-  background-color: var(--boyd-bg);
+  background-color: var(--body-bg);
   color: var(--text-primary);
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -66,7 +126,6 @@ body {
 .text-gradient-accent {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400;
 }
-
 .bg-gradient-accent {
   @apply bg-gradient-to-r from-blue-400 to-violet-400;
 }

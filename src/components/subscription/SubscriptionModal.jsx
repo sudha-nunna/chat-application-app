@@ -52,33 +52,33 @@ const SubscriptionModal = () => {
       {/* Backdrop */}
       <div
         className={`fixed inset-0 backdrop-blur-md transition-opacity ${
-          isDark ? "bg-slate-950/80" : "bg-slate-900/40"
+          "bg-interactive-active/40 dark:bg-interactive-base/80"
         }`}
         onClick={() => setIsUpgradeModalOpen(false)}
       />
 
       {/* Dialog */}
       <div className={`relative w-full max-w-5xl border rounded-3xl shadow-2xl overflow-hidden z-10 my-auto ${
-        isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+        "bg-white border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-white"
       }`}>
         {/* Header Bar */}
         <div className={`p-6 border-b flex items-center justify-between ${
-          isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50"
+          "border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-active/50"
         }`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-interactive-base to-interactive-hover flex items-center justify-center text-white text-xl shadow-lg shadow-black/10/20">
               <FiZap className="animate-pulse" />
             </div>
             <div>
-              <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>Upgrade Your Plan</h2>
-              <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Unlock high priority processing, expanded agent limits, and enterprise features</p>
+              <h2 className={`text-lg font-bold tracking-tight ${"text-text-primary dark:text-white"}`}>Upgrade Your Plan</h2>
+              <p className={`text-xs ${"text-text-primary dark:text-text-primary"}`}>Unlock high priority processing, expanded agent limits, and enterprise features</p>
             </div>
           </div>
 
           <button
             onClick={() => setIsUpgradeModalOpen(false)}
             className={`p-2 rounded-xl transition ${
-              isDark ? "text-slate-400 hover:text-white hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              "text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-white dark:hover:bg-interactive-active"
             }`}
           >
             <FiX className="text-xl" />
@@ -92,8 +92,8 @@ const SubscriptionModal = () => {
             <div
               className={`p-3 rounded-xl text-xs font-semibold text-center border ${
                 feedback.type === "success"
-                  ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-500 border-rose-500/30"
+                  ? "bg-interactive-base/20 text-text-primary border-border-primary/30"
+                  : "bg-interactive-base/20 text-text-primary border-border-primary/30"
               }`}
             >
               {feedback.message}
@@ -102,26 +102,30 @@ const SubscriptionModal = () => {
 
           {/* Billing Cycle Switch */}
           <div className="flex justify-center items-center gap-3">
-            <span className={`text-xs font-semibold ${!isAnnual ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"}`}>
+            <span className={`text-xs font-semibold ${!isAnnual ? ("text-text-primary dark:text-white") : "text-text-primary"}`}>
               Monthly Billing
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative w-12 h-6 rounded-full p-1 transition-colors border focus:outline-none ${
-                isDark ? "bg-slate-800 border-slate-700" : "bg-slate-200 border-slate-300"
+              className={`relative w-12 h-6 rounded-full p-1 transition-colors focus:outline-none ring-1 ring-inset ring-border-primary/50 ${
+                isAnnual
+                  ? "bg-text-primary dark:bg-white ring-text-primary dark:ring-white"
+                  : "bg-black/10 dark:bg-black/40"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-blue-600 shadow-md transition-transform ${
-                  isAnnual ? "translate-x-6" : "translate-x-0"
+                className={`w-4 h-4 rounded-full shadow-md transition-transform ${
+                  isAnnual
+                    ? "translate-x-6 bg-white dark:bg-black"
+                    : "translate-x-0 bg-white"
                 }`}
               />
             </button>
             <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-semibold ${isAnnual ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"}`}>
+              <span className={`text-xs font-semibold ${isAnnual ? ("text-text-primary dark:text-white") : "text-text-primary"}`}>
                 Annual Billing
               </span>
-              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold bg-interactive-base/20 text-text-primary border border-border-primary/30 px-2 py-0.5 rounded-full">
                 Save 20%
               </span>
             </div>
@@ -130,11 +134,11 @@ const SubscriptionModal = () => {
           {/* Dynamic Plan Cards Grid */}
           {plansLoading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <FiRefreshCw className="text-2xl text-blue-500 animate-spin" />
-              <p className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading subscription plans...</p>
+              <FiRefreshCw className="text-2xl text-text-primary animate-spin" />
+              <p className={`text-xs font-medium ${"text-text-primary dark:text-text-primary"}`}>Loading subscription plans...</p>
             </div>
           ) : plansError ? (
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs text-center">
+            <div className="p-4 rounded-2xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs text-center">
               {plansError}
             </div>
           ) : (
@@ -154,10 +158,10 @@ const SubscriptionModal = () => {
 
           {/* SaaS Trust Footer */}
           <div className={`pt-4 border-t flex flex-wrap items-center justify-between text-xs gap-2 ${
-            isDark ? "border-slate-800/60 text-slate-400" : "border-slate-200 text-slate-500"
+            "border-border-primary text-text-primary dark:border-border-primary/60 dark:text-text-primary"
           }`}>
             <div className="flex items-center gap-2">
-              <FiShield className="text-blue-500" />
+              <FiShield className="text-text-primary" />
               <span>Cancel or downgrade anytime with 1-click</span>
             </div>
             <div className="flex items-center gap-4">

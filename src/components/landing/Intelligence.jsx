@@ -14,7 +14,7 @@ export function DocumentSection() {
 
   return (
     <motion.section ref={containerRef} style={{ y: y1, opacity }} className="py-32 bg-[#050505] px-6 md:px-12 border-t border-white/5 relative">
-      <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-blue-900/10 to-transparent pointer-events-none" />
+      <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-interactive-base/10 to-transparent pointer-events-none" />
       
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
         <div>
@@ -32,7 +32,46 @@ export function DocumentSection() {
           </ul>
         </div>
         
-       <div>
+        {/* <div className="relative h-[500px] flex items-center justify-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="w-full max-w-md glass-panel p-1 relative z-10"
+          >
+            <div className="bg-[#0a0a0a] rounded-xl p-6 h-full">
+              <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                <Search className="w-5 h-5 text-white/40" />
+                <div className="text-sm text-white/50 font-mono">"What is our Q3 leave policy?"</div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                  <p className="text-sm leading-relaxed mb-3">According to the updated Employee Handbook (v2.4), Q3 leave requires a 2-week notice and approval from department head.</p>
+                  <div className="flex gap-2">
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 bg-white/5 rounded text-white/50 flex items-center gap-1"><FileText className="w-3 h-3"/> Handbook.pdf (Pg 12)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+          
+         
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+             <motion.div 
+                animate={{ rotate: 360 }} 
+                transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                className="w-80 h-80 border border-white/5 rounded-full border-dashed"
+             />
+             <motion.div 
+                animate={{ rotate: -360 }} 
+                transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
+                className="absolute w-96 h-96 border border-white/5 rounded-full"
+             />
+          </div>
+        </div> */}
+
+        <div>
         <Workflow />
        </div>
       </div>
@@ -60,7 +99,7 @@ export function MemorySection() {
           {/* <div className="absolute inset-0 flex items-center justify-center">
             
             <motion.div className="relative w-64 h-64">
-              <div className="absolute inset-0 bg-violet-500/20 blur-[80px] rounded-full" />
+              <div className="absolute inset-0 bg-interactive-base/20 blur-[80px] rounded-full" />
               <div className="absolute inset-0 rounded-full border border-white/10 flex items-center justify-center">
                 <Brain className="w-8 h-8 text-white/50" />
               </div>
@@ -92,7 +131,7 @@ export function MemorySection() {
         </div>
 
         <div className="flex-1">
-          <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-3">AI WORKSPACE</div>
+          <div className="text-[11px] font-bold text-text-primary uppercase tracking-widest mb-3">AI WORKSPACE</div>
           <h2 className="text-3xl md:text-5xl font-display mb-6">
             Talk to Your Agents. Get Work Done.
           </h2>
@@ -101,14 +140,14 @@ export function MemorySection() {
           </p>
           <div className="grid grid-cols-2 gap-6">
             <div className="glass-panel p-5">
-              <Database className="w-5 h-5 text-violet-400 mb-3" />
+              <Database className="w-5 h-5 text-text-primary mb-3" />
               <h4 className="font-medium text-sm mb-1">Conversational Workspace</h4>
               <p className="text-xs text-white/40">
                 Interact naturally with your agents.
               </p>
             </div>
             <div className="glass-panel p-5">
-              <Layers className="w-5 h-5 text-violet-400 mb-3" />
+              <Layers className="w-5 h-5 text-text-primary mb-3" />
               <h4 className="font-medium text-sm mb-1">Actionable Results</h4>
               <p className="text-xs text-white/40">
                 One conversation can start an entire workflow.
@@ -134,7 +173,7 @@ export function StudioSection() {
     <motion.section ref={containerRef} style={{ y: y1, opacity }} className="py-32 bg-[#050505] px-6 md:px-12 relative">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-24">
-          <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-3">AI AGENTS</div>
+          <div className="text-[11px] font-bold text-text-primary uppercase tracking-widest mb-3">AI AGENTS</div>
           <h2 className="text-3xl md:text-5xl font-display mb-6">Create AI Agents for Real Work.</h2>
           <p className="text-white/50 max-w-2xl mx-auto text-lg">Build specialized AI agents with their own instructions, knowledge, tools, and capabilities. Give every agent a clear purpose and let it handle repetitive and complex tasks.</p>
         </div>
@@ -145,9 +184,9 @@ export function StudioSection() {
           <div className="relative z-10 w-full h-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/5 rounded-xl p-6 flex flex-col">
             {/* Fake Builder UI */}
             <div className="flex gap-4 border-b border-white/5 pb-4 mb-6">
-              <div className="w-3 h-3 rounded-full bg-red-500/50" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-              <div className="w-3 h-3 rounded-full bg-green-500/50" />
+              <div className="w-3 h-3 rounded-full bg-interactive-base/50" />
+              <div className="w-3 h-3 rounded-full bg-interactive-base/50" />
+              <div className="w-3 h-3 rounded-full bg-interactive-base/50" />
             </div>
 
             <div className="flex flex-1 gap-6">
@@ -171,7 +210,7 @@ export function StudioSection() {
                   whileInView={{ y: 0, opacity: 1 }}
                   className="absolute top-1/4 left-1/4 glass-panel p-4 w-64 shadow-2xl"
                 >
-                  <div className="text-xs font-medium text-blue-400 mb-2">Trigger</div>
+                  <div className="text-xs font-medium text-text-primary mb-2">Trigger</div>
                   <div className="text-sm">When Zendesk Ticket Created</div>
                 </motion.div>
                 
@@ -181,7 +220,7 @@ export function StudioSection() {
                   transition={{ delay: 0.2 }}
                   className="absolute top-1/2 left-1/2 glass-panel p-4 w-64 shadow-2xl"
                 >
-                  <div className="text-xs font-medium text-violet-400 mb-2">Action</div>
+                  <div className="text-xs font-medium text-text-primary mb-2">Action</div>
                   <div className="text-sm">Summarize & Draft Response</div>
                 </motion.div>
                 

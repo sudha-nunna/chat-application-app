@@ -55,22 +55,22 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
 
   return (
     <aside className={`w-full md:w-64 shrink-0 md:min-w-[256px] md:max-w-[256px] border-r flex flex-col h-full select-none ${
-      isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+      "bg-surface-secondary border-border-primary"
     }`}>
       {/* Sub-Header */}
       <div className={`p-3.5 border-b flex items-center justify-between ${
-        isDark ? "border-slate-800" : "border-slate-200"
+        "border-border-primary"
       }`}>
         <span className={`text-xs font-bold flex items-center gap-1.5 ${
-          isDark ? "text-slate-300" : "text-slate-700"
+          "text-text-primary dark:text-text-muted"
         }`}>
-          <FiMessageSquare className="text-blue-500" />
+          <FiMessageSquare className="text-text-primary" />
           <span>General Threads</span>
         </span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleSelectChat(null)}
-            className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-500/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
+            className="flex items-center gap-1 bg-interactive-base/20 hover:bg-interactive-base text-text-primary hover:text-white border border-border-primary/30 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
             title="New Chat Thread"
           >
             <FiPlus />
@@ -79,7 +79,7 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className={`md:hidden p-1 ${isDark ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"}`}
+              className={`md:hidden p-1 ${"text-text-primary hover:text-text-primary dark:hover:text-white"}`}
             >
               <FiX className="text-base" />
             </button>
@@ -90,7 +90,7 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
       {/* Threads List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
         {chats.length === 0 ? (
-          <div className={`text-[11px] text-center py-8 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+          <div className={`text-[11px] text-center py-8 ${"text-text-primary"}`}>
             No history threads yet.<br />Start asking questions!
           </div>
         ) : (
@@ -102,24 +102,20 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
                 onClick={() => handleSelectChat(chat._id)}
                 className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
                   isActive
-                    ? isDark
-                      ? "bg-blue-600/20 border border-blue-500/30 text-blue-300 font-semibold"
-                      : "bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
-                    : isDark
-                    ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
-                    : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
+                    ? "bg-interactive-base border border-border-primary text-text-primary font-semibold dark:bg-interactive-base/20 dark:border dark:border-border-primary/30 dark:text-text-muted dark:font-semibold"
+                    : "hover:bg-surface-secondary text-text-primary hover:text-text-primary dark:hover:bg-interactive-active dark:text-text-primary dark:hover:text-text-muted"
                 }`}
               >
                 <div className="flex items-center gap-2 truncate">
-                  <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
+                  <FiMessageSquare className={isActive ? "text-text-primary shrink-0" : "text-text-primary shrink-0"} />
                   <span className="truncate text-[11px]">{chat.title || "New Conversation"}</span>
                 </div>
 
                 <button
                   onClick={(e) => handleDeleteChat(e, chat._id)}
                   disabled={deleteChatMutation.isPending}
-                  className={`opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition ${
-                    isDark ? "text-slate-500" : "text-slate-400"
+                  className={`opacity-0 group-hover:opacity-100 p-1 hover:text-text-primary transition ${
+                    "text-text-primary"
                   }`}
                   title="Delete Thread"
                 >

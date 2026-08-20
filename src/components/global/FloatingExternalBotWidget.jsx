@@ -363,36 +363,34 @@ const FloatingExternalBotWidget = () => {
       <p className="mb-1.5 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
     ),
     a: ({ node, ...props }) => (
-      <a className="text-blue-400 hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
+      <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
     ),
     strong: ({ node, ...props }) => (
       <strong
-        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${isDark
-          ? "text-amber-300 bg-amber-500/20 border border-amber-500/40"
-          : "text-indigo-700 bg-indigo-100 border border-indigo-300"
+        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${"text-text-primary bg-surface-secondary border border-border-primary dark:text-amber-600 dark:bg-amber-900/20 dark:border dark:border-amber-800/40"
           }`}
         {...props}
       />
     ),
     em: ({ node, ...props }) => (
-      <em className={`italic font-medium ${isDark ? "text-amber-200" : "text-indigo-600"}`} {...props} />
+      <em className={`italic font-medium ${"text-text-primary dark:text-amber-200"}`} {...props} />
     ),
     table: ({ node, ...props }) => (
-      <div className={`w-full max-w-full overflow-x-auto my-2 rounded-xl border custom-scrollbar ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-300 bg-white"}`}>
+      <div className={`w-full max-w-full overflow-x-auto my-2 rounded-xl border custom-scrollbar ${"border-border-primary bg-white dark:bg-interactive-base"}`}>
         <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
       </div>
     ),
     thead: ({ node, ...props }) => (
-      <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"}`} {...props} />
+      <thead className={`uppercase text-[10px] tracking-wider border-b ${"bg-surface-secondary dark:bg-interactive-active text-text-primary dark:text-text-muted border-border-primary"}`} {...props} />
     ),
     th: ({ node, ...props }) => (
       <th className="px-3 py-2 font-semibold select-none whitespace-nowrap align-top" {...props} />
     ),
     td: ({ node, ...props }) => (
-      <td className={`px-3 py-2 border-b align-top ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"}`} {...props} />
+      <td className={`px-3 py-2 border-b align-top ${"text-text-primary dark:text-text-muted border-border-primary dark:border-border-primary/50"}`} {...props} />
     ),
     tr: ({ node, ...props }) => (
-      <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"}`} {...props} />
+      <tr className={`transition-colors last:border-none ${"hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"}`} {...props} />
     ),
     ul: ({ node, ...props }) => (
       <ul className="list-disc list-outside my-2 space-y-1 pl-4" {...props} />
@@ -401,7 +399,7 @@ const FloatingExternalBotWidget = () => {
       <ol className="list-decimal list-outside my-2 space-y-1 pl-4" {...props} />
     ),
     li: ({ node, ...props }) => (
-      <li className="leading-relaxed marker:text-blue-500 font-normal pl-0.5" {...props} />
+      <li className="leading-relaxed marker:text-text-primary font-normal pl-0.5" {...props} />
     ),
   };
 
@@ -420,12 +418,10 @@ const FloatingExternalBotWidget = () => {
       >
         <button
           onClick={handleFabClick}
-          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${isDragging ? "ring-4 ring-blue-500/40 scale-110" : ""
+          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${isDragging ? "ring-4 ring-border-focus/40 scale-110" : ""
             } ${isOpen
-              ? "bg-rose-600 text-white border-rose-500 shadow-rose-600/30 rotate-90"
-              : isDark
-                ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-500/50 shadow-blue-600/40"
-                : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white border-blue-400 shadow-blue-500/30"
+              ? "bg-white text-text-primary dark:bg-interactive-base dark:text-white border-border-primary shadow-black/10/30 rotate-90"
+              : "bg-text-primary text-text-inverse dark:bg-gradient-to-tr dark:from-interactive-base dark:to-interactive-hover dark:text-white border-transparent dark:border-border-primary/50 shadow-black/10/30 dark:shadow-black/10/40"
             }`}
           title={isOpen ? "Close Assistant (Drag to Move)" : "Open External AI Chatbot Widget (Drag to Move)"}
         >
@@ -435,8 +431,8 @@ const FloatingExternalBotWidget = () => {
             <>
               <FiMessageSquare className="text-xl" />
               <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-900"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-interactive-base opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-interactive-base border-2 border-border-primary"></span>
               </span>
             </>
           )}
@@ -450,29 +446,27 @@ const FloatingExternalBotWidget = () => {
             left: `${modalLeft}px`,
             top: `${modalTop}px`
           }}
-          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${isDark
-            ? "bg-slate-900/95 border-slate-800 text-slate-100 backdrop-blur-xl"
-            : "bg-white/95 border-slate-200 text-slate-900 backdrop-blur-xl shadow-slate-300/60"
+          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${"bg-white/95 border-border-primary text-text-primary backdrop-blur-xl shadow-black/10/60 dark:bg-interactive-active/95 dark:border-border-primary dark:text-text-muted dark:backdrop-blur-xl"
             }`}
         >
           {/* Header - Draggable Drag Handle */}
           <div
             onMouseDown={handlePointerDown}
             onTouchStart={handlePointerDown}
-            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary"
               }`}
             title="Drag Header to Move Chat Widget"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 shrink-0">
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-interactive-base to-interactive-hover text-text-primary dark:text-white flex items-center justify-center font-bold shadow-md shadow-black/10/20 shrink-0">
                 <FiCpu className="text-lg" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-xs font-bold tracking-tight">External AI Assistant</h3>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-interactive-base animate-pulse" />
                 </div>
-                <p className={`text-[10px] flex items-center gap-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <p className={`text-[10px] flex items-center gap-1 ${"text-text-primary"}`}>
                   <FiMove className="text-[9px]" />
                   <span>Drag header to move</span>
                 </p>
@@ -485,10 +479,8 @@ const FloatingExternalBotWidget = () => {
                 onClick={toggleVoiceMode}
                 className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
                   isVoiceModeActive
-                    ? "bg-emerald-500 text-slate-950 animate-pulse"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                    ? "bg-interactive-base text-text-primary animate-pulse"
+                    : "text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
                 }`}
                 title="Toggle Live Hands-Free Voice Mode"
               >
@@ -498,7 +490,7 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={handleClearHistory}
-                className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                className={`p-1.5 rounded-lg text-xs transition ${"text-text-primary hover:text-text-primary dark:hover:text-text-muted hover:bg-surface-secondary dark:hover:bg-interactive-active"
                   }`}
                 title="Clear Chat History"
               >
@@ -507,7 +499,7 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className={`p-1.5 rounded-lg text-xs transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                className={`p-1.5 rounded-lg text-xs transition ${"text-text-primary hover:text-text-primary dark:hover:text-text-muted hover:bg-surface-secondary dark:hover:bg-interactive-active"
                   }`}
                 title="Minimize Widget"
               >
@@ -527,10 +519,8 @@ const FloatingExternalBotWidget = () => {
                 >
                   <div
                     className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${isUser
-                      ? "bg-blue-600 text-white rounded-br-xs shadow-md shadow-blue-600/10 font-medium"
-                      : isDark
-                        ? "bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-bl-xs"
-                        : "bg-slate-100 text-slate-900 border border-slate-200 rounded-bl-xs"
+                      ? "bg-interactive-base text-text-primary dark:text-white rounded-br-xs shadow-md shadow-black/10/10 font-medium"
+                      : "bg-surface-secondary text-text-primary border border-border-primary rounded-bl-xs dark:bg-interactive-active/90 dark:text-text-muted dark:border dark:border-border-primary/60 dark:rounded-bl-xs"
                       }`}
                   >
                     {isUser ? (
@@ -559,30 +549,30 @@ const FloatingExternalBotWidget = () => {
                     )}
 
                     {msg.isStreaming && !msg.content && (
-                      <span className="flex items-center gap-1.5 text-blue-400 font-mono italic mt-1">
+                      <span className="flex items-center gap-1.5 text-text-primary font-mono italic mt-1">
                         <FiRefreshCw className="animate-spin text-xs" />
                         <span>Thinking & Streaming response...</span>
                       </span>
                     )}
 
                     {msg.isStreaming && msg.content && (
-                      <span className="inline-block w-1.5 h-3 bg-blue-400 ml-1 animate-pulse" />
+                      <span className="inline-block w-1.5 h-3 bg-interactive-base ml-1 animate-pulse" />
                     )}
 
                     {!isUser && isLiveAgentRequested(msg) && (
-                      <div className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 ${isDark ? "bg-slate-950/90 border-amber-500/30" : "bg-amber-50/90 border-amber-200 shadow-sm"
+                      <div className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 ${"bg-amber-50/90 dark:bg-interactive-base/90 border-amber-200 dark:border-amber-800/30 shadow-sm"
                         }`}>
                         <div className="flex items-center gap-2 text-xs font-bold text-amber-500">
                           <FiCalendar className="text-sm shrink-0" />
                           <span>Live Agent Handoff</span>
                         </div>
-                        <p className={`text-[11px] leading-tight ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                        <p className={`text-[11px] leading-tight ${"text-text-primary dark:text-text-muted"}`}>
                           A live support representative is requested. Would you like to schedule a call?
                         </p>
                         <button
                           type="button"
                           onClick={(e) => handleSendMessage(e, "I would like to schedule a call with a live agent")}
-                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs py-2 rounded-lg shadow-md transition cursor-pointer"
+                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-interactive-hover hover:from-amber-600 hover:to-interactive-hover text-text-primary dark:text-white font-bold text-xs py-2 rounded-lg shadow-md transition cursor-pointer"
                         >
                           <FiPhoneCall />
                           <span>Schedule Call Now</span>
@@ -599,8 +589,8 @@ const FloatingExternalBotWidget = () => {
           {/* Quick Prompts */}
           {messages.length <= 2 && !loading && (
             <div className="px-4 pb-2">
-              <div className="flex items-center gap-1.5 text-[10px] text-blue-400 font-semibold mb-1.5">
-                <FiZap className="text-amber-400" />
+              <div className="flex items-center gap-1.5 text-[10px] text-text-primary font-semibold mb-1.5">
+                <FiZap className="text-amber-800" />
                 <span>Suggested Questions:</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -609,9 +599,7 @@ const FloatingExternalBotWidget = () => {
                     key={i}
                     type="button"
                     onClick={(e) => handleSendMessage(e, promptText)}
-                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${isDark
-                      ? "bg-slate-800/70 border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-700/80"
-                      : "bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200"
+                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${"bg-surface-secondary border-border-primary text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:bg-interactive-active/70 dark:border-border-primary/80 dark:text-text-muted dark:hover:text-white dark:hover:bg-interactive-base/80"
                       }`}
                   >
                     {promptText}
@@ -624,15 +612,15 @@ const FloatingExternalBotWidget = () => {
           {/* Footer Input Form */}
           <form
             onSubmit={handleSendMessage}
-            className={`p-3 border-t flex flex-col gap-2 shrink-0 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-slate-50 border-slate-200"
+            className={`p-3 border-t flex flex-col gap-2 shrink-0 ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary"
               }`}
           >
             {isVoiceModeActive && (
-              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-[11px] text-emerald-400 animate-pulse">
+              <div className="p-2 rounded-lg bg-interactive-base/10 border border-border-primary/30 flex items-center justify-between text-[11px] text-text-primary animate-pulse">
                 <div className="flex items-center gap-1.5 truncate">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-interactive-base animate-ping shrink-0" />
                   <span className="font-bold uppercase text-[9px]">{voiceState}:</span>
-                  <span className="italic text-slate-300 truncate">{sttInterimText || "Listening..."}</span>
+                  <span className="italic text-text-muted truncate">{sttInterimText || "Listening..."}</span>
                 </div>
                 <button type="button" onClick={toggleVoiceMode} className="text-[9px] font-bold underline shrink-0">Exit</button>
               </div>
@@ -644,10 +632,8 @@ const FloatingExternalBotWidget = () => {
                 onClick={toggleVoiceMode}
                 className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center shrink-0 cursor-pointer ${
                   isVoiceModeActive
-                    ? "bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30 animate-pulse"
-                    : isDark
-                    ? "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                    : "bg-white border-slate-300 text-slate-600 hover:text-slate-900 shadow-xs"
+                    ? "bg-interactive-base text-text-primary border-border-primary shadow-md shadow-black/10/30 animate-pulse"
+                    : "bg-white border-border-primary text-text-primary hover:text-text-primary shadow-xs dark:bg-interactive-active dark:border-border-primary dark:text-text-primary dark:hover:text-white"
                 }`}
                 title="Toggle Live Hands-Free Voice Mode"
               >
@@ -660,9 +646,7 @@ const FloatingExternalBotWidget = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={loading}
-                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-blue-500 transition ${isDark
-                  ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500"
-                  : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400"
+                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-primary dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-primary"
                   }`}
               />
 
@@ -670,7 +654,7 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={handleStopStream}
-                className="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs transition shadow-md shadow-rose-600/20 cursor-pointer"
+                className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
                 title="Stop Response Stream"
               >
                 <FiSquare className="text-xs" />
@@ -679,7 +663,7 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs transition shadow-md shadow-blue-600/20 cursor-pointer"
+                className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base disabled:opacity-40 text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
                 title="Send Message"
               >
                 <FiSend className="text-xs" />

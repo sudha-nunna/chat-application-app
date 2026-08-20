@@ -163,19 +163,19 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
     <div className="p-5 max-w-4xl mx-auto space-y-6">
       {/* Success Banner */}
       {successMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+        <div className="p-3.5 rounded-xl bg-interactive-base/15 border border-border-primary/30 text-text-primary text-xs font-semibold flex items-center gap-2">
           <FiCheckCircle className="text-base shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Bot Response Delivery Mode Card */}
-      <div className={`p-5 rounded-2xl border shadow-sm space-y-3 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-        <div className="flex items-center gap-2 text-sm font-bold text-blue-500">
+      <div className={`p-5 rounded-2xl border shadow-sm space-y-3 ${"bg-white border-border-primary dark:bg-interactive-active dark:border-border-primary"}`}>
+        <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
           <FiSliders className="text-base" />
           <h3>Response Delivery Mode</h3>
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-text-primary">
           Intelligence (RAG Knowledge, System Rules & API Actions) is shared across all modes. Choose how this bot presents its output:
         </p>
 
@@ -191,10 +191,8 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
               type="button"
               onClick={() => setResponseMode(mode.id)}
               className={`p-3.5 rounded-xl border text-left transition-all ${responseMode === mode.id
-                  ? "bg-blue-600/15 border-blue-500 text-blue-400 font-semibold ring-2 ring-blue-500/20"
-                  : isDark
-                    ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
-                    : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                  ? "bg-interactive-base/15 border-border-primary text-text-primary font-semibold ring-2 ring-border-focus/20"
+                  : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary"
                 }`}
             >
               <div className="text-xs font-bold">{mode.label}</div>
@@ -208,29 +206,29 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
 
       {/* 1. TEXT ONLY MODE CONFIGURATION */}
       {responseMode === "TEXT_ONLY" && (
-        <div className={`p-5 rounded-2xl border shadow-sm space-y-4 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`p-5 rounded-2xl border shadow-sm space-y-4 ${"bg-white border-border-primary dark:bg-interactive-active dark:border-border-primary"}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-blue-400">
+            <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
               <FiMessageSquare className="text-base" />
               <h3>Text-Only Engine Configuration</h3>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-interactive-base/10 text-text-primary border border-border-primary/20">
               TEXT_ONLY MODE
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs">
+          <div className="p-3.5 rounded-xl bg-interactive-base/10 border border-border-primary/20 text-text-muted text-xs">
             💬 <strong>Text-Only Mode Active</strong>: Assistant responses will be delivered cleanly as Markdown text. 3D visual avatars and TTS speech audio are disabled to minimize latency and bandwidth.
           </div>
 
           <div className="space-y-2 pt-2">
-            <label className="text-xs font-bold text-slate-300">Bot Persona & Markdown System Rules</label>
+            <label className="text-xs font-bold text-text-muted">Bot Persona & Markdown System Rules</label>
             <textarea
               rows={5}
               value={botSpecificRules}
               onChange={(e) => setBotSpecificRules(e.target.value)}
               placeholder="e.g. Respond concisely using bullet points, use markdown table formatting for data, speak professionally..."
-              className={`w-full p-3 rounded-xl border text-xs outline-none transition font-mono ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 focus:border-blue-500" : "bg-slate-50 border-slate-300 text-slate-900 focus:border-blue-500"}`}
+              className={`w-full p-3 rounded-xl border text-xs outline-none transition font-mono ${"bg-interactive-base border-border-primary text-text-primary focus:border-border-focus dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:focus:border-border-focus"}`}
             />
           </div>
         </div>
@@ -238,29 +236,29 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
 
       {/* 2. VOICE AUDIO MODE CONFIGURATION (VOICE CLONING & SPEECH ENGINE) */}
       {responseMode === "AUDIO_ONLY" && (
-        <div className={`p-5 rounded-2xl border shadow-sm space-y-5 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`p-5 rounded-2xl border shadow-sm space-y-5 ${"bg-white border-border-primary dark:bg-interactive-active dark:border-border-primary"}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-purple-400">
+            <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
               <FiVolume2 className="text-base" />
               <h3>Voice Audio & Neural Voice Cloning Engine</h3>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-interactive-base/10 text-text-primary border border-border-primary/20">
               AUDIO_ONLY MODE
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs">
+          <div className="p-3.5 rounded-xl bg-interactive-base/10 border border-border-primary/20 text-text-muted text-xs">
             🎙️ <strong>Voice Audio Mode Active</strong>: Responses will be spoken aloud using neural text-to-speech audio synthesis. Choose a preset voice profile or upload a voice sample for custom cloning.
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Select Neural Voice Profile</label>
+                <label className="text-xs font-bold text-text-muted">Select Neural Voice Profile</label>
                 <select
                   value={voiceId}
                   onChange={(e) => setVoiceId(e.target.value)}
-                  className={`w-full p-2.5 rounded-xl border text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                  className={`w-full p-2.5 rounded-xl border text-xs outline-none ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
                 >
                   <option value="default-en">Female Professional (Sophia / Natural)</option>
                   <option value="male-executive">Male Executive (Alex / Deep)</option>
@@ -271,42 +269,42 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Custom Voice Cloning (.mp3 / .wav Upload)</label>
-                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl cursor-pointer bg-purple-500/5 hover:bg-purple-500/10 transition text-center group">
-                  <FiUpload className="text-xl text-purple-400 group-hover:scale-110 transition-transform mb-1" />
-                  <span className="text-xs font-bold text-purple-300">Upload 10–30s Voice Sample</span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">Neural engine extracts vocal timber for custom voice cloning</span>
+                <label className="text-xs font-bold text-text-muted">Custom Voice Cloning (.mp3 / .wav Upload)</label>
+                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border-primary/40 hover:border-border-primary rounded-xl cursor-pointer bg-interactive-base/5 hover:bg-interactive-base/10 transition text-center group">
+                  <FiUpload className="text-xl text-text-primary group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-xs font-bold text-text-muted">Upload 10–30s Voice Sample</span>
+                  <span className="text-[10px] text-text-primary mt-0.5">Neural engine extracts vocal timber for custom voice cloning</span>
                   <input type="file" accept="audio/*" className="hidden" />
                 </label>
               </div>
 
               <div className="space-y-1.5 pt-1">
-                <label className="text-xs font-bold text-slate-300">Bot Voice Rules</label>
+                <label className="text-xs font-bold text-text-muted">Bot Voice Rules</label>
                 <textarea
                   rows={3}
                   value={botSpecificRules}
                   onChange={(e) => setBotSpecificRules(e.target.value)}
                   placeholder="e.g. Speak warmly, answer concisely, use clear speech pauses..."
-                  className={`w-full p-2.5 rounded-xl border text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                  className={`w-full p-2.5 rounded-xl border text-xs outline-none ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
                 />
               </div>
             </div>
 
             <div className="space-y-4">
-              <label className="text-xs font-bold text-slate-300">Test Speech Audio Synthesis</label>
-              <div className={`p-4 rounded-xl border space-y-3 ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+              <label className="text-xs font-bold text-text-muted">Test Speech Audio Synthesis</label>
+              <div className={`p-4 rounded-xl border space-y-3 ${"bg-interactive-base border-border-primary dark:bg-interactive-base/70 dark:border-border-primary"}`}>
                 <input
                   type="text"
                   value={testText}
                   onChange={(e) => setTestText(e.target.value)}
                   placeholder="Enter text to synthesize speech..."
-                  className={`w-full p-2.5 rounded-xl border text-xs outline-none ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                  className={`w-full p-2.5 rounded-xl border text-xs outline-none ${"bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"}`}
                 />
                 <button
                   type="button"
                   onClick={handleGenerateTestPreview}
                   disabled={generatingPreview}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white font-bold text-xs py-2.5 rounded-xl transition cursor-pointer disabled:opacity-50"
                 >
                   <FiPlay className="text-xs" />
                   <span>{generatingPreview ? "Synthesizing Speech..." : "Play Voice Speech Test"}</span>
@@ -319,26 +317,26 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
 
       {/* 3. VIDEO AVATAR & HYBRID MODE CONFIGURATION (3D DIGITAL HUMAN STUDIO) */}
       {(responseMode === "VIDEO_AVATAR" || responseMode === "HYBRID") && (
-        <div className={`p-5 rounded-2xl border shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`p-5 rounded-2xl border shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 ${"bg-white border-border-primary dark:bg-interactive-active dark:border-border-primary"}`}>
           {/* Left Column: Upload & 3D Character Controls */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-bold text-indigo-400">
+              <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
                 <FiUser className="text-base" />
                 <h3>3D Digital Human & Avatar Studio</h3>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-interactive-base/10 text-text-primary border border-border-primary/20">
                 {responseMode} MODE
               </span>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-text-primary leading-relaxed">
               Configure 3D VRM digital humans, 2D portrait photo visemes, or custom avatar model files. The AI renders real-time lip-synced talking avatar responses.
             </p>
 
             {/* Avatar Provider Mode Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Avatar Engine Mode</label>
+              <label className="text-xs font-bold text-text-muted">Avatar Engine Mode</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: "THREE_3D", label: "🎭 3D Model Canvas" },
@@ -355,10 +353,8 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
                       }
                     }}
                     className={`p-2 rounded-xl border text-center text-xs font-semibold transition ${avatarProvider === prov.id
-                        ? "bg-blue-600/20 border-blue-500 text-blue-400 ring-1 ring-blue-500/30"
-                        : isDark
-                          ? "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
+                        ? "bg-interactive-base/20 border-border-primary text-text-primary ring-1 ring-border-focus/30"
+                        : "bg-interactive-base border-border-primary text-text-primary hover:text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-primary dark:hover:text-text-muted"
                       }`}
                   >
                     {prov.label}
@@ -370,7 +366,7 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
             {/* 3D Model Character Presets */}
             {avatarProvider === "THREE_3D" && (
               <div className="space-y-1.5 pt-1">
-                <label className="text-xs font-bold text-slate-300">Select Realistic 3D Character Preset</label>
+                <label className="text-xs font-bold text-text-muted">Select Realistic 3D Character Preset</label>
                 <div className="grid grid-cols-3 gap-2">
                   {PRESET_3D_MODELS.map((m) => (
                     <button
@@ -382,10 +378,8 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
                         setAvatarProvider("THREE_3D");
                       }}
                       className={`p-2 rounded-xl border text-left text-xs font-semibold transition ${selected3DPresetId === m.id
-                          ? "bg-blue-600/20 border-blue-500 text-blue-400 ring-1 ring-blue-500/30 font-bold"
-                          : isDark
-                            ? "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
-                            : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
+                          ? "bg-interactive-base/20 border-border-primary text-text-primary ring-1 ring-border-focus/30 font-bold"
+                          : "bg-interactive-base border-border-primary text-text-primary hover:text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-primary dark:hover:text-text-muted"
                         }`}
                     >
                       <div className="truncate">{m.name}</div>
@@ -395,31 +389,31 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
               </div>
             )}
 
-            <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all text-center group">
-              <FiUpload className="text-xl text-slate-400 group-hover:text-blue-400 mb-1.5 transition-transform group-hover:scale-110" />
-              <span className="text-xs font-bold text-slate-200 group-hover:text-blue-400">
+            <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-border-primary hover:border-border-primary rounded-2xl cursor-pointer bg-interactive-base/50 hover:bg-interactive-base transition-all text-center group">
+              <FiUpload className="text-xl text-text-primary group-hover:text-text-primary mb-1.5 transition-transform group-hover:scale-110" />
+              <span className="text-xs font-bold text-text-muted group-hover:text-text-primary">
                 {uploading ? "Processing Avatar Upload..." : "Click to Upload Photo, Video, or 3D Model (.vrm, .glb, .png, .mp4)"}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5">Supports VRoid, Ready Player Me & GLTF 3D avatars</span>
+              <span className="text-[10px] text-text-primary mt-0.5">Supports VRoid, Ready Player Me & GLTF 3D avatars</span>
               <input type="file" accept="image/*,video/*,.glb,.gltf,.vrm" onChange={handleFileUpload} className="hidden" disabled={uploading} />
             </label>
 
             {/* Bot Specific Rules Input */}
             <div className="space-y-1.5 pt-1">
-              <label className="text-xs font-bold text-slate-300">Bot-Specific Override Rules</label>
+              <label className="text-xs font-bold text-text-muted">Bot-Specific Override Rules</label>
               <textarea
                 rows={3}
                 value={botSpecificRules}
                 onChange={(e) => setBotSpecificRules(e.target.value)}
                 placeholder="e.g. Speak energetically, keep voice pitch warm, handle sales objections concisely..."
-                className={`w-full p-3 rounded-xl border text-xs outline-none transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 focus:border-blue-500" : "bg-slate-50 border-slate-300 text-slate-900 focus:border-blue-500"}`}
+                className={`w-full p-3 rounded-xl border text-xs outline-none transition ${"bg-interactive-base border-border-primary text-text-primary focus:border-border-focus dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:focus:border-border-focus"}`}
               />
             </div>
           </div>
 
           {/* Right Column: Interactive Live Preview */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-bold text-emerald-400">
+            <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
               <FiZap className="text-base" />
               <h3>Live Talking Avatar Preview</h3>
             </div>
@@ -445,13 +439,13 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
                 value={testText}
                 onChange={(e) => setTestText(e.target.value)}
                 placeholder="Enter text for live avatar test..."
-                className={`w-full p-2.5 rounded-xl border text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                className={`w-full p-2.5 rounded-xl border text-xs outline-none ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
               />
               <button
                 type="button"
                 onClick={handleGenerateTestPreview}
                 disabled={generatingPreview}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 <FiPlay className="text-xs" />
                 <span>{generatingPreview ? "Synthesizing Speech..." : "Test Avatar Speech"}</span>
@@ -466,7 +460,7 @@ const BotAvatarTab = ({ bot, onBotUpdated }) => {
         <button
           onClick={handleSaveSettings}
           disabled={saving}
-          className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50"
+          className="px-6 py-2.5 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50"
         >
           {saving ? "Saving Avatar Settings..." : "Save Bot & Avatar Configuration"}
         </button>
