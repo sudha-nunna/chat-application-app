@@ -106,7 +106,7 @@ const BotDetailPage = () => {
       {/* BOT HEADER BAR */}
       <div className={` p-2 md:p-3 md:p-5 border-b flex flex-col xl:flex-row xl:items-center justify-between gap-2 lg:gap-4 ${isDark ? "border-border-primary bg-interactive-base" : "border-border-primary bg-white"
         }`}>
-        <div className="flex items-start sm:items-center gap-3 w-full xl:w-auto min-w-0">
+        <div className="flex items-start sm:items-center gap-1.5 lg:gap-3 w-full xl:w-auto min-w-0">
           <button
             onClick={() => navigate("/dashboard")}
             className={`shrink-0 p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-white hover:bg-interactive-active" : "text-text-primary hover:text-text-primary hover:bg-surface-secondary"
