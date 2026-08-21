@@ -35,7 +35,7 @@ const AuthModal = ({ onAuthSuccess }) => {
     <div className={`absolute inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-8 ${
       "bg-[#111111] md:bg-black/90 md:backdrop-blur-md"
     }`}>
-      <div className="flex flex-col md:flex-row w-full h-full md:h-auto max-w-4xl md:min-h-[550px] bg-transparent md:bg-[#0A0A0A] rounded-none md:rounded-[32px] border-none md:border border-white/5 overflow-hidden md:shadow-2xl relative">
+      <div className="flex flex-col md:flex-row w-full h-full md:h-auto max-w-4xl md:min-h-[550px] bg-transparent md:bg-[#0A0A0A] rounded-none md:rounded-[32px] md:border border-white/5 overflow-hidden md:shadow-2xl relative">
         
         {/* Top Image (Mobile) / Left Side (Desktop) */}
         <div className="flex md:flex-col w-full md:w-1/2 h-[45%] md:h-auto p-8 md:p-10 justify-between relative bg-gradient-to-b from-[#111111] to-[#050505] border-none md:border-r border-white/5 overflow-hidden">
@@ -90,6 +90,7 @@ const AuthModal = ({ onAuthSuccess }) => {
                 text="signin_with"
                 width="340"
                 shape="rectangular"
+                logo_alignment="center"
               />
             </div>
 
