@@ -341,7 +341,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   return (
-    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${"bg-white dark:bg-interactive-active/50 text-text-primary dark:text-text-muted"
+    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${"bg-white dark:bg-interactive-active/40 text-text-primary dark:text-text-muted"
       }`}>
 
       {/* Fixed Sticky Header Bar */}

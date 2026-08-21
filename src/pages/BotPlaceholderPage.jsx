@@ -9,7 +9,7 @@ const BotPlaceholderPage = () => {
   };
 
   return (
-    <div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center bg-white dark:bg-interactive-active/50 text-text-primary dark:text-text-muted">
+    <div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center bg-white dark:bg-interactive-active/40 text-text-primary dark:text-text-muted">
       <div className="w-full max-w-3xl mx-auto px-4 md:px-6 py-6 flex flex-col space-y-3">
         <div className="h-full flex flex-col items-center justify-center pt-10 pb-8 px-4 w-full max-w-2xl mx-auto">
           <div className="w-16 h-16 rounded-2xl bg-interactive-base/80 flex items-center justify-center mb-6 shadow-sm border border-border-primary/50">

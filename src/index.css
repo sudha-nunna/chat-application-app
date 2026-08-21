@@ -51,7 +51,8 @@
   --interactive-inverse: #ececec;
   --interactive-inverse-hover: #ffffff;
   
-  --surface-dropdown: #2f2f2f;
+  /* --surface-dropdown: #2f2f2f; */
+  --surface-dropdown: #0e0d0d;
   --interactive-selected: #181818;
   --accent-primary: #146bea;
 }

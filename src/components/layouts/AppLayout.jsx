@@ -543,7 +543,7 @@ const AppLayout = ({ children }) => {
         {isProfileDropdownOpen && (
           <div 
             ref={profileDropdownRef}
-            className={`profile-dropdown absolute bottom-full left-2 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[240px]`}
+            className={`profile-dropdown absolute bottom-full left-4 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[220px]`}
           >
             <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
               <div className="flex items-center gap-3">
