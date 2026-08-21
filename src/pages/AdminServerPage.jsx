@@ -226,8 +226,8 @@ const AdminServerPage = () => {
             <FiServer />
             <span>Infrastructure Management</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">AI Server Nodes & Routing</h1>
-          <p className={`text-xs md:text-sm mt-1 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
+          <h1 className="text-xl md:text-3xl font-extrabold tracking-tight">AI Server Nodes & Routing</h1>
+          <p className={`text-xs md:text-sm mt-1 ${isDark ? "text-text-primary/70" : "text-text-primary/70"}`}>
             Manage, edit, or test local/cloud LLaMA server node URLs in real-time. Changes take effect instantly without restarting the backend!
           </p>
         </div>

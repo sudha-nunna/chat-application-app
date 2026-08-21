@@ -28,19 +28,19 @@ const MessageBubble = ({ role, content, onRetry }) => {
   const displayContent = formatMarkdownBreaks(rawDisplayContent);
 
   return (
-    <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse ml-auto max-w-[85%]" : "mr-auto w-full"} my-2.5 min-w-0`}>
+    <div className={`flex items-start gap-1.5 lg:gap-3 ${isUser ? "flex-row-reverse ml-auto max-w-[85%]" : "mr-auto w-full"} my-2.5 min-w-0`}>
       {/* Avatar */}
       <div
-        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
+        className={`w-6 lg:w-8 h-6 lg:h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
           isUser ? "bg-interactive-base text-text-primary dark:text-white shadow-md shadow-black/10" : "bg-surface-secondary dark:bg-interactive-base/20 text-text-primary border border-border-primary dark:border-border-primary/30"
         }`}
       >
-        {isUser ? <FiUser /> : <TbRobotFace className="text-xl" />}
+        {isUser ? <FiUser /> : <TbRobotFace className=" text-sm lg:text-base" />}
       </div>
 
       {/* Bubble Container */}
       <div
-        className={`min-w-0 max-w-full rounded-2xl p-5 shadow-md leading-relaxed text-[14px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
+        className={`min-w-0 max-w-full rounded-2xl p-3 lg:p-5 shadow-md leading-relaxed text-[14px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
           isUser ? "bg-interactive-base text-text-primary dark:text-white font-medium rounded-tr-none shadow-black/10" : "bg-surface-secondary dark:bg-interactive-base border border-border-primary text-text-primary dark:text-text-muted rounded-tl-none"
         }`}
       >
@@ -125,7 +125,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 </div>
               );
             },
-            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />,
+            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-xs md:text-sm" {...props} />,
             strong: ({ node, ...props }) => (
               <strong
                 className={`font-semibold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-sm ${

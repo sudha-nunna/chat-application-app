@@ -104,30 +104,30 @@ const BotDetailPage = () => {
       }`}>
 
       {/* BOT HEADER BAR */}
-      <div className={`p-4 md:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isDark ? "border-border-primary bg-interactive-base" : "border-border-primary bg-white"
+      <div className={` p-2 md:p-3 md:p-5 border-b flex flex-col xl:flex-row xl:items-center justify-between gap-2 lg:gap-4 ${isDark ? "border-border-primary bg-interactive-base" : "border-border-primary bg-white"
         }`}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-start sm:items-center gap-3 w-full xl:w-auto min-w-0">
           <button
             onClick={() => navigate("/dashboard")}
-            className={`p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-white hover:bg-interactive-active" : "text-text-primary hover:text-text-primary hover:bg-surface-secondary"
+            className={`shrink-0 p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-white hover:bg-interactive-active" : "text-text-primary hover:text-text-primary hover:bg-surface-secondary"
               }`}
             title="Back to Dashboard"
           >
             <FiArrowLeft className="text-lg" />
           </button>
 
-          <div className="w-10 h-10 rounded-xl bg-interactive-base/20 border border-border-primary/30 flex items-center justify-center text-text-primary text-xl font-bold">
+          <div className="shrink-0 w-10 h-10 rounded-xl bg-interactive-base/20 border border-border-primary/30 flex items-center justify-center text-text-primary text-xl font-bold">
             <FiCpu />
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className={`text-base font-bold ${isDark ? "text-text-muted" : "text-text-primary"}`}>{bot.name}</h1>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase font-semibold ${"bg-surface-primary text-text-primary"
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className={`text-base font-bold truncate max-w-full ${isDark ? "text-text-muted" : "text-text-primary"}`}>{bot.name}</h1>
+              <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded font-mono uppercase font-semibold ${"bg-surface-primary text-text-primary"
                 }`}>
                 {bot.model}
               </span>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+              <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded font-semibold border ${
                 currentBotType === "VOICE" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
                 currentBotType === "ACTION" ? "bg-amber-900/10 text-amber-800 border-amber-800/30" :
                 currentBotType === "AVATAR" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
@@ -140,14 +140,14 @@ const BotDetailPage = () => {
                  currentBotType === "CHAT" ? "💬 Knowledge Chatbot" : "🌐 Hybrid Assistant"}
               </span>
             </div>
-            <p className={`text-xs truncate max-w-md mt-0.5 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
+            <p className={`text-xs truncate max-w-full mt-0.5 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
               {bot.description || "Isolated multi-tenant RAG bot with dedicated knowledge base."}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-3 text-xs px-3 py-1.5 rounded-lg border ${isDark ? "text-text-primary bg-interactive-active border-border-primary" : "text-text-primary bg-surface-secondary border-border-primary"
+        <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar w-full xl:w-auto pb-1">
+          <div className={`shrink-0 flex items-center gap-3 text-xs px-3 py-1.5 rounded-lg border ${isDark ? "text-text-primary bg-interactive-active border-border-primary" : "text-text-primary bg-surface-secondary border-border-primary"
             }`}>
             {(["CHAT", "HYBRID"].includes(currentBotType)) && (
               <span className="flex items-center gap-1">
@@ -182,7 +182,7 @@ const BotDetailPage = () => {
 
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-1.5 bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary border border-border-primary/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
+            className="shrink-0 flex items-center gap-1.5 bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary border border-border-primary/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
             title="Upgrade Agent Capabilities (Enable Voice, Avatar, REST Actions)"
           >
             <FiEdit2 className="text-xs" />
@@ -191,7 +191,7 @@ const BotDetailPage = () => {
 
           <button
             onClick={handleDeleteBot}
-            className={`p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-text-primary hover:bg-interactive-base/40" : "text-text-primary hover:text-text-primary hover:bg-interactive-base"
+            className={`shrink-0 p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-text-primary hover:bg-interactive-base/40" : "text-text-primary hover:text-text-primary hover:bg-interactive-base"
               }`}
             title="Delete Bot"
           >

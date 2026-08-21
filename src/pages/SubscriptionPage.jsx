@@ -100,8 +100,8 @@ const SubscriptionPage = () => {
         isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary"
       }`}>
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className={`text-2xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Subscription & Billing</h1>
+          <div className="flex items-center flex-wrap gap-3">
+            <h1 className={`text-xl lg:text-2xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Subscription & Billing</h1>
             <PlanBadge showPriority={true} />
           </div>
           <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>

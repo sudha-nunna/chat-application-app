@@ -22,6 +22,7 @@ import {
   FiVolume2,
   FiVolumeX
 } from "react-icons/fi";
+import { TbRobotFace } from "react-icons/tb";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
 import { useSearchParams } from "react-router-dom";
@@ -387,7 +388,7 @@ const BotChatTab = ({ bot }) => {
   // Shared Markdown Components Styling
   const markdownComponents = {
     p: ({ node, ...props }) => (
-      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
+      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-xs md:text-sm" {...props} />
     ),
     a: ({ node, ...props }) => (
       <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
@@ -613,8 +614,9 @@ const BotChatTab = ({ bot }) => {
         {activeMode === "TEXT_CHAT" && (
         <div
           ref={messagesContainerRef}
-          className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar flex flex-col"
+          className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col"
         >
+          <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-6">
           {isFetchingMessages ? (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
               <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
@@ -638,16 +640,16 @@ const BotChatTab = ({ bot }) => {
               return (
                 <div
                   key={msg._id || index}
-                  className={`flex gap-3 items-start ${isUser ? "ml-auto flex-row-reverse max-w-[75%]" : "mr-auto max-w-[85%] md:max-w-[80%]"} min-w-0`}
+                  className={`flex gap-1.5 lg:gap-3 items-start ${isUser ? "ml-auto flex-row-reverse max-w-[75%]" : "mr-auto max-w-[85%] md:max-w-[80%]"} min-w-0`}
                 >
                   {/* Avatar */}
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isUser
+                    className={`w-6 lg:w-8 h-6 lg:h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isUser
                       ? "bg-interactive-base text-text-primary dark:text-white shadow-md shadow-black/10/20"
                       : "bg-surface-secondary text-text-primary border border-border-primary dark:bg-interactive-base/20 dark:text-text-primary dark:border dark:border-border-primary/30"
                       }`}
                   >
-                    {isUser ? <FiUser /> : <FiCpu />}
+                    {isUser ? <FiUser /> :  <TbRobotFace className=" text-sm lg:text-base" />}
                   </div>
 
                   {/* Bubble Container */}
@@ -777,6 +779,7 @@ const BotChatTab = ({ bot }) => {
               <span>Retrieving chunks & generating grounded response...</span>
             </div>
           )}
+          </div>
         </div>
         )}
 
@@ -785,7 +788,7 @@ const BotChatTab = ({ bot }) => {
           <div className={`p-4 border-t shrink-0 ${"border-border-primary bg-interactive-base dark:border-border-primary/80 dark:bg-interactive-base"}`}>
           {/* Live Voice Mode Speech-to-Text Banner Indicator */}
           {isVoiceModeActive && activeMode === "TEXT_CHAT" && (
-            <div className="max-w-4xl mx-auto mb-3 p-2.5 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-between text-xs text-text-primary animate-pulse">
+            <div className="max-w-3xl mx-auto mb-3 p-2.5 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-between text-xs text-text-primary animate-pulse">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-interactive-base animate-ping" />
                 <span className="font-semibold uppercase tracking-wider text-[10px]">
@@ -805,7 +808,7 @@ const BotChatTab = ({ bot }) => {
             </div>
           )}
 
-          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-2">
+          <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex items-center gap-2">
             <button
               type="button"
               onClick={toggleVoiceMode}
@@ -825,7 +828,7 @@ const BotChatTab = ({ bot }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className={`flex-1 px-4 py-2.5 rounded-xl text-xs focus:outline-none transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-primary focus:border-border-focus dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-primary dark:focus:border-border-focus"
+              className={`flex-1 px-4 py-2.5 rounded-xl text-xs focus:outline-none transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-muted focus:border-border-focus dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted dark:focus:border-border-focus"
                 }`}
             />
 

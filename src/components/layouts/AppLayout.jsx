@@ -499,7 +499,7 @@ const AppLayout = ({ children }) => {
   const renderPrimarySidebar = () => (
     <>
       <div className="p-3">
-        <div className="flex items-center gap-1.5 mb-6 cursor-pointer" onClick={() => navigate("/")}>
+        <div className="flex items-center gap-1.5 mb-6">
           <img src="/mini-logo2.png" alt="Nexora Logo" className={`w-9 h-9 object-contain shrink-0 ${isDark? "invert": ""}`}/>
           <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
             <span className="text-[13px] font-bold text-text-muted leading-tight">NEXORA</span>
@@ -951,11 +951,16 @@ const AppLayout = ({ children }) => {
     return <>{children}</>;
   }
 
+  if (!isAuthenticated && !isGoogleCallbackRoute) {
+    return (
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-surface-primary text-text-primary">
+        <AuthModal onAuthSuccess={() => setIsAuthenticated(true)} />
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col md:flex-row h-screen w-screen overflow-hidden bg-surface-primary text-text-primary`}>
-      {!isAuthenticated && !isGoogleCallbackRoute && (
-        <AuthModal onAuthSuccess={() => setIsAuthenticated(true)} />
-      )}
 
       <SubscriptionModal />
 
@@ -1026,7 +1031,7 @@ const AppLayout = ({ children }) => {
                 placeholder="Search chats, agents, or messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-none outline-none text-base placeholder:text-text-primary"
+                className="w-full bg-transparent border-none outline-none text-base placeholder:text-text-muted"
               />
               <button 
                 onClick={() => setIsSearchModalOpen(false)}

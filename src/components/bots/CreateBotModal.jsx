@@ -522,7 +522,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   placeholder="e.g. Sales Assistant / CRM Action Bot / Support Voice Agent"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-primary"}`}
+                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"}`}
                 />
               </div>
 
@@ -555,7 +555,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   placeholder="Describe what this bot does and its main goal..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-primary"}`}
+                  className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"}`}
                 />
               </div>
             </div>

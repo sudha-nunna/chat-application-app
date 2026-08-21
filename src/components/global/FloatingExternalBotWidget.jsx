@@ -646,7 +646,7 @@ const FloatingExternalBotWidget = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={loading}
-                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-primary dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-primary"
+                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"
                   }`}
               />
 

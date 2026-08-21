@@ -388,7 +388,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             {isVoicePaused ? (
               <>
                 <FiVolumeX className="text-sm" />
-                <span>Voice Muted</span>
+                <span className="hidden lg:block">Voice Muted</span>
               </>
             ) : isAudioActive ? (
               <>
@@ -410,7 +410,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         ref={messagesContainerRef}
         className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col"
       >
-        <div className="w-full flex-1 max-w-3xl mx-auto px-4 md:px-6 py-6 flex flex-col space-y-3">
+        <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-3">
           {isFetchingMessages && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
               <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
@@ -427,7 +427,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               <h2 className={`text-2xl font-bold mb-2 tracking-tight ${"text-text-primary dark:text-text-muted"}`}>
                 General AI Assistant
               </h2>
-              <p className={`text-sm mb-10 text-center ${"text-text-muted dark:text-text-primary"}`}>
+              <p className={`text-sm mb-6 lg:mb-10 text-center ${"text-text-muted dark:text-text-primary"}`}>
                 Start a conversation or choose a suggestion below.
               </p>
 
