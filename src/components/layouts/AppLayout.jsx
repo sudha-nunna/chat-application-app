@@ -343,7 +343,7 @@ const AppLayout = ({ children }) => {
           title={title}
           className={`group relative flex items-center justify-between py-2 rounded-lg cursor-pointer text-sm transition select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-3"} ${
             isActive
-              ? "bg-interactive-base/10 dark:bg-interactive-active text-text-primary font-medium"
+              ? "bg-black/5 dark:bg-interactive-active text-text-primary font-medium"
               : "hover:bg-surface-secondary dark:hover:bg-interactive-active/50 text-text-primary dark:text-text-muted dark:hover:text-text-primary"
           }`}
         >
@@ -403,7 +403,7 @@ const AppLayout = ({ children }) => {
                     e.stopPropagation();
                     setExpandedBotId(expandedBotId === item._id ? null : item._id);
                   }}
-                  className={`p-1 mr-0.5 rounded-md hover:text-black dark:hover:text-white ${isActive ? "text-text-muted" : "text-text-primary"}`}
+                  className={`p-1 mr-0.5 rounded-md hover:text-black dark:hover:text-white transition cursor-pointer ${isActive ? "text-text-muted" : "text-text-primary"}`}
                 >
                   {expandedBotId === item._id ? <FiChevronDown className="text-[14px]" /> : <FiChevronRight className="text-[14px]" />}
                 </button>
@@ -411,7 +411,7 @@ const AppLayout = ({ children }) => {
               
               <button
                 onClick={(e) => togglePin(e, item._id)}
-                className={`p-1 mr-0.5 rounded-md hover:text-black dark:hover:text-white ${isActive ? "text-text-muted" : "text-text-primary"}`}
+                className={`p-1 mr-0.5 rounded-md hover:text-black dark:hover:text-white transition cursor-pointer ${isActive ? "text-text-muted" : "text-text-primary"}`}
                 title={isPinned ? "Unpin" : "Pin"}
               >
                 {isPinned ? <TbPinnedOff className="text-[14px]" /> : <TbPin className="text-[14px]" />}
@@ -431,7 +431,7 @@ const AppLayout = ({ children }) => {
                     setActiveDropdownType(type);
                   }
                 }}
-                className={`three-dots-btn p-1 rounded-md hover:text-black dark:hover:text-white ${isActive ? "text-text-muted" : "text-text-primary"}`}
+                className={`three-dots-btn p-1 rounded-md hover:text-black dark:hover:text-white transition cursor-pointer ${isActive ? "text-text-muted" : "text-text-primary"}`}
               >
                 <FiMoreHorizontal />
               </button>
@@ -458,7 +458,7 @@ const AppLayout = ({ children }) => {
                         }}
                         className={`group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition ${
                           activeChatId === conv._id || searchParams.get("convId") === conv._id
-                            ? "bg-interactive-base/10 text-text-primary font-medium"
+                            ? "bg-black/5 dark:bg-interactive-active text-text-primary font-medium"
                             : "hover:bg-surface-secondary text-text-primary/80 hover:text-text-primary"
                         }`}
                       >
@@ -508,15 +508,15 @@ const AppLayout = ({ children }) => {
         </div>
         
         <div className="space-y-1">
-          <button onClick={() => { setIsSearchModalOpen(true); setTempClosed(true); }} className="w-full flex items-center gap-3 p-2 rounded-xl transition-all text-text-primary hover:bg-surface-secondary dark:hover:bg-interactive-active/50">
+          <button onClick={() => { setIsSearchModalOpen(true); setTempClosed(true); }} className="w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer text-text-primary hover:bg-black/5 dark:hover:bg-white/10">
             <div className="w-6 h-6 flex items-center justify-center shrink-0"><FiSearch className="text-lg" /></div>
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">Search</span>
           </button>
-          <button onClick={() => { setActiveSidebarTab("chat"); navigate("/chat"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${activeSidebarTab === "chat" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-surface-secondary dark:hover:bg-interactive-active/50"}`}>
+          <button onClick={() => { setActiveSidebarTab("chat"); navigate("/chat"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "chat" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}>
             <div className="w-6 h-6 flex items-center justify-center shrink-0"><FiMessageSquare className="text-lg" /></div>
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">Chat</span>
           </button>
-          <button onClick={() => { setActiveSidebarTab("agents"); navigate("/bots"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${activeSidebarTab === "agents" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-surface-secondary dark:hover:bg-interactive-active/50"}`}>
+          <button onClick={() => { setActiveSidebarTab("agents"); navigate("/bots"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "agents" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}>
             <div className="w-6 h-6 flex items-center justify-center shrink-0"><TbRobotFace className="text-lg" /></div>
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">AI Agents</span>
           </button>
@@ -525,15 +525,15 @@ const AppLayout = ({ children }) => {
         <div className="my-4 border-t border-border-primary/30 mx-2"></div>
 
         <div className="space-y-1">
-          <button onClick={() => { setActiveSidebarTab("dashboard"); navigate("/dashboard"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${activeSidebarTab === "dashboard" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-surface-secondary dark:hover:bg-interactive-active/50"}`}>
+          <button onClick={() => { setActiveSidebarTab("dashboard"); navigate("/dashboard"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "dashboard" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}>
             <div className="w-6 h-6 flex items-center justify-center shrink-0"><FiGrid className="text-lg" /></div>
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">Dashboard</span>
           </button>
-          <button onClick={() => { setActiveSidebarTab("subscription"); navigate("/subscription"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${activeSidebarTab === "subscription" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-surface-secondary dark:hover:bg-interactive-active/50"}`}>
+          <button onClick={() => { setActiveSidebarTab("subscription"); navigate("/subscription"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "subscription" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}>
             <div className="w-6 h-6 flex items-center justify-center shrink-0"><FiCreditCard className="text-lg" /></div>
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">Subscription</span>
           </button>
-          <button onClick={() => { setActiveSidebarTab("servers"); navigate("/admin/servers"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${activeSidebarTab === "servers" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-surface-secondary dark:hover:bg-interactive-active/50"}`}>
+          <button onClick={() => { setActiveSidebarTab("servers"); navigate("/admin/servers"); setTempClosed(true); }} className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "servers" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}>
             <div className="w-6 h-6 flex items-center justify-center shrink-0"><FiServer className="text-lg" /></div>
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">AI Servers</span>
           </button>
@@ -565,25 +565,25 @@ const AppLayout = ({ children }) => {
 
             <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-            <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsUpgradeModalOpen(true); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition flex items-center gap-3">
+            <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsUpgradeModalOpen(true); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               <FiZap className="text-sm" /> Upgrade plan
             </button>
-            <button onClick={(e) => { e.stopPropagation(); toggleTheme(); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition flex items-center gap-3">
+            <button onClick={(e) => { e.stopPropagation(); toggleTheme(); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               {isDark ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />} Appearance
             </button>
-            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition flex items-center gap-3">
+            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               <FiUser className="text-sm" /> Profile
             </button>
-            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition flex items-center gap-3">
+            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               <FiSettings className="text-sm" /> Settings
             </button>
 
             <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition flex items-center gap-3">
+            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               <FiLifeBuoy className="text-sm" /> Help
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition flex items-center gap-3">
+            <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               <FiLogOut className="text-sm" /> Log out
             </button>
           </div>
@@ -661,7 +661,7 @@ const AppLayout = ({ children }) => {
         
         {isMobile ? (
           <div className="p-4 border-b border-border-primary/40 flex items-center gap-3 shrink-0 relative">
-            <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-lg hover:bg-surface-secondary text-text-primary shrink-0">
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-lg hover:bg-surface-secondary text-text-primary shrink-0 transition cursor-pointer">
               <FiChevronLeft className="text-xl" />
             </button>
             <div 
@@ -707,25 +707,25 @@ const AppLayout = ({ children }) => {
 
                 <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsUpgradeModalOpen(true); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition flex items-center gap-3">
+                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsUpgradeModalOpen(true); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                   <FiZap className="text-sm" /> Upgrade plan
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); toggleTheme(); setIsProfileDropdownOpen(false); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition flex items-center gap-3">
+                <button onClick={(e) => { e.stopPropagation(); toggleTheme(); setIsProfileDropdownOpen(false); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                   {isDark ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />} Appearance
                 </button>
-                <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition flex items-center gap-3">
+                <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                   <FiUser className="text-sm" /> Profile
                 </button>
-                <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition flex items-center gap-3">
+                <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                   <FiSettings className="text-sm" /> Settings
                 </button>
 
                 <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-                <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition flex items-center gap-3">
+                <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                   <FiLifeBuoy className="text-sm" /> Help
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition flex items-center gap-3">
+                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                   <FiLogOut className="text-sm" /> Log out
                 </button>
               </div>
@@ -735,7 +735,7 @@ const AppLayout = ({ children }) => {
           <div className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}>
             {!isSidebarCollapsed && <span className="text-sm font-semibold truncate">{activeSidebarTab === "chat" ? "Chats" : "AI Agents"}</span>}
             <div className="flex gap-1">
-               <button onClick={() => { setIsSidebarCollapsed(!isSidebarCollapsed); setTempClosed(true); }} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-primary transition" title="Toggle Sidebar">
+               <button onClick={() => { setIsSidebarCollapsed(!isSidebarCollapsed); setTempClosed(true); }} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-primary transition cursor-pointer" title="Toggle Sidebar">
                  <FiSidebar className="text-sm" />
                </button>
             </div>
@@ -749,7 +749,7 @@ const AppLayout = ({ children }) => {
             <button 
                onClick={() => activeSidebarTab === "chat" ? handleSelectItem(null, "chat") : setIsCreateModalOpen(true)}
                title={activeSidebarTab === "chat" ? "New chat" : "New agent"}
-               className={`w-full ${((activeSidebarTab === "chat" && !activeChatId && location.pathname === "/chat") || (activeSidebarTab === "agents" && isCreateModalOpen)) ? "bg-surface-secondary dark:bg-interactive-active/40" : "bg-transparent"} hover:bg-surface-secondary/80 dark:hover:bg-interactive-active/70 text-text-primary ${isSidebarCollapsed ? "py-2.5 px-0 justify-center w-10 h-10" : "py-2.5 px-3"} rounded-2xl flex items-center gap-2 text-sm transition font-medium border border-transparent  `}
+               className={`w-full ${((activeSidebarTab === "chat" && !activeChatId && location.pathname === "/chat") || (activeSidebarTab === "agents" && isCreateModalOpen)) ? "bg-surface-secondary dark:bg-interactive-active/40" : "bg-transparent"} hover:bg-surface-secondary/80 dark:hover:bg-interactive-active/70 text-text-primary ${isSidebarCollapsed ? "py-2.5 px-0 justify-center w-10 h-10" : "py-2.5 px-3"} rounded-2xl flex items-center gap-2 text-sm transition font-medium border border-transparent cursor-pointer`}
             >
                <FiPlus className="text-base shrink-0" /> {!isSidebarCollapsed && <span>{activeSidebarTab === "chat" ? "New chat" : "New agent"}</span>}
             </button>
@@ -770,7 +770,7 @@ const AppLayout = ({ children }) => {
                 <div className="relative group flex justify-center">
                   <button 
                     onClick={() => setActivePopover(activePopover === "pinnedChats" ? null : "pinnedChats")}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePopover === "pinnedChats" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "pinnedChats" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
                     title="Pinned Chats"
                   >
                     <TbPin className="text-xl" />
@@ -810,7 +810,7 @@ const AppLayout = ({ children }) => {
                 <div className="relative group flex justify-center">
                   <button 
                     onClick={() => setActivePopover(activePopover === "pinnedBots" ? null : "pinnedBots")}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePopover === "pinnedBots" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "pinnedBots" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
                     title="Pinned Agents"
                   >
                     <TbPin className="text-xl" />
@@ -961,7 +961,7 @@ const AppLayout = ({ children }) => {
 
       <div className={`md:hidden flex items-center justify-between p-3 border-b shrink-0 ${"bg-surface-secondary border-border-primary"}`}>
         <div className="flex items-center gap-2.5">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1.5 rounded-lg bg-interactive-active text-text-primary dark:text-white hover:bg-interactive-base">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1.5 rounded-lg bg-interactive-active text-text-primary dark:text-white hover:bg-interactive-base transition cursor-pointer">
             <FiMenu className="text-lg" />
           </button>
           <div className="flex items-center gap-1">
@@ -1137,7 +1137,7 @@ const AppLayout = ({ children }) => {
               setOpenDropdownId(null);
               setActiveDropdownItem(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-white/10 transition flex items-center gap-2"
+            className="w-full text-left px-4 py-2 hover:bg-white/10 transition cursor-pointer flex items-center gap-2"
           >
             <FiEdit2 className="text-xs" /> Rename
           </button>
@@ -1146,7 +1146,7 @@ const AppLayout = ({ children }) => {
               togglePin(e, activeDropdownItem._id);
               setActiveDropdownItem(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-white/10 transition flex items-center gap-2"
+            className="w-full text-left px-4 py-2 hover:bg-white/10 transition cursor-pointer flex items-center gap-2"
           >
             {pinnedItemIds.includes(activeDropdownItem._id) ? (
               <><TbPinnedOff className="text-xs" /> Unpin</>
@@ -1160,7 +1160,7 @@ const AppLayout = ({ children }) => {
               handleDeleteItem(e, activeDropdownItem._id, activeDropdownType);
               setActiveDropdownItem(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-500 transition flex items-center gap-2"
+            className="w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-500 transition cursor-pointer flex items-center gap-2"
           >
             <FiTrash2 className="text-xs" /> Delete
           </button>

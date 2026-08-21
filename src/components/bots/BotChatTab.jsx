@@ -843,7 +843,7 @@ const BotChatTab = ({ bot }) => {
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="p-2.5 bg-interactive-base hover:bg-interactive-base disabled:opacity-40 text-white font-bold rounded-xl text-xs transition shrink-0 shadow-md shadow-black/10/20 active:scale-95 cursor-pointer"
+                className="p-2.5 bg-accent-primary hover:opacity-90 disabled:opacity-40 text-white font-bold rounded-xl text-xs transition shrink-0 shadow-md shadow-black/10/20 active:scale-95 cursor-pointer"
               >
                 <FiSend />
               </button>

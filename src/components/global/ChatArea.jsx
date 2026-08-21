@@ -351,7 +351,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           {onToggleMobileSidebar && (
             <button
               onClick={onToggleMobileSidebar}
-              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 ${"bg-surface-secondary dark:bg-interactive-active hover:bg-interactive-base text-text-primary border-border-primary"
+              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 cursor-pointer transition ${"bg-surface-secondary dark:bg-interactive-active hover:bg-interactive-base text-text-primary border-border-primary"
                 }`}
               title="Toggle Threads List"
             >
@@ -360,7 +360,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             </button>
           )}
           <span className={`font-semibold text-xs tracking-wide truncate ${"text-text-primary dark:text-text-muted"}`}>
-            General AI Assistant (ChatGPT Mode)
+            General AI Assistant 
           </span>
         </div>
 

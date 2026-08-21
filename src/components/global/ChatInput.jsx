@@ -104,7 +104,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           onClick={handleVoiceClick}
           type="button"
           disabled={isGenerating}
-          className={`p-3 rounded-xl transition-colors duration-200 shrink-0 border ${
+          className={`p-3 rounded-xl transition-colors duration-200 shrink-0 border cursor-pointer ${
             isListening 
               ? "bg-text-primary animate-pulse text-text-inverse border-transparent dark:bg-white dark:text-black" 
               : "bg-white hover:bg-surface-secondary text-text-primary border-border-primary shadow-sm dark:bg-interactive-active dark:hover:bg-interactive-base dark:border-transparent dark:text-text-muted"
@@ -137,7 +137,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
             onClick={handleSend}
             disabled={!text.trim()}
             type="button"
-            className="bg-text-primary hover:opacity-90 text-text-inverse dark:bg-interactive-active dark:hover:bg-interactive-base dark:text-white font-medium px-5 py-2.5 rounded-xl transition-colors shrink-0 disabled:opacity-50 text-xs shadow-md border border-transparent dark:border-border-primary/50"
+            className="bg-text-primary hover:opacity-90 text-text-inverse dark:bg-interactive-active dark:hover:bg-interactive-base dark:text-white font-medium px-5 py-2.5 rounded-xl transition-colors shrink-0 disabled:opacity-50 text-xs shadow-md border border-transparent dark:border-border-primary/50 cursor-pointer"
           >
             Send
           </button>
