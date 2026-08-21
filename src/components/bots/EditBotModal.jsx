@@ -53,11 +53,11 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
       <div
-        className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${"bg-white border-border-primary text-text-primary dark:bg-surface-primary dark:border-border-primary dark:text-text-primary"
+        className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${"bg-surface-secondary border-border-primary text-text-primary dark:bg-[#0A0A0A] dark:border-border-primary dark:text-text-primary"
           }`}
       >
         {/* Modal Header */}
-        <div className={`p-4 md:p-5 border-b flex items-center justify-between ${"border-border-primary bg-surface-secondary/50 dark:border-border-primary dark:bg-surface-secondary"}`}>
+        <div className={`p-4 md:p-5 border-b flex items-center justify-between ${"border-border-primary bg-white dark:border-border-primary dark:bg-[#121212]"}`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-center text-text-primary font-bold">
               <FiEdit2 />
@@ -97,7 +97,7 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Codegene Assistant"
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-border-focus ${"bg-white border-border-primary text-text-primary dark:bg-surface-secondary dark:border-border-primary dark:text-text-primary"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-border-focus ${"bg-white border-border-primary text-text-primary dark:bg-[#121212] dark:border-border-primary dark:text-text-primary"
                 }`}
             />
           </div>
@@ -108,7 +108,7 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-border-focus ${"bg-white border-border-primary text-text-primary dark:bg-surface-secondary dark:border-border-primary dark:text-text-primary"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition focus:ring-2 focus:ring-border-focus ${"bg-white border-border-primary text-text-primary dark:bg-[#121212] dark:border-border-primary dark:text-text-primary"
                 }`}
             >
               {MODELS.map((m) => (
@@ -124,7 +124,7 @@ const EditBotModal = ({ bot, onClose, onBotUpdated }) => {
             <button
               type="button"
               onClick={onClose}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition ${"border-border-primary hover:bg-surface-secondary text-text-primary dark:border-border-primary dark:hover:bg-interactive-active dark:text-text-muted"
+              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition ${"border-border-primary hover:bg-white text-text-primary dark:border-border-primary dark:hover:bg-interactive-active dark:text-text-muted"
                 }`}
             >
               Cancel

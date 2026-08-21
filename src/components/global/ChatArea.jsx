@@ -442,7 +442,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     key={i}
                     onClick={() => handleSendSubmit(item.prompt)}
                     className={`flex flex-col text-left p-4 rounded-xl border transition-all duration-200 group ${
-                      "bg-surface-secondary hover:bg-white cursor-pointer border-border-primary shadow-sm hover:shadow-md dark:bg-[#181818] dark:hover:bg-[#2f2f2f] dark:border-border-primary/40 dark:hover:border-border-primary"
+                      "bg-surface-secondary hover:bg-white cursor-pointer border-border-primary shadow-sm hover:shadow-md dark:bg-[#131212] dark:hover:bg-[#0e0d0d] dark:border-border-primary/40 dark:hover:border-border-primary"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 mb-2">

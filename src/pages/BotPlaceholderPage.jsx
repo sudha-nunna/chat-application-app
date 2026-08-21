@@ -33,7 +33,7 @@ const BotPlaceholderPage = () => {
               <button
                 key={i}
                 onClick={openCreateModal}
-                className="flex flex-col text-left p-4 rounded-xl border transition-all duration-200 group bg-surface-secondary hover:bg-white border-border-primary shadow-sm hover:shadow-md dark:bg-[#181818] dark:hover:bg-[#2f2f2f] dark:border-border-primary/40 dark:hover:border-border-primary cursor-pointer"
+                className="flex flex-col text-left p-4 rounded-xl border transition-all duration-200 group bg-surface-secondary hover:bg-white border-border-primary shadow-sm hover:shadow-md dark:bg-[#131212] dark:hover:bg-[#0e0d0d] dark:border-border-primary/40 dark:hover:border-border-primary cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 mb-2">
                   <div className="p-1.5 rounded-lg border bg-white border-border-primary/60 dark:bg-[#222222] dark:border-border-primary/40 shadow-sm flex items-center justify-center shrink-0">

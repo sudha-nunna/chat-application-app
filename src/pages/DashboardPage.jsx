@@ -151,9 +151,9 @@ const DashboardPage = () => {
             <div
               key={bot._id}
               onClick={() => navigate(`/bots/${bot._id}`)}
-              className={`border rounded-2xl p-5 cursor-pointer transition shadow-lg group relative flex flex-col justify-between ${isDark
-                ? "bg-interactive-active/90 border-border-primary hover:border-border-primary"
-                : "bg-white border-border-primary hover:border-border-primary hover:shadow-xl"
+              className={`border rounded-2xl p-5 cursor-pointer transition shadow-sm group relative flex flex-col justify-between ${isDark
+                ? "bg-interactive-active/70 border-border-primary hover:border-border-primary"
+                : "bg-white border-border-primary hover:border-border-primary hover:shadow-lg"
                 }`}
             >
               <div>
@@ -215,7 +215,7 @@ const DashboardPage = () => {
                 </p>
               </div>
 
-              <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-border-primary/80" : "border-border-primary"
+              <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-border-primary/60" : "border-border-primary"
                 }`}>
                 <div className={`flex items-center gap-4 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
                   {(["CHAT", "HYBRID"].includes(bot.botType || "HYBRID")) && (

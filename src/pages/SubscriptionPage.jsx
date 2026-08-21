@@ -92,7 +92,7 @@ const SubscriptionPage = () => {
   };
 
   return (
-    <div className={`flex-1 h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-7xl mx-auto custom-scrollbar ${
+    <div className={`flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-8xl mx-auto custom-scrollbar ${
       "bg-transparent text-text-primary"
     }`}>
       {/* Header Banner */}

@@ -220,7 +220,7 @@ const AdminServerPage = () => {
   return (
     <div className={`p-4 md:p-8 flex-1 h-full w-full overflow-y-auto custom-scrollbar ${"bg-transparent text-text-primary"}`}>
       {/* Top Banner */}
-      <div className="max-w-6xl mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-text-primary font-bold text-xs uppercase tracking-wider mb-1">
             <FiServer />
@@ -255,21 +255,21 @@ const AdminServerPage = () => {
 
       {/* Messages */}
       {errorMsg && (
-        <div className="max-w-6xl mx-auto mb-4 p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs font-medium flex items-center gap-2">
+        <div className="max-w-7xl mx-auto mb-4 p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs font-medium flex items-center gap-2">
           <FiAlertTriangle className="shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="max-w-6xl mx-auto mb-4 p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs font-medium flex items-center gap-2">
+        <div className="max-w-7xl mx-auto mb-4 p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs font-medium flex items-center gap-2">
           <FiCheckCircle className="shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Server Grid */}
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {loading ? (
           <div className={`text-center py-16 text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>
             <FiRefreshCw className="animate-spin text-2xl mx-auto mb-2 text-text-primary" />
@@ -290,14 +290,14 @@ const AdminServerPage = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
             {nodes.map((node) => {
               const isHealthy = node.isActive && (!node.status || node.status === "ACTIVE" || node.status.startsWith("HEALTHY") || node.status === "OK");
               return (
                 <div
                   key={node._id}
                   className={`p-5 rounded-2xl border transition relative flex flex-col justify-between ${isDark
-                      ? "bg-interactive-active/80 border-border-primary hover:border-border-primary"
+                      ? "bg-interactive-active/70 border-border-primary hover:border-border-primary"
                       : "bg-white border-border-primary hover:border-border-primary shadow-sm"
                     } ${!node.isActive ? "opacity-60" : ""}`}
                 >
