@@ -288,7 +288,6 @@ const AppLayout = ({ children }) => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.dispatchEvent(new Event("auth-change"));
     queryClient.clear();
     window.location.href = "/";
   };
