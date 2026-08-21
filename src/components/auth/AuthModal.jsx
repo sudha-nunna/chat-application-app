@@ -35,13 +35,13 @@ const AuthModal = ({ onAuthSuccess }) => {
     <div className={`absolute inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-8 ${
       "bg-[#111111] md:bg-black/90 md:backdrop-blur-md"
     }`}>
-      <div className="flex flex-col md:flex-row w-full h-full md:h-auto max-w-4xl md:min-h-[550px] bg-transparent md:bg-[#0A0A0A] rounded-none md:rounded-[32px] md:border border-white/5 overflow-hidden md:shadow-2xl relative">
+      <div className="flex flex-col md:flex-row w-full h-full md:h-auto max-w-4xl md:min-h-[500px] bg-transparent md:bg-[#0A0A0A] rounded-none md:rounded-[32px] md:border border-white/[0.01] overflow-hidden md:shadow-2xl relative">
         
         {/* Top Image (Mobile) / Left Side (Desktop) */}
         <div className="flex md:flex-col w-full md:w-1/2 h-[45%] md:h-auto p-8 md:p-10 justify-between relative bg-gradient-to-b from-[#111111] to-[#050505] border-none md:border-r border-white/5 overflow-hidden">
           {/* Background Image Layer */}
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-80 md:pointer-events-none">
-            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top" />
+            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top brightness-80" />
           </div>
 
           <div className="hidden md:flex relative z-10 items-center gap-1">
@@ -60,7 +60,7 @@ const AuthModal = ({ onAuthSuccess }) => {
         </div>
 
         {/* Bottom Card (Mobile) / Right Side (Desktop) */}
-        <div className="w-full md:w-1/2 h-[75%] md:h-auto flex flex-col justify-start md:justify-center bg-[#121212] relative z-10 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 p-8 md:p-14 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] md:shadow-none overflow-y-auto">
+        <div className="w-full md:w-1/2 h-[75%] md:h-auto flex flex-col justify-start md:justify-center bg-[#121212] relative z-10 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 p-8 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] md:shadow-none overflow-y-auto">
           <div className="max-w-[340px] mx-auto w-full pt-2 md:pt-0">
             
             {/* Mobile Logo */}
