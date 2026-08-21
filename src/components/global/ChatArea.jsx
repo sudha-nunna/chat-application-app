@@ -442,14 +442,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     key={i}
                     onClick={() => handleSendSubmit(item.prompt)}
                     className={`flex flex-col text-left p-4 rounded-xl border transition-all duration-200 group ${
-                      "bg-surface-secondary hover:bg-white border-border-primary shadow-sm hover:shadow-md dark:bg-[#181818] dark:hover:bg-[#2f2f2f] dark:border-border-primary/40 dark:hover:border-border-primary"
+                      "bg-surface-secondary hover:bg-white cursor-pointer border-border-primary shadow-sm hover:shadow-md dark:bg-[#181818] dark:hover:bg-[#2f2f2f] dark:border-border-primary/40 dark:hover:border-border-primary"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <item.icon className={`text-lg ${"text-interactive-base"}`} />
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="p-1.5 rounded-lg border bg-white border-border-primary/60 dark:bg-[#222222] dark:border-border-primary/40 shadow-sm flex items-center justify-center shrink-0">
+                        <item.icon className={`text-[15px] ${"text-text-primary dark:text-text-muted"}`} />
+                      </div>
                       <span className={`font-semibold text-sm ${"text-text-primary dark:text-text-muted"}`}>{item.title}</span>
                     </div>
-                    <span className={`text-xs leading-relaxed line-clamp-2 ${"text-text-muted dark:text-text-primary/70"}`}>
+                    <span className={`text-xs leading-relaxed tracking-wide line-clamp-2 ${"text-text-muted dark:text-text-primary/60"}`}>
                       {item.prompt}
                     </span>
                   </button>

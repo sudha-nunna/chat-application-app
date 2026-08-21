@@ -849,7 +849,7 @@ const AppLayout = ({ children }) => {
                 <div className="relative group flex justify-center">
                   <button 
                     onClick={() => setActivePopover(activePopover === "recentChats" ? null : "recentChats")}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePopover === "recentChats" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "recentChats" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
                     title="Recent Chats"
                   >
                     <FiMessageCircle className="text-xl" />
@@ -897,7 +897,7 @@ const AppLayout = ({ children }) => {
                 <div className="relative group flex justify-center">
                   <button 
                     onClick={() => setActivePopover(activePopover === "otherBots" ? null : "otherBots")}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePopover === "otherBots" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "otherBots" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"}`}
                     title="My AI Agents"
                   >
                     <TbRobotFace className="text-xl" />
