@@ -35,17 +35,17 @@ const AuthModal = ({ onAuthSuccess }) => {
     <div className={`absolute inset-0 z-50 flex items-center justify-center p-4 md:p-8 ${
       "bg-black/90 backdrop-blur-md"
     }`}>
-      <div className="flex flex-col md:flex-row w-full max-w-4xl min-h-[550px] bg-[#0A0A0A] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl relative">
+      <div className="flex flex-col md:flex-row w-full max-w-4xl min-h-[510px] md:min-h-[550px] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl relative">
         
         {/* Left Side */}
         <div className="hidden md:flex w-full md:w-1/2 p-10 flex-col justify-between relative bg-gradient-to-b from-[#111111] to-[#050505] border-r border-white/5">
           {/* Background Image Layer */}
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-80 pointer-events-none">
-            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover" />
+            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top" />
           </div>
 
-          <div className="relative z-10 flex items-center gap-2">
-            <img src="/mini-logo2.png" alt="Nexora Logo" className="w-7 h-7 object-contain invert" />
+          <div className="relative z-10 flex items-center gap-1">
+            <img src="/mini-logo2.png" alt="Nexora Logo" className={`w-9 h-9 object-contain shrink-0 ${isDark? "invert": ""}`}/>
             <span className="text-white font-medium text-sm tracking-wide">NEXORA</span>
           </div>
 
@@ -60,12 +60,12 @@ const AuthModal = ({ onAuthSuccess }) => {
         </div>
 
         {/* Right Side */}
-        <div className="w-full md:w-1/2 p-10 md:p-14 flex flex-col justify-center bg-[#050505] relative z-10">
+        <div className="w-full md:w-1/2 p-6 md:p-14 flex flex-col justify-center bg-[#121212] relative z-10">
           <div className="max-w-[340px] mx-auto w-full">
             
             {/* Mobile Logo */}
-            <div className="md:hidden flex items-center gap-2 mb-10">
-              <img src="/mini-logo2.png" alt="Nexora Logo" className="w-7 h-7 object-contain invert" />
+            <div className="md:hidden flex items-center gap-1 mb-10">
+              <img src="/mini-logo2.png" alt="Nexora Logo" className="w-8 h-8 object-contain invert" />
               <span className="text-white font-medium text-sm tracking-wide">NEXORA</span>
             </div>
 
