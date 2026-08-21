@@ -345,7 +345,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       }`}>
 
       {/* Fixed Sticky Header Bar */}
-      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${"bg-interactive-base dark:bg-interactive-base/60 border-border-primary dark:border-border-primary/60"
+      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary dark:border-border-primary/60"
         }`}>
         <div className="flex items-center gap-2 truncate">
           {onToggleMobileSidebar && (

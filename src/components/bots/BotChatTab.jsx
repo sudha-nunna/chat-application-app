@@ -388,7 +388,7 @@ const BotChatTab = ({ bot }) => {
   // Shared Markdown Components Styling
   const markdownComponents = {
     p: ({ node, ...props }) => (
-      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-xs md:text-sm" {...props} />
+      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm" {...props} />
     ),
     a: ({ node, ...props }) => (
       <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
@@ -614,7 +614,7 @@ const BotChatTab = ({ bot }) => {
         {activeMode === "TEXT_CHAT" && (
         <div
           ref={messagesContainerRef}
-          className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col"
+          className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col bg-white dark:bg-interactive-active/40"
         >
           <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-6">
           {isFetchingMessages ? (

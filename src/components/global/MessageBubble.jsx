@@ -125,7 +125,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 </div>
               );
             },
-            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-xs md:text-sm" {...props} />,
+            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm" {...props} />,
             strong: ({ node, ...props }) => (
               <strong
                 className={`font-semibold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-sm ${
