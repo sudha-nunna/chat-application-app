@@ -81,14 +81,14 @@ const AuthModal = ({ onAuthSuccess }) => {
               </div>
             )}
 
-            <div className="mb-5 rounded-xl overflow-hidden shadow-sm">
+            <div className="mb-5 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => setError("Google sign-in failed. Please try again.")}
                 theme="outline"
                 size="large"
                 text="signin_with"
-                width="100%"
+                width="340"
                 shape="rectangular"
               />
             </div>
