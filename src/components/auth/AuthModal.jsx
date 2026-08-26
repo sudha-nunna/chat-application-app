@@ -3,6 +3,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { NobackEndCallObj, setJwt } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
 import { FiCpu, FiDatabase, FiMessageSquare } from "react-icons/fi";
+import { Link } from "react-router-dom";
 
 const AuthModal = ({ onAuthSuccess }) => {
   const [error, setError] = useState("");
@@ -44,10 +45,10 @@ const AuthModal = ({ onAuthSuccess }) => {
             <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top brightness-80" />
           </div>
 
-          <div className="hidden md:flex relative z-10 items-center gap-1">
+          <Link to="/" className="hidden md:flex relative z-10 items-center gap-1">
             <img src="/mini-logo2.png" alt="Nexora Logo" className={`w-9 h-9 object-contain shrink-0 ${isDark? "invert": ""}`}/>
             <span className="text-white font-medium text-sm tracking-wide">NEXORA</span>
-          </div>
+          </Link>
 
           <div className="hidden md:block relative z-10 mt-auto">
             <h2 className="text-2xl md:text-4xl font-display font-medium text-white mb-4 leading-[1.1] tracking-tight">

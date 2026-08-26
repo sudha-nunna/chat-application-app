@@ -27,7 +27,7 @@ export function MultiAgentSection() {
   ];
 
   return (
-    <motion.section ref={containerRef} style={{ y: y1, opacity }} className="py-32 px-6 md:px-12 bg-[#030303] relative overflow-hidden min-h-screen flex items-center justify-center border-t border-white/5">
+    <motion.section ref={containerRef} style={{ y: y1, opacity }} className="pb-32 pt-16 px-6 md:px-12 bg-[#030303] relative overflow-hidden min-h-screen flex items-center justify-center border-t border-white/5">
       {/* <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.03),transparent_70%)]" /> */}
       
       <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col items-center">

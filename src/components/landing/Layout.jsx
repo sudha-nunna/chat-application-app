@@ -168,7 +168,7 @@ export function Footer() {
           <div className="flex gap-4">
             <a
               href="#"
-              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:border-border-primary/40"
+              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(37,99,235,0.45)] hover:border-border-primary/40"
             >
               <Facebook
                 size={18}
@@ -178,7 +178,7 @@ export function Footer() {
 
             <a
               href="#"
-              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:border-border-primary/40"
+              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(37,99,235,0.45)] hover:border-border-primary/40"
             >
               <Linkedin
                 size={18}
@@ -188,7 +188,7 @@ export function Footer() {
 
             <a
               href="#"
-              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:border-border-primary/40"
+              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(37,99,235,0.45)] hover:border-border-primary/40"
             >
               <Github
                 size={18}
