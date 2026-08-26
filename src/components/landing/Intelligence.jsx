@@ -183,10 +183,11 @@ export function StudioSection() {
           {/* Sidebar */}
           <div className="w-[60px] bg-[#000000] border-r border-white/5 flex flex-col items-center py-5 gap-7 z-10 shrink-0">
             <div className="text-white mb-2 font-black text-xl">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
                 <circle cx="12" cy="12" r="4" fill="white" />
-              </svg>
+              </svg> */}
+              <img src="/mini-logo2.png" alt='logo' className="w-8 h-8 rounded-xl invert" />
             </div>
             <FiSearch className="text-white/40 hover:text-white transition cursor-pointer text-lg" />
             <FiMessageSquare className="text-white/40 hover:text-white transition cursor-pointer text-lg" />
@@ -198,7 +199,7 @@ export function StudioSection() {
             <FiList className="text-white/40 hover:text-white transition cursor-pointer text-lg" />
             
             <div className="mt-auto w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-[11px] font-bold cursor-pointer shadow-lg shadow-blue-600/30">
-              YA
+              AI
             </div>
           </div>
 
@@ -245,7 +246,7 @@ export function StudioSection() {
                       <FiCpu className="text-white/80" />
                     </div>
                     <div>
-                      <div className="font-semibold text-sm">reader</div>
+                      <div className="font-semibold text-sm">AI Voice assistant</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/80">GPT-4.1-MINI</span>
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center gap-1">
@@ -277,7 +278,7 @@ export function StudioSection() {
                       <FiCpu className="text-white/80" />
                     </div>
                     <div>
-                      <div className="font-semibold text-sm">nexos</div>
+                      <div className="font-semibold text-sm">DocPdf reader Bot</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/80">CLAUDE-3.5-SONNET</span>
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center gap-1">
@@ -291,7 +292,7 @@ export function StudioSection() {
                     <FiTrash2 className="text-white/40 hover:text-white text-xs" />
                   </div>
                 </div>
-                <div className="text-white/60 text-xs mb-6">Testing Bot</div>
+                <div className="text-white/60 text-xs mb-6">PDF Reader Bot</div>
                 <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-[11px] text-white/50 font-medium">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5"><FiFileText /> 1 Files</span>
@@ -309,7 +310,7 @@ export function StudioSection() {
                       <FiCpu className="text-white/80" />
                     </div>
                     <div>
-                      <div className="font-semibold text-sm">nouso</div>
+                      <div className="font-semibold text-sm">Chat Assistant</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/80">GPT-4O</span>
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center gap-1">
@@ -323,7 +324,7 @@ export function StudioSection() {
                     <FiTrash2 className="text-white/40 hover:text-white text-xs" />
                   </div>
                 </div>
-                <div className="text-white/60 text-xs mb-6">Testing Bot</div>
+                <div className="text-white/60 text-xs mb-6">General chat Bot</div>
                 <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-[11px] text-white/50 font-medium">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5"><FiFileText /> 1 Files</span>
