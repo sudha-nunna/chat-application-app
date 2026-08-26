@@ -775,7 +775,7 @@ const BotChatTab = ({ bot }) => {
           {/* Loading Indicator */}
           {loading && messages[messages.length - 1]?.content === "" && (
             <div className={`flex items-center gap-2 text-xs p-2 italic ${"text-text-primary dark:text-text-primary"}`}>
-              <span className="w-2 h-2 rounded-full bg-interactive-base animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-amber-800 animate-pulse" />
               <span>Retrieving chunks & generating grounded response...</span>
             </div>
           )}

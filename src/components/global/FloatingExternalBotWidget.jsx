@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   FiMessageSquare,
   FiX,
@@ -474,6 +476,38 @@ const FloatingExternalBotWidget = () => {
         {...props}
       />
     ),
+    pre: ({ node, ...props }) => <div className="my-2">{props.children}</div>,
+    code: ({ node, inline, className, children, ...props }) => {
+      const match = /language-(\w+)/.exec(className || "");
+      if (!inline) {
+        return (
+          <div className="relative w-full max-w-full overflow-x-auto rounded-xl shadow-sm custom-scrollbar bg-[#1e1e1e] border border-white/10">
+            {match ? (
+              <SyntaxHighlighter
+                children={String(children).replace(/\n$/, "")}
+                style={vscDarkPlus}
+                language={match[1]}
+                PreTag="div"
+                customStyle={{ margin: 0, padding: "12px", fontSize: "11px", background: "transparent" }}
+                {...props}
+              />
+            ) : (
+              <pre className="p-3 text-[11px] font-mono leading-relaxed text-[#d4d4d4]" {...props}>
+                {children}
+              </pre>
+            )}
+          </div>
+        );
+      }
+      return (
+        <code
+          className="px-1.5 py-0.5 rounded-md text-[10px] bg-black/5 dark:bg-white/10 border border-border-primary/30 dark:border-white/5 font-mono font-medium text-text-primary"
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    },
   };
 
   return (
@@ -543,7 +577,7 @@ const FloatingExternalBotWidget = () => {
                   <h3 className="text-xs font-bold tracking-tight">
                     External AI Assistant
                   </h3>
-                  <span className="w-2 h-2 rounded-full bg-interactive-base animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-amber-700 animate-pulse" />
                 </div>
                 <p
                   className={`text-[10px] flex items-center gap-1 ${"text-text-primary"}`}
@@ -603,8 +637,8 @@ const FloatingExternalBotWidget = () => {
                   <div
                     className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
                       isUser
-                        ? "bg-interactive-base text-text-primary dark:text-white rounded-br-xs shadow-md shadow-black/10/10 font-medium"
-                        : "bg-surface-secondary text-text-primary border border-border-primary rounded-bl-xs dark:bg-interactive-active/90 dark:text-text-muted dark:border dark:border-border-primary/60 dark:rounded-bl-xs"
+                        ? "bg-neutral-900 text-white dark:bg-[#383838] dark:text-white rounded-br-xs shadow-md font-normal"
+                        : "bg-surface-secondary text-text-primary border border-border-primary rounded-bl-xs dark:bg-[#181818] dark:text-text-muted dark:border dark:border-white/5 dark:rounded-bl-xs"
                     }`}
                   >
                     {isUser ? (
@@ -651,7 +685,7 @@ const FloatingExternalBotWidget = () => {
                     )}
 
                     {msg.isStreaming && !msg.content && (
-                      <span className="flex items-center gap-1.5 text-text-primary font-mono italic mt-1">
+                      <span className="flex items-center gap-1.5 text-text-primary  text-xs font-mono italic mt-1">
                         <FiRefreshCw className="animate-spin text-xs" />
                         <span>Thinking & Streaming response...</span>
                       </span>
@@ -710,7 +744,7 @@ const FloatingExternalBotWidget = () => {
                     key={i}
                     type="button"
                     onClick={(e) => handleSendMessage(e, promptText)}
-                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${"bg-surface-secondary border-border-primary text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:bg-interactive-active/70 dark:border-border-primary/80 dark:text-text-muted dark:hover:text-white dark:hover:bg-interactive-base/80"}`}
+                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${"bg-surface-secondary border-border-primary text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:bg-interactive-active/70 dark:border-white/5 dark:text-text-muted dark:hover:text-white dark:hover:bg-interactive-base/80"}`}
                   >
                     {promptText}
                   </button>
@@ -765,7 +799,7 @@ const FloatingExternalBotWidget = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={loading}
-                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"}`}
+                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-neutral-400 dark:bg-[#1a1a1a] dark:border dark:border-white/10 dark:text-white dark:placeholder:text-neutral-600"}`}
               />
 
               {loading ? (
@@ -781,7 +815,7 @@ const FloatingExternalBotWidget = () => {
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base disabled:opacity-40 text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
+                  className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-interactive-base disabled:opacity-40 disabled:hover:bg-interactive-base text-white text-xs transition shadow-md shadow-blue-500/20 cursor-pointer"
                   title="Send Message"
                 >
                   <FiSend className="text-xs" />

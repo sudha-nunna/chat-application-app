@@ -499,7 +499,7 @@ const AdminServerPage = () => {
                         onClick={() => handleOpenEditModal(node)}
                         className={`p-2 rounded-lg border text-xs transition ${
                           isDark
-                            ? "border-border-primary hover:bg-interactive-active text-text-muted"
+                            ? "border-white/5 hover:bg-interactive-active text-text-muted"
                             : "border-border-primary hover:bg-surface-secondary text-text-primary"
                         }`}
                         title="Edit URL & Settings"
@@ -509,7 +509,7 @@ const AdminServerPage = () => {
 
                       <button
                         onClick={() => handleDeleteNode(node._id, node.name)}
-                        className="p-2 rounded-lg border border-border-primary/30 bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary text-xs transition"
+                        className="p-2 rounded-lg border border-border-primary/30 dark:border-white/5  bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary text-xs transition"
                         title="Delete Server Node"
                       >
                         <FiTrash2 />
