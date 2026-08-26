@@ -657,9 +657,9 @@ const BotChatTab = ({ bot }) => {
 
                     {/* DIRECT MARKDOWN RENDERER */}
                     <div
-                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${isUser
-                        ? "bg-interactive-base text-text-primary dark:text-white font-medium rounded-tr-none shadow-black/10/20"
-                        : "bg-surface-secondary border border-border-primary text-text-primary rounded-tl-none dark:bg-interactive-base dark:border dark:border-border-primary dark:text-text-muted dark:rounded-tl-none"
+                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-sm ${isUser
+                        ? "bg-gray-100 border border-gray-200 dark:bg-[#222222] text-text-primary dark:text-white font-medium rounded-tr-none dark:border-white/5"
+                        : "bg-white dark:bg-[#0a0a0a] border border-border-primary dark:border-white/10 text-text-primary dark:text-text-muted rounded-tl-none"
                         }`}
                     >
                       {isUser ? (

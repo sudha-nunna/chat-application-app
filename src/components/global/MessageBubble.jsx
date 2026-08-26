@@ -40,8 +40,8 @@ const MessageBubble = ({ role, content, onRetry }) => {
 
       {/* Bubble Container */}
       <div
-        className={`min-w-0 max-w-full rounded-2xl p-3 lg:p-5 shadow-md leading-relaxed text-[14px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
-          isUser ? "bg-interactive-base text-text-primary dark:text-white font-medium rounded-tr-none shadow-black/10" : "bg-surface-secondary dark:bg-interactive-base border border-border-primary text-text-primary dark:text-text-muted rounded-tl-none"
+        className={`min-w-0 max-w-full rounded-2xl p-3 lg:p-5 shadow-sm leading-relaxed text-[14px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
+          isUser ? "bg-gray-100 border border-gray-200 dark:bg-[#222222] text-text-primary dark:text-white font-medium rounded-tr-none dark:border-white/5" : "bg-white dark:bg-[#0a0a0a] border border-border-primary dark:border-white/10 text-text-primary dark:text-text-muted rounded-tl-none"
         }`}
       >
         <ReactMarkdown
@@ -128,10 +128,10 @@ const MessageBubble = ({ role, content, onRetry }) => {
             p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm" {...props} />,
             strong: ({ node, ...props }) => (
               <strong
-                className={`font-semibold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-sm ${
+                className={`font-medium tracking-wider px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-sm ${
                   isUser
-                    ? "text-white bg-interactive-base/80 border border-border-primary/30"
-                    : "text-black bg-black/5 border border-black/10 dark:text-white dark:bg-white/10 dark:border dark:border-white/20"
+                    ? "text-amber-700 bg-interactive-base/80 border border-border-primary/30"
+                    : " text-amber-700 bg-amber-600/5 border border-amber-600/20"
                 }`}
                 {...props}
               />
