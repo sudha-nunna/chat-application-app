@@ -76,7 +76,7 @@ const DashboardPage = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">Multi-Agent AI Applications</h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-interactive-base/10 text-text-primary border border-border-primary/20 font-bold uppercase">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-interactive-base/10 text-amber-700 font-normal tracking-wider border border-border-primary/20 font-bold uppercase">
               Production Architecture
             </span>
           </div>

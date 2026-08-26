@@ -155,7 +155,7 @@ export function Footer() {
         <div className="col-span-1 md:col-span-2">
           <div className="flex items-center gap-1 relative mb-6">
             {/* <div className="w-10 h-10 p-1 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
-              <img src="/mini-logo.png" />
+              <img src="/mini-logo2.png" />
             </div> */}
             <img src="/mini-logo2.png" className="invert w-10 h-10"/>
             <h5 className="font-display font-semibold text-2xl tracking-tight">

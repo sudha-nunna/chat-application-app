@@ -10,14 +10,18 @@ import {
   FiActivity,
   FiZap,
   FiSliders,
-  FiX
+  FiX,
 } from "react-icons/fi";
-import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../services/authService";
+import {
+  NobackEndCall,
+  NobackEndCallObj,
+  backEndCallObjDel,
+} from "../services/authService";
 import { useTheme } from "../context/ThemeContext";
 import {
   useTanStackData,
   useTanStackMutation,
-  useTanStackQueryClient
+  useTanStackQueryClient,
 } from "../hooks/useTanStackData";
 
 const AdminServerPage = () => {
@@ -39,21 +43,18 @@ const AdminServerPage = () => {
     defaultModel: "llama3.2:3b",
     format: "openai",
     priority: 10,
-    isActive: true
+    isActive: true,
   });
 
   // 1. GET Route: Admin Server Nodes
   const {
     data: nodesData = null,
     isLoading: loading,
-    refetch: fetchNodes
-  } = useTanStackData(
-    ["admin-nodes"],
-    async () => {
-      const res = await NobackEndCall("/admin/nodes");
-      return res;
-    }
-  );
+    refetch: fetchNodes,
+  } = useTanStackData(["admin-nodes"], async () => {
+    const res = await NobackEndCall("/admin/nodes");
+    return res;
+  });
 
   const nodes = nodesData?.nodes || (Array.isArray(nodesData) ? nodesData : []);
 
@@ -67,14 +68,17 @@ const AdminServerPage = () => {
       }
     },
     onSuccess: (resData, variables) => {
-      const nodeName = resData?.node?.name || variables.data?.name || "Server node";
-      setSuccessMsg(`Server node "${nodeName}" ${variables.isEdit ? "updated" : "created"} successfully!`);
+      const nodeName =
+        resData?.node?.name || variables.data?.name || "Server node";
+      setSuccessMsg(
+        `Server node "${nodeName}" ${variables.isEdit ? "updated" : "created"} successfully!`,
+      );
       queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
       setIsModalOpen(false);
     },
     onError: (err) => {
       setErrorMsg(err?.error || err?.message || "Failed to save server node.");
-    }
+    },
   });
 
   const deleteNodeMutation = useTanStackMutation({
@@ -86,8 +90,10 @@ const AdminServerPage = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
     },
     onError: (err) => {
-      setErrorMsg(err?.error || err?.message || "Failed to delete server node.");
-    }
+      setErrorMsg(
+        err?.error || err?.message || "Failed to delete server node.",
+      );
+    },
   });
 
   const pingNodeMutation = useTanStackMutation({
@@ -97,25 +103,33 @@ const AdminServerPage = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
-      setSuccessMsg(`Ping result for ${data?.name || "node"}: ${data?.status || "OK"} (${data?.latencyMs || 0} ms)`);
+      setSuccessMsg(
+        `Ping result for ${data?.name || "node"}: ${data?.status || "OK"} (${data?.latencyMs || 0} ms)`,
+      );
       setPingingId(null);
     },
     onError: (err) => {
-      setErrorMsg(err?.error || err?.message || "Ping failed to reach server node.");
+      setErrorMsg(
+        err?.error || err?.message || "Ping failed to reach server node.",
+      );
       setPingingId(null);
-    }
+    },
   });
 
   const toggleActiveMutation = useTanStackMutation({
     mutationFn: async (node) => {
-      return await NobackEndCallObj(`/admin/nodes/${node._id}`, { isActive: !node.isActive }, "put");
+      return await NobackEndCallObj(
+        `/admin/nodes/${node._id}`,
+        { isActive: !node.isActive },
+        "put",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
     },
     onError: () => {
       setErrorMsg("Failed to toggle server node status.");
-    }
+    },
   });
 
   const handleOpenAddModal = () => {
@@ -128,7 +142,7 @@ const AdminServerPage = () => {
       defaultModel: "llama3.2:3b",
       format: "openai",
       priority: 10,
-      isActive: true
+      isActive: true,
     });
     setIsModalOpen(true);
   };
@@ -143,7 +157,7 @@ const AdminServerPage = () => {
       defaultModel: node.defaultModel || "llama3.2:3b",
       format: node.format || "openai",
       priority: node.priority || 10,
-      isActive: node.isActive !== undefined ? node.isActive : true
+      isActive: node.isActive !== undefined ? node.isActive : true,
     });
     setIsModalOpen(true);
   };
@@ -166,10 +180,16 @@ const AdminServerPage = () => {
       hasError = true;
     } else {
       let urlToTest = formData.url.trim();
-      const isApiKeyInput = /^(AQ\.Ab|AIzaSy|sk-proj-|sk-|gsk_|nvapi-)/i.test(urlToTest) || formData.format === "glm" || formData.format === "gemini";
+      const isApiKeyInput =
+        /^(AQ\.Ab|AIzaSy|sk-proj-|sk-|gsk_|nvapi-)/i.test(urlToTest) ||
+        formData.format === "glm" ||
+        formData.format === "gemini";
 
       if (!isApiKeyInput) {
-        if (!urlToTest.startsWith("http://") && !urlToTest.startsWith("https://")) {
+        if (
+          !urlToTest.startsWith("http://") &&
+          !urlToTest.startsWith("https://")
+        ) {
           urlToTest = `https://${urlToTest}`;
         }
 
@@ -178,12 +198,16 @@ const AdminServerPage = () => {
           const host = parsed.hostname.toLowerCase();
           const isLocalhost = host === "localhost" || host === "127.0.0.1";
           const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(host);
-          const hasDomainDot = host.includes(".") && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host);
+          const hasDomainDot =
+            host.includes(".") && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host);
 
           if (!isLocalhost && !isIp && !hasDomainDot) {
             errors.url = `Invalid URL format "${formData.url}". High-quality domain name, IP address, or localhost required (e.g., http://localhost:11434 or https://my-tunnel.trycloudflare.com).`;
             hasError = true;
-          } else if (host.length < 3 || /^(aa|aaa|test|demo|abc|qwerty|foo|bar|123)$/i.test(host)) {
+          } else if (
+            host.length < 3 ||
+            /^(aa|aaa|test|demo|abc|qwerty|foo|bar|123)$/i.test(host)
+          ) {
             errors.url = `Invalid URL format "${formData.url}". Dummy URLs like 'aa' are strictly rejected.`;
             hasError = true;
           }
@@ -200,12 +224,15 @@ const AdminServerPage = () => {
     saveNodeMutation.mutate({
       isEdit: !!editingNode,
       nodeId: editingNode?._id,
-      data: formData
+      data: formData,
     });
   };
 
   const handleDeleteNode = (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete server node "${name}"?`)) return;
+    if (
+      !window.confirm(`Are you sure you want to delete server node "${name}"?`)
+    )
+      return;
     deleteNodeMutation.mutate(id);
   };
 
@@ -218,7 +245,9 @@ const AdminServerPage = () => {
   };
 
   return (
-    <div className={`p-4 md:p-8 flex-1 h-full w-full overflow-y-auto custom-scrollbar ${"bg-transparent text-text-primary"}`}>
+    <div
+      className={`p-4 md:p-8 flex-1 h-full w-full overflow-y-auto custom-scrollbar ${"bg-transparent text-text-primary"}`}
+    >
       {/* Top Banner */}
       <div className="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -226,17 +255,26 @@ const AdminServerPage = () => {
             <FiServer />
             <span>Infrastructure Management</span>
           </div>
-          <h1 className="text-xl md:text-3xl font-extrabold tracking-tight">AI Server Nodes & Routing</h1>
-          <p className={`text-xs md:text-sm mt-1 ${isDark ? "text-text-primary/70" : "text-text-primary/70"}`}>
-            Manage, edit, or test local/cloud LLaMA server node URLs in real-time. Changes take effect instantly without restarting the backend!
+          <h1 className="text-xl md:text-3xl font-extrabold tracking-tight">
+            AI Server Nodes & Routing
+          </h1>
+          <p
+            className={`text-xs md:text-sm mt-1 ${isDark ? "text-text-primary/70" : "text-text-primary/70"}`}
+          >
+            Manage, edit, or test local/cloud LLaMA server node URLs in
+            real-time. Changes take effect instantly without restarting the
+            backend!
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => fetchNodes()}
-            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition whitespace-nowrap shrink-0 ${isDark ? "border-border-primary hover:bg-interactive-active text-text-muted" : "border-border-primary hover:bg-surface-secondary text-text-primary"
-              }`}
+            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition whitespace-nowrap shrink-0 ${
+              isDark
+                ? "border-border-primary hover:bg-interactive-active text-text-muted"
+                : "border-border-primary hover:bg-surface-secondary text-text-primary"
+            }`}
             title="Refresh Server List"
           >
             <FiRefreshCw className={loading ? "animate-spin" : ""} />
@@ -271,16 +309,21 @@ const AdminServerPage = () => {
       {/* Server Grid */}
       <div className="max-w-7xl mx-auto">
         {loading ? (
-          <div className={`text-center py-16 text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>
+          <div
+            className={`text-center py-16 text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}
+          >
             <FiRefreshCw className="animate-spin text-2xl mx-auto mb-2 text-text-primary" />
             Loading AI Server Nodes...
           </div>
         ) : nodes.length === 0 ? (
-          <div className={`p-8 rounded-2xl border border-dashed text-center ${isDark ? "border-border-primary bg-interactive-active/50" : "border-border-primary bg-white"}`}>
+          <div
+            className={`p-8 rounded-2xl border border-dashed text-center ${isDark ? "border-border-primary bg-interactive-active/50" : "border-border-primary bg-white"}`}
+          >
             <FiServer className="text-3xl text-text-primary mx-auto mb-2" />
             <h3 className="font-bold text-sm">No Server Nodes Configured</h3>
             <p className="text-xs text-text-primary mt-1 max-w-md mx-auto">
-              Add your first local LLaMA node (vLLM, Ollama, LM Studio) or Cloudflare tunnel URL to start routing AI requests.
+              Add your first local LLaMA node (vLLM, Ollama, LM Studio) or
+              Cloudflare tunnel URL to start routing AI requests.
             </p>
             <button
               onClick={handleOpenAddModal}
@@ -292,40 +335,60 @@ const AdminServerPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
             {nodes.map((node) => {
-              const isHealthy = node.isActive && (!node.status || node.status === "ACTIVE" || node.status.startsWith("HEALTHY") || node.status === "OK");
+              const isHealthy =
+                node.isActive &&
+                (!node.status ||
+                  node.status === "ACTIVE" ||
+                  node.status.startsWith("HEALTHY") ||
+                  node.status === "OK");
               return (
                 <div
                   key={node._id}
-                  className={`p-5 rounded-2xl border transition relative flex flex-col justify-between ${isDark
+                  className={`p-5 rounded-2xl border transition relative flex flex-col justify-between ${
+                    isDark
                       ? "bg-interactive-active/70 border-border-primary hover:border-border-primary"
                       : "bg-white border-border-primary hover:border-border-primary shadow-sm"
-                    } ${!node.isActive ? "opacity-60" : ""}`}
+                  } ${!node.isActive ? "opacity-60" : ""}`}
                 >
                   {/* Top Bar */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${isHealthy ? "bg-green-400 animate-pulse" : "bg-text-muted/50"}`} />
-                        <h3 className="font-bold text-sm tracking-tight">{node.name}</h3>
+                        <span
+                          className={`w-2 h-2 rounded-full ${isHealthy ? "bg-green-400 animate-pulse" : "bg-text-muted/50"}`}
+                        />
+                        <h3 className="font-bold text-sm tracking-tight">
+                          {node.name}
+                        </h3>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                          node.format === "gemini" || (node.url && node.url.includes("googleapis.com"))
-                            ? "bg-interactive-base/20 text-text-primary border border-border-primary/30"
-                            : node.format === "glm" || (node.url && node.url.includes("integrate.api.nvidia.com"))
-                            ? "bg-interactive-base/20 text-text-primary border border-border-primary/30"
-                            : node.format === "openai"
-                            ? "bg-interactive-base/20 text-text-primary border border-border-primary/30"
-                            : "bg-interactive-base/20 text-text-primary border border-border-primary/30"
-                          }`}>
-                          {node.format === "gemini" || (node.url && node.url.includes("googleapis.com"))
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                            node.format === "gemini" ||
+                            (node.url && node.url.includes("googleapis.com"))
+                              ? "bg-interactive-base/20 text-text-primary border border-border-primary/30"
+                              : node.format === "glm" ||
+                                  (node.url &&
+                                    node.url.includes(
+                                      "integrate.api.nvidia.com",
+                                    ))
+                                ? "bg-interactive-base/20 text-text-primary border border-border-primary/30"
+                                : node.format === "openai"
+                                  ? "bg-interactive-base/20 text-text-primary border border-border-primary/30"
+                                  : "bg-interactive-base/20 text-text-primary border border-border-primary/30"
+                          }`}
+                        >
+                          {node.format === "gemini" ||
+                          (node.url && node.url.includes("googleapis.com"))
                             ? "Google Gemini API"
-                            : node.format === "glm" || (node.url && node.url.includes("integrate.api.nvidia.com"))
-                            ? "NVIDIA GLM API"
-                            : node.format === "openai"
-                            ? "vLLM / OpenAI API"
-                            : "Ollama Native API"}
+                            : node.format === "glm" ||
+                                (node.url &&
+                                  node.url.includes("integrate.api.nvidia.com"))
+                              ? "NVIDIA GLM API"
+                              : node.format === "openai"
+                                ? "vLLM / OpenAI API"
+                                : "Ollama Native API"}
                         </span>
 
                         <label className="relative inline-flex items-center cursor-pointer">
@@ -342,40 +405,72 @@ const AdminServerPage = () => {
 
                     {/* URL & Secret Key Display */}
                     <div className="space-y-1.5 mb-3">
-                      <div className={`p-2 px-3 rounded-xl border text-xs font-mono flex items-center justify-between gap-2 ${
-                        isDark ? "bg-interactive-base border-border-primary text-text-primary" : "bg-surface-secondary border-border-primary text-text-primary"
-                      }`}>
-                        <span className="text-[10px] text-text-primary uppercase font-sans font-bold shrink-0">Endpoint:</span>
+                      <div
+                        className={`p-2 px-3 rounded-xl border text-xs font-mono flex items-center justify-between gap-2 ${
+                          isDark
+                            ? "bg-interactive-base border-border-primary text-text-primary"
+                            : "bg-surface-secondary border-border-primary text-text-primary"
+                        }`}
+                      >
+                        <span className="text-[10px] text-text-primary uppercase font-sans font-bold shrink-0">
+                          Endpoint:
+                        </span>
                         <span className="truncate">{node.url}</span>
                       </div>
 
-                      <div className={`p-2 px-3 rounded-xl border text-[11px] font-mono flex items-center justify-between gap-2 ${
-                        isDark ? "bg-interactive-base/60 border-border-primary/80 text-amber-800" : "bg-amber-50/50 border-amber-200 text-amber-800"
-                      }`}>
-                        <span className="text-[10px] text-text-primary uppercase font-sans font-bold shrink-0">API Key:</span>
+                      <div
+                        className={`p-2 px-3 rounded-xl border text-[11px] font-mono flex items-center justify-between gap-2 ${
+                          isDark
+                            ? "bg-interactive-base/60 border-border-primary/80 text-amber-800"
+                            : "bg-amber-50/50 border-amber-200 text-amber-800"
+                        }`}
+                      >
+                        <span className="text-[10px] text-text-primary uppercase font-sans font-bold shrink-0">
+                          API Key:
+                        </span>
                         <span className="truncate">
-                          {node.secretKey ? `🔑 ${node.secretKey} (Stored & Encrypted)` : "🔓 None (Open Endpoint)"}
+                          {node.secretKey
+                            ? `🔑 ${node.secretKey} (Stored & Encrypted)`
+                            : "🔓 None (Open Endpoint)"}
                         </span>
                       </div>
                     </div>
 
                     {/* Info Metrics */}
                     <div className="grid grid-cols-3 gap-2 text-[11px] mb-4">
-                      <div className={`p-2 rounded-lg border ${isDark ? "bg-interactive-base/60 border-border-primary" : "bg-interactive-base border-border-primary"}`}>
-                        <div className="text-text-primary text-[10px]">Target Model</div>
-                        <div className="font-semibold truncate">{node.defaultModel || "llama3.2:3b"}</div>
-                      </div>
-
-                      <div className={`p-2 rounded-lg border ${isDark ? "bg-interactive-base/60 border-border-primary" : "bg-interactive-base border-border-primary"}`}>
-                        <div className="text-text-primary text-[10px]">Ping Latency</div>
-                        <div className="font-semibold text-text-primary flex items-center gap-1">
-                          <FiActivity />
-                          <span>{node.lastLatencyMs ? `${node.lastLatencyMs} ms` : "Untested"}</span>
+                      <div
+                        className={`p-2 rounded-lg border ${isDark ? "bg-interactive-base/60 border-border-primary" : "bg-interactive-base border-border-primary"}`}
+                      >
+                        <div className="text-text-primary text-[10px]">
+                          Target Model
+                        </div>
+                        <div className="font-semibold truncate">
+                          {node.defaultModel || "llama3.2:3b"}
                         </div>
                       </div>
 
-                      <div className={`p-2 rounded-lg border ${isDark ? "bg-interactive-base/60 border-border-primary" : "bg-interactive-base border-border-primary"}`}>
-                        <div className="text-text-primary text-[10px]">Priority Tier</div>
+                      <div
+                        className={`p-2 rounded-lg border ${isDark ? "bg-interactive-base/60 border-border-primary" : "bg-interactive-base border-border-primary"}`}
+                      >
+                        <div className="text-text-primary text-[10px]">
+                          Ping Latency
+                        </div>
+                        <div className="font-semibold text-text-primary flex items-center gap-1">
+                          <FiActivity />
+                          <span>
+                            {node.lastLatencyMs
+                              ? `${node.lastLatencyMs} ms`
+                              : "Untested"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`p-2 rounded-lg border ${isDark ? "bg-interactive-base/60 border-border-primary" : "bg-interactive-base border-border-primary"}`}
+                      >
+                        <div className="text-text-primary text-[10px]">
+                          Priority Tier
+                        </div>
                         <div className="font-semibold flex items-center gap-1 text-amber-800">
                           <FiZap />
                           <span>Tier {node.priority || 10}</span>
@@ -385,21 +480,28 @@ const AdminServerPage = () => {
                   </div>
 
                   {/* Actions Footer */}
-                  <div className={`pt-3 border-t flex items-center justify-between ${isDark ? "border-border-primary" : "border-border-primary"}`}>
+                  <div
+                    className={`pt-3 border-t flex items-center justify-between ${isDark ? "border-border-primary" : "border-border-primary"}`}
+                  >
                     <button
                       onClick={() => handlePingNode(node._id)}
                       disabled={pingingId === node._id}
                       className="flex items-center gap-1.5 bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary border border-border-primary/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                     >
-                      <FiRefreshCw className={pingingId === node._id ? "animate-spin" : ""} />
+                      <FiRefreshCw
+                        className={pingingId === node._id ? "animate-spin" : ""}
+                      />
                       <span>Test Health</span>
                     </button>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleOpenEditModal(node)}
-                        className={`p-2 rounded-lg border text-xs transition ${isDark ? "border-border-primary hover:bg-interactive-active text-text-muted" : "border-border-primary hover:bg-surface-secondary text-text-primary"
-                          }`}
+                        className={`p-2 rounded-lg border text-xs transition ${
+                          isDark
+                            ? "border-border-primary hover:bg-interactive-active text-text-muted"
+                            : "border-border-primary hover:bg-surface-secondary text-text-primary"
+                        }`}
                         title="Edit URL & Settings"
                       >
                         <FiEdit3 />
@@ -424,8 +526,13 @@ const AdminServerPage = () => {
       {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl relative ${isDark ? "bg-interactive-active border-border-primary text-text-muted" : "bg-white border-border-primary text-text-primary"
-            }`}>
+          <div
+            className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl relative ${
+              isDark
+                ? "bg-interactive-active border-border-primary text-text-muted"
+                : "bg-white border-border-primary text-text-primary"
+            }`}
+          >
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-text-primary hover:text-white"
@@ -437,10 +544,15 @@ const AdminServerPage = () => {
               {editingNode ? "Edit Server Node" : "Add New Server Node"}
             </h2>
             <p className="text-xs text-text-primary mb-4">
-              Enter your LLaMA server URL (local IP or Cloudflare tunnel) and configuration.
+              Enter your LLaMA server URL (local IP or Cloudflare tunnel) and
+              configuration.
             </p>
 
-            <form onSubmit={handleSubmitForm} autoComplete="off" className="space-y-4">
+            <form
+              onSubmit={handleSubmitForm}
+              autoComplete="off"
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-xs font-semibold mb-1">
                   Server Name <span className="text-text-primary">*</span>
@@ -453,12 +565,15 @@ const AdminServerPage = () => {
                   value={formData.name}
                   onChange={(e) => {
                     setFormData({ ...formData, name: e.target.value });
-                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: "" }));
+                    if (fieldErrors.name)
+                      setFieldErrors((prev) => ({ ...prev, name: "" }));
                   }}
                   className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none transition ${
                     fieldErrors.name
                       ? "border-border-primary ring-2 ring-border-focus/30 text-text-primary bg-interactive-base/5"
-                      : isDark ? "bg-interactive-base border-border-primary focus:border-border-focus text-text-muted" : "bg-interactive-base border-border-primary focus:border-border-focus text-text-primary"
+                      : isDark
+                        ? "bg-interactive-base border-border-primary focus:border-border-focus text-text-muted"
+                        : "bg-interactive-base border-border-primary focus:border-border-focus text-text-primary"
                   }`}
                 />
                 {fieldErrors.name && (
@@ -470,7 +585,8 @@ const AdminServerPage = () => {
 
               <div>
                 <label className="block text-xs font-semibold mb-1">
-                  Server URL / Tunnel Endpoint <span className="text-text-primary">*</span>
+                  Server URL / Tunnel Endpoint{" "}
+                  <span className="text-text-primary">*</span>
                 </label>
 
                 <input
@@ -481,12 +597,15 @@ const AdminServerPage = () => {
                   value={formData.url}
                   onChange={(e) => {
                     setFormData({ ...formData, url: e.target.value });
-                    if (fieldErrors.url) setFieldErrors(prev => ({ ...prev, url: "" }));
+                    if (fieldErrors.url)
+                      setFieldErrors((prev) => ({ ...prev, url: "" }));
                   }}
                   className={`w-full px-3 py-2 rounded-xl border text-xs font-mono focus:outline-none transition ${
                     fieldErrors.url
                       ? "border-border-primary ring-2 ring-border-focus/30 text-text-primary bg-interactive-base/5"
-                      : isDark ? "bg-interactive-base border-border-primary focus:border-border-focus text-text-primary" : "bg-interactive-base border-border-primary focus:border-border-focus text-text-primary"
+                      : isDark
+                        ? "bg-interactive-base border-border-primary focus:border-border-focus text-text-primary"
+                        : "bg-interactive-base border-border-primary focus:border-border-focus text-text-primary"
                   }`}
                 />
 
@@ -498,41 +617,64 @@ const AdminServerPage = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-1">Authorization Secret Key (Optional)</label>
+                <label className="block text-xs font-semibold mb-1">
+                  Authorization Secret Key (Optional)
+                </label>
                 <input
                   type="password"
                   name="server_node_secret"
                   autoComplete="new-password"
                   placeholder="e.g. Bearer token / Secret Key for server header authorization"
                   value={formData.secretKey}
-                  onChange={(e) => setFormData({ ...formData, secretKey: e.target.value })}
-                  className={`w-full px-3 py-2 rounded-xl border text-xs font-mono focus:outline-none focus:border-border-focus ${isDark ? "bg-interactive-base border-border-primary text-amber-800" : "bg-interactive-base border-border-primary text-amber-700"
-                    }`}
+                  onChange={(e) =>
+                    setFormData({ ...formData, secretKey: e.target.value })
+                  }
+                  className={`w-full px-3 py-2 rounded-xl border text-xs font-mono focus:outline-none focus:border-border-focus ${
+                    isDark
+                      ? "bg-interactive-base border-border-primary text-amber-800"
+                      : "bg-interactive-base border-border-primary text-amber-700"
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Default Model</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    Default Model
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g. llama3.2:3b"
                     value={formData.defaultModel}
-                    onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:border-border-focus ${isDark ? "bg-interactive-base border-border-primary text-text-muted" : "bg-interactive-base border-border-primary text-text-primary"
-                      }`}
+                    onChange={(e) =>
+                      setFormData({ ...formData, defaultModel: e.target.value })
+                    }
+                    className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:border-border-focus ${
+                      isDark
+                        ? "bg-interactive-base border-border-primary text-text-muted"
+                        : "bg-interactive-base border-border-primary text-text-primary"
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">API Protocol</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    API Protocol
+                  </label>
                   <select
                     value={formData.format}
-                    onChange={(e) => setFormData({ ...formData, format: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:border-border-focus ${isDark ? "bg-interactive-base border-border-primary text-text-muted" : "bg-interactive-base border-border-primary text-text-primary"
-                      }`}
+                    onChange={(e) =>
+                      setFormData({ ...formData, format: e.target.value })
+                    }
+                    className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:border-border-focus ${
+                      isDark
+                        ? "bg-interactive-base border-border-primary text-text-muted"
+                        : "bg-interactive-base border-border-primary text-text-primary"
+                    }`}
                   >
-                    <option value="openai">vLLM / LM Studio / OpenAI (/v1)</option>
+                    <option value="openai">
+                      vLLM / LM Studio / OpenAI (/v1)
+                    </option>
                     <option value="gemini">Google Gemini API (Cloud)</option>
                     <option value="glm">NVIDIA GLM API (Cloud)</option>
                     <option value="ollama">Ollama Native (/api/chat)</option>
@@ -540,27 +682,49 @@ const AdminServerPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Priority Tier (1-100)</label>
+                  <label className="block text-xs font-semibold mb-1">
+                    Priority Tier (1-100)
+                  </label>
                   <input
                     type="number"
                     placeholder="e.g. 100"
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: Math.min(100, Math.max(1, Number(e.target.value) || 1)) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        priority: Math.min(
+                          100,
+                          Math.max(1, Number(e.target.value) || 1),
+                        ),
+                      })
+                    }
                     min="1"
                     max="100"
-                    className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:border-border-focus ${isDark ? "bg-interactive-base border-border-primary text-amber-800 font-bold" : "bg-interactive-base border-border-primary text-amber-700 font-bold"
-                      }`}
+                    className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:border-border-focus ${
+                      isDark
+                        ? "bg-interactive-base border-border-primary text-amber-800 font-bold"
+                        : "bg-interactive-base border-border-primary text-amber-700 font-bold"
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Priority Tier Explanation Note */}
-              <div className={`p-2.5 rounded-xl border text-[11px] flex items-start gap-2 ${
-                isDark ? "bg-amber-900/10 border-amber-800/20 text-amber-600" : "bg-amber-50 border-amber-200 text-amber-800"
-              }`}>
-                <span className="text-amber-800 font-bold shrink-0">💡 Note:</span>
+              <div
+                className={`p-2.5 rounded-xl border text-[11px] flex items-start gap-2 ${
+                  isDark
+                    ? "bg-amber-900/10 border-amber-800/20 text-amber-600"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+                }`}
+              >
+                <span className="text-amber-800 font-bold shrink-0">
+                  💡 Note:
+                </span>
                 <span>
-                  <strong>Priority Tier Load Balancing (1 to 100):</strong> Set <strong>100</strong> for Highest Priority (Primary GPU Server used first). Set <strong>10</strong> for Secondary / Fallback Servers.
+                  <strong>Priority Tier Load Balancing (1 to 100):</strong> Set{" "}
+                  <strong>100</strong> for Highest Priority (Primary GPU Server
+                  used first). Set <strong>10</strong> for Secondary / Fallback
+                  Servers.
                 </span>
               </div>
 
@@ -578,7 +742,11 @@ const AdminServerPage = () => {
                   disabled={saveNodeMutation.isPending}
                   className="px-5 py-2 rounded-xl bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-bold shadow-lg shadow-black/10/20"
                 >
-                  {saveNodeMutation.isPending ? "Saving..." : editingNode ? "Save Changes" : "Create Node"}
+                  {saveNodeMutation.isPending
+                    ? "Saving..."
+                    : editingNode
+                      ? "Save Changes"
+                      : "Create Node"}
                 </button>
               </div>
             </form>

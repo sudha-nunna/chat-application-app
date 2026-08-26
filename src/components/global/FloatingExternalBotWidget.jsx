@@ -14,12 +14,12 @@ import {
   FiPhoneCall,
   FiMic,
   FiMicOff,
-  FiRadio
+  FiRadio,
 } from "react-icons/fi";
 import {
   streamExternalChatApi,
   formatMarkdownBreaks,
-  toCapitalized
+  toCapitalized,
 } from "../../services/externalBotService";
 import { useTheme } from "../../context/ThemeContext";
 import VisemeAvatarPlayer from "./VisemeAvatarPlayer";
@@ -28,15 +28,18 @@ import VoiceConversationManager from "../avatar/VoiceConversationManager";
 const SUGGESTED_PROMPTS = [
   "Explain React Hooks in detail with examples",
   "How does Async/Await work in JavaScript?",
-  "What is the difference between SQL and NoSQL?"
+  "What is the difference between SQL and NoSQL?",
 ];
 
 const createMessageObj = (role, content, extra = {}) => ({
   id: `${role}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
   role,
   content,
-  timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-  ...extra
+  timestamp: new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  }),
+  ...extra,
 });
 
 const isLiveAgentRequested = (msg) => {
@@ -85,7 +88,10 @@ const FloatingExternalBotWidget = () => {
   const voiceManagerRef = useRef(null);
 
   const [messages, setMessages] = useState([
-    createMessageObj("assistant", "Hello! I am your AI Assistant powered by External Bot Stream APIs. Ask me anything!")
+    createMessageObj(
+      "assistant",
+      "Hello! I am your AI Assistant powered by External Bot Stream APIs. Ask me anything!",
+    ),
   ]);
 
   // Draggable State Management (Mouse & Touch)
@@ -113,7 +119,7 @@ const FloatingExternalBotWidget = () => {
           handleSendMessage(null, finalTranscript);
         }
       },
-      onError: (err) => console.warn("Widget Voice Error:", err)
+      onError: (err) => console.warn("Widget Voice Error:", err),
     });
 
     return () => {
@@ -129,7 +135,8 @@ const FloatingExternalBotWidget = () => {
     } else {
       setIsVoiceModeActive(true);
       setVoiceState("LISTENING");
-      if (voiceManagerRef.current) voiceManagerRef.current.startListening("HANDS_FREE");
+      if (voiceManagerRef.current)
+        voiceManagerRef.current.startListening("HANDS_FREE");
     }
   };
 
@@ -148,7 +155,7 @@ const FloatingExternalBotWidget = () => {
       if (position.x === null && typeof window !== "undefined") {
         setPosition({
           x: Math.max(16, window.innerWidth - 75),
-          y: Math.max(16, window.innerHeight - 75)
+          y: Math.max(16, window.innerHeight - 75),
         });
       }
     };
@@ -175,11 +182,11 @@ const FloatingExternalBotWidget = () => {
 
       const newX = Math.min(
         Math.max(16, clientX - dragStartRef.current.offsetX),
-        window.innerWidth - 70
+        window.innerWidth - 70,
       );
       const newY = Math.min(
         Math.max(16, clientY - dragStartRef.current.offsetY),
-        window.innerHeight - 70
+        window.innerHeight - 70,
       );
 
       setPosition({ x: newX, y: newY });
@@ -210,14 +217,18 @@ const FloatingExternalBotWidget = () => {
     if (clientX === undefined || clientY === undefined) return;
 
     hasMovedRef.current = false;
-    const currentX = position.x ?? (typeof window !== "undefined" ? window.innerWidth - 75 : 800);
-    const currentY = position.y ?? (typeof window !== "undefined" ? window.innerHeight - 75 : 600);
+    const currentX =
+      position.x ??
+      (typeof window !== "undefined" ? window.innerWidth - 75 : 800);
+    const currentY =
+      position.y ??
+      (typeof window !== "undefined" ? window.innerHeight - 75 : 600);
 
     dragStartRef.current = {
       startX: clientX,
       startY: clientY,
       offsetX: clientX - currentX,
-      offsetY: clientY - currentY
+      offsetY: clientY - currentY,
     };
     setIsDragging(true);
   };
@@ -244,7 +255,9 @@ const FloatingExternalBotWidget = () => {
     }
     setLoading(false);
     setMessages((prev) =>
-      prev.map((msg) => (msg.isStreaming ? { ...msg, isStreaming: false } : msg))
+      prev.map((msg) =>
+        msg.isStreaming ? { ...msg, isStreaming: false } : msg,
+      ),
     );
   };
 
@@ -262,7 +275,7 @@ const FloatingExternalBotWidget = () => {
     const botMessagePlaceholder = createMessageObj("assistant", "", {
       id: botPlaceholderId,
       isStreaming: true,
-      metadata: null
+      metadata: null,
     });
 
     setMessages((prev) => [...prev, userMessage, botMessagePlaceholder]);
@@ -283,13 +296,18 @@ const FloatingExternalBotWidget = () => {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botPlaceholderId
-                ? { ...msg, content: msg.content + chunkText, isStreaming: true }
-                : msg
-            )
+                ? {
+                    ...msg,
+                    content: msg.content + chunkText,
+                    isStreaming: true,
+                  }
+                : msg,
+            ),
           );
         },
         onMetadata: (metaObj) => {
-          const convId = metaObj?.conversationId || metaObj?.chatId || metaObj?._id;
+          const convId =
+            metaObj?.conversationId || metaObj?.chatId || metaObj?._id;
           if (convId) {
             setActiveConvId(convId);
             sessionStorage.setItem("external_bot_conv_id", convId);
@@ -301,17 +319,24 @@ const FloatingExternalBotWidget = () => {
                 const mergedMeta = {
                   ...prevMeta,
                   ...metaObj,
-                  responseType: (metaObj?.responseType === "live_agent" || prevMeta?.responseType === "live_agent")
-                    ? "live_agent"
-                    : (metaObj?.responseType || prevMeta?.responseType),
-                  liveAgent: metaObj?.liveAgent || metaObj?.live_agent || prevMeta?.liveAgent || prevMeta?.live_agent || false
+                  responseType:
+                    metaObj?.responseType === "live_agent" ||
+                    prevMeta?.responseType === "live_agent"
+                      ? "live_agent"
+                      : metaObj?.responseType || prevMeta?.responseType,
+                  liveAgent:
+                    metaObj?.liveAgent ||
+                    metaObj?.live_agent ||
+                    prevMeta?.liveAgent ||
+                    prevMeta?.live_agent ||
+                    false,
                 };
                 return { ...msg, metadata: mergedMeta };
               }
               return msg;
-            })
+            }),
           );
-        }
+        },
       });
     } catch (err) {
       if (err.name !== "AbortError") {
@@ -319,20 +344,22 @@ const FloatingExternalBotWidget = () => {
           prev.map((msg) =>
             msg.id === botPlaceholderId
               ? {
-                ...msg,
-                content: msg.content || "⚠️ Failed to receive response from external bot API.",
-                isStreaming: false
-              }
-              : msg
-          )
+                  ...msg,
+                  content:
+                    msg.content ||
+                    "⚠️ Failed to receive response from external bot API.",
+                  isStreaming: false,
+                }
+              : msg,
+          ),
         );
       }
     } finally {
       setLoading(false);
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === botPlaceholderId ? { ...msg, isStreaming: false } : msg
-        )
+          msg.id === botPlaceholderId ? { ...msg, isStreaming: false } : msg,
+        ),
       );
       abortControllerRef.current = null;
     }
@@ -343,63 +370,109 @@ const FloatingExternalBotWidget = () => {
     setActiveConvId(null);
     sessionStorage.removeItem("external_bot_conv_id");
     setMessages([
-      createMessageObj("assistant", "Hello! Chat history cleared. How can I assist you today?")
+      createMessageObj(
+        "assistant",
+        "Hello! Chat history cleared. How can I assist you today?",
+      ),
     ]);
   };
 
   // Compute boundaries for floating chat box so it doesn't go offscreen
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+
   const modalLeft = Math.min(
-    Math.max(16, (position.x ?? (typeof window !== "undefined" ? window.innerWidth - 75 : 800)) - 320),
-    typeof window !== "undefined" ? window.innerWidth - 390 : 800
+    Math.max(
+      16,
+      (position.x ??
+        (typeof window !== "undefined" ? window.innerWidth - 75 : 800)) - 320,
+    ),
+    typeof window !== "undefined" ? (isMobile ? Math.max(16, window.innerWidth - 390) : window.innerWidth - 390) : 800,
   );
   const modalTop = Math.min(
-    Math.max(16, (position.y ?? (typeof window !== "undefined" ? window.innerHeight - 75 : 600)) - 550),
-    typeof window !== "undefined" ? window.innerHeight - 560 : 600
+    Math.max(
+      16,
+      (position.y ??
+        (typeof window !== "undefined" ? window.innerHeight - 75 : 600)) - 550,
+    ),
+    typeof window !== "undefined" ? (isMobile ? Math.max(16, window.innerHeight - 560) : window.innerHeight - 560) : 600,
   );
 
   // Markdown Custom Styling Components
   const markdownComponents = {
     p: ({ node, ...props }) => (
-      <p className="mb-1.5 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
+      <p
+        className="mb-1.5 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]"
+        {...props}
+      />
     ),
     a: ({ node, ...props }) => (
-      <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
+      <a
+        className="text-text-primary hover:underline font-semibold break-all"
+        target="_blank"
+        rel="noopener noreferrer"
+        {...props}
+      />
     ),
     strong: ({ node, ...props }) => (
       <strong
-        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${"text-text-primary bg-surface-secondary border border-border-primary dark:text-amber-600 dark:bg-amber-900/20 dark:border dark:border-amber-800/40"
-          }`}
+        className={`font-extrabold px-1.5 py-0.5 rounded-md text-[11px] inline-block my-0.5 shadow-2xs ${"text-text-primary bg-surface-secondary border border-border-primary dark:text-amber-600 dark:bg-amber-900/20 dark:border dark:border-amber-800/40"}`}
         {...props}
       />
     ),
     em: ({ node, ...props }) => (
-      <em className={`italic font-medium ${"text-text-primary dark:text-amber-200"}`} {...props} />
+      <em
+        className={`italic font-medium ${"text-text-primary dark:text-amber-200"}`}
+        {...props}
+      />
     ),
     table: ({ node, ...props }) => (
-      <div className={`w-full max-w-full overflow-x-auto my-2 rounded-xl border custom-scrollbar ${"border-border-primary bg-white dark:bg-interactive-base"}`}>
-        <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
+      <div
+        className={`w-full max-w-full overflow-x-auto my-2 rounded-xl border custom-scrollbar ${"border-border-primary bg-white dark:bg-interactive-base"}`}
+      >
+        <table
+          className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0"
+          {...props}
+        />
       </div>
     ),
     thead: ({ node, ...props }) => (
-      <thead className={`uppercase text-[10px] tracking-wider border-b ${"bg-surface-secondary dark:bg-interactive-active text-text-primary dark:text-text-muted border-border-primary"}`} {...props} />
+      <thead
+        className={`uppercase text-[10px] tracking-wider border-b ${"bg-surface-secondary dark:bg-interactive-active text-text-primary dark:text-text-muted border-border-primary"}`}
+        {...props}
+      />
     ),
     th: ({ node, ...props }) => (
-      <th className="px-3 py-2 font-semibold select-none whitespace-nowrap align-top" {...props} />
+      <th
+        className="px-3 py-2 font-semibold select-none whitespace-nowrap align-top"
+        {...props}
+      />
     ),
     td: ({ node, ...props }) => (
-      <td className={`px-3 py-2 border-b align-top ${"text-text-primary dark:text-text-muted border-border-primary dark:border-border-primary/50"}`} {...props} />
+      <td
+        className={`px-3 py-2 border-b align-top ${"text-text-primary dark:text-text-muted border-border-primary dark:border-border-primary/50"}`}
+        {...props}
+      />
     ),
     tr: ({ node, ...props }) => (
-      <tr className={`transition-colors last:border-none ${"hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"}`} {...props} />
+      <tr
+        className={`transition-colors last:border-none ${"hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"}`}
+        {...props}
+      />
     ),
     ul: ({ node, ...props }) => (
       <ul className="list-disc list-outside my-2 space-y-1 pl-4" {...props} />
     ),
     ol: ({ node, ...props }) => (
-      <ol className="list-decimal list-outside my-2 space-y-1 pl-4" {...props} />
+      <ol
+        className="list-decimal list-outside my-2 space-y-1 pl-4"
+        {...props}
+      />
     ),
     li: ({ node, ...props }) => (
-      <li className="leading-relaxed marker:text-text-primary font-normal pl-0.5" {...props} />
+      <li
+        className="leading-relaxed marker:text-text-primary font-normal pl-0.5"
+        {...props}
+      />
     ),
   };
 
@@ -418,12 +491,18 @@ const FloatingExternalBotWidget = () => {
       >
         <button
           onClick={handleFabClick}
-          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${isDragging ? "ring-4 ring-border-focus/40 scale-110" : ""
-            } ${isOpen
+          className={`relative p-3.5 rounded-full shadow-2xl flex items-center justify-center transition-transform duration-200 transform hover:scale-105 active:scale-95 border cursor-grab active:cursor-grabbing ${
+            isDragging ? "ring-4 ring-border-focus/40 scale-110" : ""
+          } ${
+            isOpen
               ? "bg-white text-text-primary dark:bg-interactive-base dark:text-white border-border-primary shadow-black/10/30 rotate-90"
               : "bg-text-primary text-text-inverse dark:bg-gradient-to-tr dark:from-interactive-base dark:to-interactive-hover dark:text-white border-transparent dark:border-border-primary/50 shadow-black/10/30 dark:shadow-black/10/40"
-            }`}
-          title={isOpen ? "Close Assistant (Drag to Move)" : "Open External AI Chatbot Widget (Drag to Move)"}
+          }`}
+          title={
+            isOpen
+              ? "Close Assistant (Drag to Move)"
+              : "Open External AI Chatbot Widget (Drag to Move)"
+          }
         >
           {isOpen ? (
             <FiX className="text-xl" />
@@ -444,17 +523,15 @@ const FloatingExternalBotWidget = () => {
         <div
           style={{
             left: `${modalLeft}px`,
-            top: `${modalTop}px`
+            top: `${modalTop}px`,
           }}
-          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${"bg-white/95 border-border-primary text-text-primary backdrop-blur-xl shadow-black/10/60 dark:bg-interactive-active/95 dark:border-border-primary dark:text-text-muted dark:backdrop-blur-xl"
-            }`}
+          className={`fixed z-50 w-[92vw] sm:w-96 h-[540px] max-h-[82vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-5 ${"bg-white/95 border-border-primary text-text-primary backdrop-blur-xl shadow-black/10/60 dark:bg-interactive-active/95 dark:border-border-primary dark:text-text-muted dark:backdrop-blur-xl"}`}
         >
           {/* Header - Draggable Drag Handle */}
           <div
             onMouseDown={handlePointerDown}
             onTouchStart={handlePointerDown}
-            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary"
-              }`}
+            className={`p-4 border-b flex items-center justify-between shrink-0 select-none cursor-grab active:cursor-grabbing ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary"}`}
             title="Drag Header to Move Chat Widget"
           >
             <div className="flex items-center gap-3">
@@ -463,10 +540,14 @@ const FloatingExternalBotWidget = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-bold tracking-tight">External AI Assistant</h3>
+                  <h3 className="text-xs font-bold tracking-tight">
+                    External AI Assistant
+                  </h3>
                   <span className="w-2 h-2 rounded-full bg-interactive-base animate-pulse" />
                 </div>
-                <p className={`text-[10px] flex items-center gap-1 ${"text-text-primary"}`}>
+                <p
+                  className={`text-[10px] flex items-center gap-1 ${"text-text-primary"}`}
+                >
                   <FiMove className="text-[9px]" />
                   <span>Drag header to move</span>
                 </p>
@@ -484,14 +565,17 @@ const FloatingExternalBotWidget = () => {
                 }`}
                 title="Toggle Live Hands-Free Voice Mode"
               >
-                {isVoiceModeActive ? <FiRadio className="text-xs animate-spin" /> : <FiMic className="text-xs" />}
+                {isVoiceModeActive ? (
+                  <FiRadio className="text-xs animate-spin" />
+                ) : (
+                  <FiMic className="text-xs" />
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={handleClearHistory}
-                className={`p-1.5 rounded-lg text-xs transition ${"text-text-primary hover:text-text-primary dark:hover:text-text-muted hover:bg-surface-secondary dark:hover:bg-interactive-active"
-                  }`}
+                className={`p-1.5 rounded-lg text-xs transition ${"text-text-primary hover:text-text-primary dark:hover:text-text-muted hover:bg-surface-secondary dark:hover:bg-interactive-active"}`}
                 title="Clear Chat History"
               >
                 <FiRefreshCw />
@@ -499,8 +583,7 @@ const FloatingExternalBotWidget = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className={`p-1.5 rounded-lg text-xs transition ${"text-text-primary hover:text-text-primary dark:hover:text-text-muted hover:bg-surface-secondary dark:hover:bg-interactive-active"
-                  }`}
+                className={`p-1.5 rounded-lg text-xs transition ${"text-text-primary hover:text-text-primary dark:hover:text-text-muted hover:bg-surface-secondary dark:hover:bg-interactive-active"}`}
                 title="Minimize Widget"
               >
                 <FiX className="text-base" />
@@ -518,31 +601,50 @@ const FloatingExternalBotWidget = () => {
                   className={`flex flex-col w-full ${isUser ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${isUser
-                      ? "bg-interactive-base text-text-primary dark:text-white rounded-br-xs shadow-md shadow-black/10/10 font-medium"
-                      : "bg-surface-secondary text-text-primary border border-border-primary rounded-bl-xs dark:bg-interactive-active/90 dark:text-text-muted dark:border dark:border-border-primary/60 dark:rounded-bl-xs"
-                      }`}
+                    className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
+                      isUser
+                        ? "bg-interactive-base text-text-primary dark:text-white rounded-br-xs shadow-md shadow-black/10/10 font-medium"
+                        : "bg-surface-secondary text-text-primary border border-border-primary rounded-bl-xs dark:bg-interactive-active/90 dark:text-text-muted dark:border dark:border-border-primary/60 dark:rounded-bl-xs"
+                    }`}
                   >
                     {isUser ? (
-                      <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</span>
+                      <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                        {msg.content}
+                      </span>
                     ) : (
                       <>
-                        {((msg.metadata?.botType === "AVATAR" || msg.metadata?.botType === "VIDEO_AVATAR" || msg.metadata?.botType === "HYBRID" || !msg.metadata?.botType) && (msg.speechData || msg.metadata?.speechData)) && (
-                          <div className="mb-3">
-                            <VisemeAvatarPlayer
-                              speechData={msg.speechData || msg.metadata?.speechData}
-                              onSpeechEnd={handleAvatarSpeechEnd}
-                              avatarConfig={msg.avatarConfig || msg.metadata?.avatarConfig || {
-                                avatarProvider: msg.metadata?.avatarProvider || (msg.metadata?.avatar3DModel ? "THREE_3D" : "LOCAL_VISEME"),
-                                faceModelUrl: msg.metadata?.avatar3DModel,
-                                avatar3DModel: msg.metadata?.avatar3DModel,
-                                faceImageUrl: msg.metadata?.avatarImage,
-                                faceVideoUrl: msg.metadata?.avatarVideo
-                              }}
-                            />
-                          </div>
-                        )}
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                        {(msg.metadata?.botType === "AVATAR" ||
+                          msg.metadata?.botType === "VIDEO_AVATAR" ||
+                          msg.metadata?.botType === "HYBRID" ||
+                          !msg.metadata?.botType) &&
+                          (msg.speechData || msg.metadata?.speechData) && (
+                            <div className="mb-3">
+                              <VisemeAvatarPlayer
+                                speechData={
+                                  msg.speechData || msg.metadata?.speechData
+                                }
+                                onSpeechEnd={handleAvatarSpeechEnd}
+                                avatarConfig={
+                                  msg.avatarConfig ||
+                                  msg.metadata?.avatarConfig || {
+                                    avatarProvider:
+                                      msg.metadata?.avatarProvider ||
+                                      (msg.metadata?.avatar3DModel
+                                        ? "THREE_3D"
+                                        : "LOCAL_VISEME"),
+                                    faceModelUrl: msg.metadata?.avatar3DModel,
+                                    avatar3DModel: msg.metadata?.avatar3DModel,
+                                    faceImageUrl: msg.metadata?.avatarImage,
+                                    faceVideoUrl: msg.metadata?.avatarVideo,
+                                  }
+                                }
+                              />
+                            </div>
+                          )}
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={markdownComponents}
+                        >
                           {formatMarkdownBreaks(msg.content) || ""}
                         </ReactMarkdown>
                       </>
@@ -560,18 +662,27 @@ const FloatingExternalBotWidget = () => {
                     )}
 
                     {!isUser && isLiveAgentRequested(msg) && (
-                      <div className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 ${"bg-amber-50/90 dark:bg-interactive-base/90 border-amber-200 dark:border-amber-800/30 shadow-sm"
-                        }`}>
+                      <div
+                        className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 ${"bg-amber-50/90 dark:bg-interactive-base/90 border-amber-200 dark:border-amber-800/30 shadow-sm"}`}
+                      >
                         <div className="flex items-center gap-2 text-xs font-bold text-amber-500">
                           <FiCalendar className="text-sm shrink-0" />
                           <span>Live Agent Handoff</span>
                         </div>
-                        <p className={`text-[11px] leading-tight ${"text-text-primary dark:text-text-muted"}`}>
-                          A live support representative is requested. Would you like to schedule a call?
+                        <p
+                          className={`text-[11px] leading-tight ${"text-text-primary dark:text-text-muted"}`}
+                        >
+                          A live support representative is requested. Would you
+                          like to schedule a call?
                         </p>
                         <button
                           type="button"
-                          onClick={(e) => handleSendMessage(e, "I would like to schedule a call with a live agent")}
+                          onClick={(e) =>
+                            handleSendMessage(
+                              e,
+                              "I would like to schedule a call with a live agent",
+                            )
+                          }
                           className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-interactive-hover hover:from-amber-600 hover:to-interactive-hover text-text-primary dark:text-white font-bold text-xs py-2 rounded-lg shadow-md transition cursor-pointer"
                         >
                           <FiPhoneCall />
@@ -599,8 +710,7 @@ const FloatingExternalBotWidget = () => {
                     key={i}
                     type="button"
                     onClick={(e) => handleSendMessage(e, promptText)}
-                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${"bg-surface-secondary border-border-primary text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:bg-interactive-active/70 dark:border-border-primary/80 dark:text-text-muted dark:hover:text-white dark:hover:bg-interactive-base/80"
-                      }`}
+                    className={`text-[11px] px-2.5 py-1 rounded-xl border transition text-left ${"bg-surface-secondary border-border-primary text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:bg-interactive-active/70 dark:border-border-primary/80 dark:text-text-muted dark:hover:text-white dark:hover:bg-interactive-base/80"}`}
                   >
                     {promptText}
                   </button>
@@ -612,17 +722,26 @@ const FloatingExternalBotWidget = () => {
           {/* Footer Input Form */}
           <form
             onSubmit={handleSendMessage}
-            className={`p-3 border-t flex flex-col gap-2 shrink-0 ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary"
-              }`}
+            className={`p-3 border-t flex flex-col gap-2 shrink-0 ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary"}`}
           >
             {isVoiceModeActive && (
               <div className="p-2 rounded-lg bg-interactive-base/10 border border-border-primary/30 flex items-center justify-between text-[11px] text-text-primary animate-pulse">
                 <div className="flex items-center gap-1.5 truncate">
                   <span className="w-2 h-2 rounded-full bg-interactive-base animate-ping shrink-0" />
-                  <span className="font-bold uppercase text-[9px]">{voiceState}:</span>
-                  <span className="italic text-text-muted truncate">{sttInterimText || "Listening..."}</span>
+                  <span className="font-bold uppercase text-[9px]">
+                    {voiceState}:
+                  </span>
+                  <span className="italic text-text-muted truncate">
+                    {sttInterimText || "Listening..."}
+                  </span>
                 </div>
-                <button type="button" onClick={toggleVoiceMode} className="text-[9px] font-bold underline shrink-0">Exit</button>
+                <button
+                  type="button"
+                  onClick={toggleVoiceMode}
+                  className="text-[9px] font-bold underline shrink-0"
+                >
+                  Exit
+                </button>
               </div>
             )}
 
@@ -646,29 +765,28 @@ const FloatingExternalBotWidget = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={loading}
-                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"
-                  }`}
+                className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:border-border-focus transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"}`}
               />
 
-            {loading ? (
-              <button
-                type="button"
-                onClick={handleStopStream}
-                className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
-                title="Stop Response Stream"
-              >
-                <FiSquare className="text-xs" />
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!input.trim()}
-                className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base disabled:opacity-40 text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
-                title="Send Message"
-              >
-                <FiSend className="text-xs" />
-              </button>
-            )}
+              {loading ? (
+                <button
+                  type="button"
+                  onClick={handleStopStream}
+                  className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
+                  title="Stop Response Stream"
+                >
+                  <FiSquare className="text-xs" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="p-2.5 rounded-xl bg-interactive-base hover:bg-interactive-base disabled:opacity-40 text-text-primary dark:text-white text-xs transition shadow-md shadow-black/10/20 cursor-pointer"
+                  title="Send Message"
+                >
+                  <FiSend className="text-xs" />
+                </button>
+              )}
             </div>
           </form>
         </div>
