@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 export function TimelineSection() {
-  const containerRef = useRef<HTMLElement>(null);
+  const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"],
@@ -126,7 +126,9 @@ export function TimelineSection() {
         viewport={{ once: true, margin: "-100px" }}
         className="text-center"
       >
-        <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-3">HOW IT WORKS</div>
+        <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-3">
+          HOW IT WORKS
+        </div>
         <h2 className="text-3xl md:text-5xl font-display mb-6">
           From Idea to Automation in Minutes.
         </h2>
@@ -410,16 +412,20 @@ export function PillarsSection() {
     <motion.section
       ref={containerRef}
       style={{ y: y1, opacity }}
-      className="py-32 px-6 md:px-12 bg-[#050505]"
+      className="py-32 px-6 md:px-12 bg-[#050505] relative overflow-hidden"
     >
       <div className="max-w-[1400px] mx-auto w-full">
-        <div className="mb-10 text-center flex flex-col items-center">
+        <motion.div
+         initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        className="mb-10 text-center flex flex-col items-center">
           <h2 className="text-4xl sm:text-6xl md:text-8xl font-display leading-[0.85] tracking-tighter">
             Why Build With
             <br />
             <span className="text-white/20">Nexora AI?</span>
           </h2>
-        </div>
+        </motion.div>
 
         <div className="flex flex-col lg:flex-row w-full gap-4 md:px-8 min-h-[800px] lg:min-h-0 lg:h-[350px]">
           {pillars.map((pillar, i) => {
@@ -530,12 +536,16 @@ export function WorkflowSection() {
           viewport={{ once: true }}
           className="text-center mb-24"
         >
-          <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-3">WORKFLOW AUTOMATION</div>
+          <div className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-3">
+            WORKFLOW AUTOMATION
+          </div>
           <h2 className="text-3xl md:text-5xl font-display text-gradient mb-6">
             Turn AI Agents Into Automated Workflows.
           </h2>
           <p className="text-white/50 max-w-xl mx-auto">
-            Connect triggers, AI agents, tools, APIs, knowledge, and actions into repeatable workflows. Automate the entire process instead of handling every step manually.
+            Connect triggers, AI agents, tools, APIs, knowledge, and actions
+            into repeatable workflows. Automate the entire process instead of
+            handling every step manually.
           </p>
         </motion.div>
 
