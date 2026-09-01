@@ -4,6 +4,7 @@ import {
   useLocation,
   useNavigate,
   useSearchParams,
+  Navigate,
 } from "react-router-dom";
 import {
   FiGrid,
@@ -117,7 +118,11 @@ const AppLayout = ({ children }) => {
     } else if (location.pathname.startsWith("/admin/servers")) {
       setActiveSidebarTab("servers");
     }
-  }, [location.pathname]);
+
+    if (location.pathname !== "/" && location.pathname !== "/login" && !location.pathname.startsWith("/auth/")) {
+      localStorage.setItem("lastActivePath", location.pathname + location.search);
+    }
+  }, [location.pathname, location.search]);
 
   const [pinnedItemIds, setPinnedItemIds] = useState(() => {
     try {
@@ -621,7 +626,7 @@ const AppLayout = ({ children }) => {
               Chat
             </span>
           </button>
-          <button
+          {/* <button
             onClick={() => {
               setActiveSidebarTab("agents");
               navigate("/bots");
@@ -635,7 +640,7 @@ const AppLayout = ({ children }) => {
             <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
               AI Agents
             </span>
-          </button>
+          </button> */}
         </div>
 
         <div className="my-4 border-t border-border-primary/30 mx-2"></div>
@@ -813,7 +818,7 @@ const AppLayout = ({ children }) => {
             setIsMobileMenuOpen(false);
           },
         },
-        {
+        /* {
           id: "agents",
           icon: TbRobotFace,
           onClick: () => {
@@ -821,7 +826,7 @@ const AppLayout = ({ children }) => {
             navigate("/bots");
             setIsMobileMenuOpen(false);
           },
-        },
+        }, */
         {
           id: "dashboard",
           icon: FiGrid,
@@ -1003,13 +1008,13 @@ const AppLayout = ({ children }) => {
               className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed ? "justify-center px-2!" : "justify-between"}`}
             >
               {!isSidebarCollapsed && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <img
                     src="/mini-logo2.png"
                     alt="Nexora Logo"
                     className={`w-8 h-8 object-contain shrink-0 ${isDark ? "invert" : ""}`}
                   />
-                  <span className="text-[13px] font-bold text-text-muted leading-tight">
+                  <span className="text-[15px] font-bold text-text-muted leading-tight">
                     NEXORA
                   </span>
                 </div>
@@ -1188,7 +1193,7 @@ const AppLayout = ({ children }) => {
                     </div>
                   )}
 
-                  {activeSidebarTab === "agents" && pinnedBots.length > 0 && (
+                  {/* activeSidebarTab === "agents" && pinnedBots.length > 0 && (
                     <div>
                       {(!isSidebarCollapsed || isMobile) && (
                         <div
@@ -1250,7 +1255,7 @@ const AppLayout = ({ children }) => {
                         </div>
                       )}
                     </div>
-                  )}
+                  )} */}
 
                   {true && (
                     <div>
@@ -1328,7 +1333,7 @@ const AppLayout = ({ children }) => {
                     </div>
                   )}
 
-                  {activeSidebarTab === "agents" && (
+                  {/* activeSidebarTab === "agents" && (
                     <div>
                       {(!isSidebarCollapsed || isMobile) && (
                         <div
@@ -1402,7 +1407,7 @@ const AppLayout = ({ children }) => {
                         </div>
                       )}
                     </div>
-                  )}
+                  )} */}
                 </div>
               </>
             )}
@@ -1525,6 +1530,10 @@ const AppLayout = ({ children }) => {
   };
 
   if (location.pathname === "/") {
+    if (isAuthenticated) {
+      const lastPath = localStorage.getItem("lastActivePath") || "/chat";
+      return <Navigate to={lastPath} replace />;
+    }
     return <>{children}</>;
   }
 
