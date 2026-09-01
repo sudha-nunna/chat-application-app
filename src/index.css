@@ -35,23 +35,23 @@
   --surface-secondary: #000000;
   --surface-tertiary: #030303;
   --surface-inverse: #ffffff;
-  
+
   --text-primary: #ececec;
   --text-secondary: #b4b4b4;
   --text-muted: #9b9b9b;
   --text-inverse: #121212;
-  
+
   --border-primary: #151515;
   --border-secondary: #0d0d0d;
   --border-focus: #ececec;
-  
+
   --interactive-base: #0c0c0c;
   /* --interactive-base: #030303; */
   --interactive-hover: #424242;
-  --interactive-active: #2a2a2a;
+  --interactive-active: #0f0f0f;
   --interactive-inverse: #ececec;
   --interactive-inverse-hover: #ffffff;
-  
+
   /* --surface-dropdown: #2f2f2f; */
   --surface-dropdown: #0e0d0d;
   --interactive-selected: #181818;
@@ -64,22 +64,22 @@
   --surface-secondary: #f9f9f9;
   --surface-tertiary: #f4f4f4;
   --surface-inverse: #212121;
-  
+
   --text-primary: #0d0d0d;
   --text-secondary: #4d4d4d;
   --text-muted: #7d7d7d;
   --text-inverse: #ffffff;
-  
+
   --border-primary: #e5e5e5;
   --border-secondary: #f0f0f0;
   --border-focus: #0d0d0d;
-  
+
   --interactive-base: #f4f4f4;
   --interactive-hover: #e5e5e5;
   --interactive-active: #d1d1d1;
   --interactive-inverse: #0d0d0d;
   --interactive-inverse-hover: #212121;
-  
+
   --surface-dropdown: #ffffff;
   --interactive-selected: #f3f4f6;
   --accent-primary: #276dd3;
@@ -95,10 +95,17 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
   background-color: var(--body-bg);
   color: var(--text-primary);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* =========================================
@@ -153,6 +160,7 @@ body {
   background: rgba(148, 163, 184, 0.4);
 }
 
-button, a {
+button,
+a {
   cursor: pointer;
 }

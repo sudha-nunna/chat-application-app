@@ -32,7 +32,7 @@ const GoogleCallbackPage = () => {
         if (token) setJwt(token);
         if (user) localStorage.setItem("user", JSON.stringify(user));
 
-        navigate("/dashboard", { replace: true });
+        navigate("/chat", { replace: true });
       } catch (err) {
         console.error("Google callback error", err);
         navigate("/", { replace: true });

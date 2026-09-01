@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle } from "react-icons/fi";
+import { FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiArrowDown } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
@@ -11,6 +11,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const queryClient = useTanStackQueryClient();
   const [messages, setMessages] = useState([]);
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   const [isSearching, setIsSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -47,11 +48,20 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   }, [currentChatId]);
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages, streamingReply, isSearching, isBotTyping]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 100);
+  };
 
   const clearAudioPipeline = () => {
     audioQueueRef.current = [];
@@ -405,12 +415,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         </div>
       </div>
 
+      {(!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping) && <div className="flex-1"></div>}
+
       {/* Messages Scroll Area - ONLY this section scrolls */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col"
+        onScroll={handleScroll}
+        className={`${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "flex-none" : "flex-1"} min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col relative`}
       >
-        <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-3">
+        <div className="w-full flex-1 max-w-4xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-3">
           {isFetchingMessages && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
               <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
@@ -419,44 +432,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           )}
 
           {!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping && (
-            <div className="h-full flex flex-col items-center justify-center pt-10 pb-8 px-4 w-full max-w-2xl mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-interactive-base/80 flex items-center justify-center mb-6 shadow-sm border border-border-primary/50">
-                {/* <FiCpu className={`text-3xl ${"text-text-primary dark:text-text-muted"}`} /> */}
-                <img src="/mini-logo2.png" alt="logo" className={`w-9 h-9 ${isDark? "invert" : ""}`}/>
-              </div>
-              <h2 className={`text-2xl font-bold mb-2 tracking-tight ${"text-text-primary dark:text-text-muted"}`}>
-                General AI Assistant
+            <div className="flex flex-col items-center justify-center px-4 w-full max-w-3xl mx-auto">
+              <h2 className={`text-[28px] md:text-[34px] font-medium tracking-tight mb-4 ${"text-text-primary dark:text-[#e3e3e3]"}`}>
+                What can I help with, Yadagiri?
               </h2>
-              <p className={`text-sm mb-6 lg:mb-10 text-center ${"text-text-muted dark:text-text-primary"}`}>
-                Start a conversation or choose a suggestion below.
-              </p>
+            </div>
+          )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                {[
-                  { title: "Write Code", icon: FiCode, prompt: "Write a React functional component for a modern landing page." },
-                  { title: "Design Landing Page", icon: FiLayout, prompt: "Create a modern layout structure and color palette for a SaaS product." },
-                  { title: "Explain a Concept", icon: FiBookOpen, prompt: "Explain quantum computing in simple terms for a beginner." },
-                  { title: "Draft an Email", icon: FiMail, prompt: "Write a professional email requesting a project status update." }
-                ].map((item, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSendSubmit(item.prompt)}
-                    className={`flex flex-col text-left p-4 rounded-xl border transition-all duration-200 group ${
-                      "bg-surface-secondary hover:bg-white cursor-pointer border-border-primary shadow-sm hover:shadow-md dark:bg-[#131212] dark:hover:bg-[#0e0d0d] dark:border-border-primary/40 dark:hover:border-border-primary"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="p-1.5 rounded-lg border bg-white border-border-primary/60 dark:bg-[#222222] dark:border-border-primary/40 shadow-sm flex items-center justify-center shrink-0">
-                        <item.icon className={`text-[15px] ${"text-text-primary dark:text-text-muted"}`} />
-                      </div>
-                      <span className={`font-semibold text-sm ${"text-text-primary dark:text-text-muted"}`}>{item.title}</span>
-                    </div>
-                    <span className={`text-xs leading-relaxed tracking-wide line-clamp-2 ${"text-text-muted dark:text-text-primary/60"}`}>
-                      {item.prompt}
-                    </span>
-                  </button>
-                ))}
-              </div>
+          {!isFetchingMessages && messages.length > 0 && (
+            <div className="w-full flex justify-center py-2">
+              <span className="text-xs font-semibold text-text-muted">
+                {new Intl.DateTimeFormat('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' }).format(new Date())}
+              </span>
             </div>
           )}
 
@@ -467,7 +454,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 key={index}
                 role={m.role}
                 content={m.content}
-                onRetry={userMsg ? () => handleSendSubmit(userMsg.content) : undefined}
+                onRetry={userMsg ? (newContent) => handleSendSubmit(newContent || userMsg.content) : undefined}
               />
             );
           })}
@@ -492,13 +479,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       </div>
 
       {/* Fixed Input Area with ChatGPT style Stop Button inside */}
-      <div className="shrink-0">
+      <div className="shrink-0 z-10 relative">
+        {showScrollBottom && (
+          <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50">
+            <button
+              onClick={scrollToBottom}
+              className="p-2.5 rounded-full bg-surface-primary border border-border-primary text-text-primary shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:bg-surface-secondary transition-all"
+            >
+              <FiArrowDown className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <ChatInput
           onSend={handleSendSubmit}
           isGenerating={isSearching || isBotTyping}
           onStop={handleStopGeneration}
         />
       </div>
+
+      {(!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping) && <div className="flex-[1.5]"></div>}
     </div>
   );
 };

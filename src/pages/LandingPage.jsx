@@ -22,7 +22,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen font-sans antialiased landing bg-[#030303] text-white selection:bg-blue-400 overflow-hidden">
-      <Navbar onSignInClick={() => navigate('/dashboard')} onBookDemoClick={() => navigate('/dashboard')} />
+      <Navbar onSignInClick={() => navigate('/chat')} onBookDemoClick={() => navigate('/chat')} />
 
       <main>
         <div id="home">

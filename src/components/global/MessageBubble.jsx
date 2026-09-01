@@ -1,155 +1,281 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FiUser, FiRotateCw, FiAlertTriangle } from "react-icons/fi";
+import { FiUser, FiRotateCw, FiAlertTriangle, FiCopy, FiEdit2, FiCheck, FiThumbsUp, FiThumbsDown, FiCode } from "react-icons/fi";
 import { TbRobotFace } from "react-icons/tb";
 import { useTheme } from "../../context/ThemeContext";
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const formatMarkdownBreaks = (text) => {
   if (!text || typeof text !== "string") return text;
   return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
 };
 
+const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props }) => {
+  const match = /language-(\w+)/.exec(className || "");
+  const isMultiLine = String(children).includes("\n");
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(String(children));
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  if (inline || (!match && !isMultiLine)) {
+    return (
+      <code
+        className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${
+          isUser
+            ? "bg-interactive-base/80 text-text-muted"
+            : "bg-surface-secondary dark:bg-interactive-active/80 text-text-primary dark:text-text-muted"
+        }`}
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  }
+  return (
+    <div
+      className={`my-3 w-full max-w-full overflow-hidden rounded-xl border ${"border-border-primary"}`}
+    >
+      <div className={`flex items-center justify-between px-4 py-2 ${isDark ? "bg-[#1e1e1e] border-[#2d2d2d] text-gray-400" : "bg-surface-secondary border-border-primary text-text-muted"} border-b text-xs font-sans select-none`}>
+        <span className="flex items-center gap-1.5 lowercase">
+          <FiCode className="w-3.5 h-3.5" />
+          {match ? match[1] : "code"}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="hover:text-text-primary transition cursor-pointer flex items-center gap-1.5"
+          title="Copy code"
+        >
+          {isCopied ? (
+            <FiCheck className="w-3.5 h-3.5 text-green-500" />
+          ) : (
+            <FiCopy className="w-3.5 h-3.5" />
+          )}
+        </button>
+      </div>
+      <div className="custom-scrollbar overflow-x-auto w-full">
+        <SyntaxHighlighter
+          style={isDark ? vscDarkPlus : oneLight}
+          language={match ? match[1] : "javascript"}
+          PreTag="div"
+          customStyle={{
+            margin: 0,
+            padding: "1rem",
+            background: isDark ? "#1e1e1e" : "var(--color-surface-secondary)",
+          }}
+        >
+          {String(children).replace(/\n$/, "")}
+        </SyntaxHighlighter>
+      </div>
+    </div>
+  );
+};
+
 const MessageBubble = ({ role, content, onRetry }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(content);
 
-  const hasPauseNotice = content && typeof content === "string" && (
-    content.includes("Stream paused due to higher-priority request") ||
-    content.includes("Click Resume")
-  );
+  const hasPauseNotice =
+    content &&
+    typeof content === "string" &&
+    (content.includes("Stream paused due to higher-priority request") ||
+      content.includes("Click Resume"));
 
   const rawDisplayContent = hasPauseNotice
-    ? content.replace(/\n\n⚠️ Stream paused due to higher-priority request\.( Click Resume\.)?/, "").trim() || "*(Response paused)*"
+    ? content
+        .replace(
+          /\n\n⚠️ Stream paused due to higher-priority request\.( Click Resume\.)?/,
+          "",
+        )
+        .trim() || "*(Response paused)*"
     : content;
 
   const displayContent = formatMarkdownBreaks(rawDisplayContent);
 
   return (
-    <div className={`flex items-start gap-1.5 lg:gap-3 ${isUser ? "flex-row-reverse ml-auto max-w-[85%]" : "mr-auto w-full"} my-2.5 min-w-0`}>
-      {/* Avatar */}
-      <div
-        className={`w-6 lg:w-8 h-6 lg:h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
-          isUser ? "bg-interactive-base text-text-primary dark:text-white shadow-md shadow-black/10" : "bg-surface-secondary dark:bg-interactive-base/20 text-text-primary border border-border-primary dark:border-border-primary/30"
-        }`}
-      >
-        {isUser ? <FiUser /> : <TbRobotFace className=" text-sm lg:text-base" />}
-      </div>
+    <div
+      className={`flex items-start gap-1.5 lg:gap-4 ${isUser ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[70%]" : "mr-auto w-full max-w-full"} my-2.5 min-w-0`}
+    >
+      {/* Avatar (Only for AI) */}
+      {!isUser && (
+        <div
+          className={`w-6 lg:w-8 h-6 lg:h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-transparent border border-border-primary/50 text-text-primary mt-1`}
+        >
+          <img
+            src="/mini-logo2.png"
+            alt="logo"
+            className={`w-5 h-5 ${isDark ? "invert opacity-90" : "opacity-80"}`}
+          />
+        </div>
+      )}
 
-      {/* Bubble Container */}
-      <div
-        className={`min-w-0 max-w-full rounded-2xl p-3 lg:p-5 shadow-sm leading-relaxed text-[14px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
-          isUser ? "bg-gray-100 border border-gray-200 dark:bg-[#222222] text-text-primary dark:text-white font-medium rounded-tr-none dark:border-white/5" : "bg-white dark:bg-[#0a0a0a] border border-border-primary dark:border-white/10 text-text-primary dark:text-text-muted rounded-tl-none"
-        }`}
-      >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            table: ({ node, ...props }) => (
-              <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${
-                "border-border-primary"
-              }`}>
-                <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
+      {/* Bubble Container & Actions */}
+      <div className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'} max-w-full min-w-0`}>
+        <div
+          className={`min-w-0 max-w-full leading-relaxed text-[15px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
+            isUser ? "rounded-3xl px-5 py-3 bg-[#f4f4f4] dark:bg-surface-secondary text-text-primary dark:text-white border-none" : "rounded-2xl py-2 text-text-primary dark:text-white/90 bg-transparent border-transparent"
+          }`}
+        >
+          {isEditing && isUser ? (
+            <div className="flex flex-col w-full min-w-[200px] sm:min-w-[300px]">
+              <textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onFocus={(e) => {
+                  const val = e.target.value;
+                  e.target.value = '';
+                  e.target.value = val;
+                }}
+                className="w-full bg-transparent text-text-primary dark:text-white outline-none resize-none custom-scrollbar"
+                rows={Math.max(2, editValue.split('\n').length)}
+                autoFocus
+              />
+              <div className="flex justify-end gap-2 mt-3">
+                <button 
+                  onClick={() => { setIsEditing(false); setEditValue(content); }} 
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-secondary/50 hover:bg-surface-secondary text-text-primary transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={editValue.trim() === content.trim() || !editValue.trim()}
+                  onClick={() => {
+                    setIsEditing(false);
+                    if (onRetry) onRetry(editValue);
+                  }} 
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-text-primary text-text-inverse dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 transition"
+                >
+                  Update
+                </button>
+              </div>
+            </div>
+          ) : (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                table: ({ node, ...props }) => (
+              <div
+                className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${"border-border-primary"}`}
+              >
+                <table
+                  className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0"
+                  {...props}
+                />
               </div>
             ),
             thead: ({ node, ...props }) => (
-              <thead className={`uppercase text-[10px] tracking-wider border-b ${
-                "bg-surface-secondary dark:bg-interactive-active text-text-primary dark:text-text-muted border-border-primary"
-              }`} {...props} />
-            ),
-            th: ({ node, ...props }) => (
-              <th className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]" {...props} />
-            ),
-            td: ({ node, ...props }) => (
-              <td className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${
-                "text-text-primary dark:text-text-muted border-border-primary dark:border-border-primary/50"
-              }`} {...props} />
-            ),
-            tr: ({ node, ...props }) => (
-              <tr className={`transition-colors last:border-none ${
-                "hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"
-              }`} {...props} />
-            ),
-            h1: ({ node, ...props }) => <h1 className={`text-base font-bold mt-3 mb-1 border-b pb-1 break-words ${"text-text-primary dark:text-text-muted border-border-primary"}`} {...props} />,
-            h2: ({ node, ...props }) => <h2 className={`text-sm font-semibold mt-2.5 mb-1 break-words ${"text-text-primary dark:text-text-muted"}`} {...props} />,
-            h3: ({ node, ...props }) => <h3 className="text-xs font-semibold text-text-primary mt-2 mb-1 break-words" {...props} />,
-            img: ({ node, ...props }) => (
-              <div className={`my-3 rounded-lg overflow-hidden border p-1 max-w-full ${
-                "border-border-primary bg-interactive-base dark:bg-interactive-active"
-              }`}>
-                <img className="max-w-full h-auto object-contain mx-auto" loading="lazy" {...props} alt={props.alt || "Diagram"} />
-              </div>
-            ),
-            code: ({ node, inline, className, children, ...props }) => {
-              const match = /language-(\w+)/.exec(className || "");
-              const isMultiLine = String(children).includes("\n");
-              if (inline || (!match && !isMultiLine)) {
-                return (
-                  <code className={`px-1.5 py-0.5 rounded font-mono text-[11px] break-words [overflow-wrap:anywhere] ${
-                    isUser ? "bg-interactive-base/80 text-text-muted" : "bg-surface-secondary dark:bg-interactive-active/80 text-text-primary dark:text-text-muted"
-                  }`} {...props}>
-                    {children}
-                  </code>
-                );
-              }
-              return (
-                <div className={`my-3 w-full max-w-full overflow-hidden rounded-xl border ${"border-border-primary"}`}>
-                  <div className="flex items-center justify-between px-4 py-2 bg-[#1e1e1e] border-b border-[#2d2d2d] text-gray-400 text-xs font-sans select-none">
-                    <span className="lowercase">{match ? match[1] : "code"}</span>
-                    <button 
-                      onClick={() => navigator.clipboard.writeText(String(children))} 
-                      className="hover:text-white transition cursor-pointer"
-                    >
-                      Copy code
-                    </button>
-                  </div>
-                  <div className="custom-scrollbar overflow-x-auto w-full">
-                    <SyntaxHighlighter
-                      style={vscDarkPlus}
-                      language={match ? match[1] : 'javascript'}
-                      PreTag="div"
-                      customStyle={{
-                        margin: 0,
-                        padding: "1rem",
-                        background: "#1e1e1e",
-                        fontSize: "12px",
-                        lineHeight: "1.5",
-                      }}
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  </div>
-                </div>
-              );
-            },
-            p: ({ node, ...props }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm" {...props} />,
-            strong: ({ node, ...props }) => (
-              <strong
-                className={`font-medium tracking-wider px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-sm ${
-                  isUser
-                    ? "text-amber-700 bg-interactive-base/80 border border-border-primary/30"
-                    : " text-amber-700 bg-amber-600/5 border border-amber-600/20"
-                }`}
+              <thead
+                className={`uppercase text-[10px] tracking-wider border-b ${"bg-surface-secondary dark:bg-interactive-active text-text-primary dark:text-text-muted border-border-primary"}`}
                 {...props}
               />
             ),
-            a: ({ node, ...props }) => <a className="text-text-primary hover:underline font-medium break-all" target="_blank" rel="noopener noreferrer" {...props} />,
-            ul: ({ node, ...props }) => <ul className={`list-disc pl-4 my-1.5 space-y-0.5 break-words ${"text-text-primary dark:text-text-muted"}`} {...props} />,
-            ol: ({ node, ...props }) => <ol className={`list-decimal pl-4 my-1.5 space-y-0.5 break-words ${"text-text-primary dark:text-text-muted"}`} {...props} />,
-            li: ({ node, ...props }) => <li className={`break-words ${"text-text-primary dark:text-text-muted"}`} {...props} />,
+            th: ({ node, ...props }) => (
+              <th
+                className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]"
+                {...props}
+              />
+            ),
+            td: ({ node, ...props }) => (
+              <td
+                className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${"text-text-primary dark:text-text-muted border-border-primary dark:border-border-primary/50"}`}
+                {...props}
+              />
+            ),
+            tr: ({ node, ...props }) => (
+              <tr
+                className={`transition-colors last:border-none ${"hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"}`}
+                {...props}
+              />
+            ),
+            h1: ({ node, ...props }) => (
+              <h1
+                className={`text-2xl font-bold mt-6 mb-4 break-words ${"text-text-primary dark:text-white"}`}
+                {...props}
+              />
+            ),
+            h2: ({ node, ...props }) => (
+              <h2
+                className={`text-xl font-bold mt-5 mb-3 break-words ${"text-text-primary dark:text-white"}`}
+                {...props}
+              />
+            ),
+            h3: ({ node, ...props }) => (
+              <h3
+                className={`text-lg font-bold mt-4 mb-2 break-words ${"text-text-primary dark:text-white"}`}
+                {...props}
+              />
+            ),
+            img: ({ node, ...props }) => (
+              <div
+                className={`my-4 rounded-xl overflow-hidden border p-1 max-w-full ${"border-border-primary bg-interactive-base dark:bg-interactive-active"}`}
+              >
+                <img
+                  className="max-w-full h-auto object-contain mx-auto"
+                  loading="lazy"
+                  {...props}
+                  alt={props.alt || "Diagram"}
+                />
+              </div>
+            ),
+            code: (props) => <CodeBlock {...props} isUser={isUser} isDark={isDark} />,
+            p: ({ node, ...props }) => (
+              <p
+                className="mb-3 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed"
+                {...props}
+              />
+            ),
+            strong: ({ node, ...props }) => (
+              <strong
+                className="font-bold text-text-primary dark:text-white"
+                {...props}
+              />
+            ),
+            a: ({ node, ...props }) => (
+              <a
+                className="text-text-primary hover:underline font-medium break-all"
+                target="_blank"
+                rel="noopener noreferrer"
+                {...props}
+              />
+            ),
+            ul: ({ node, ...props }) => (
+              <ul
+                className="list-disc pl-6 my-4 space-y-1.5 break-words text-[15px] leading-relaxed marker:text-text-muted"
+                {...props}
+              />
+            ),
+            ol: ({ node, ...props }) => (
+              <ol
+                className="list-decimal pl-6 my-4 space-y-1.5 break-words text-[15px] leading-relaxed marker:text-text-muted text-text-primary"
+                {...props}
+              />
+            ),
+            li: ({ node, ...props }) => (
+              <li
+                className="break-words mb-1 text-text-primary"
+                {...props}
+              />
+            ),
           }}
         >
           {displayContent}
         </ReactMarkdown>
+        )}
 
         {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
         {hasPauseNotice && (
-          <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-            "bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/30 dark:text-amber-600"
-          }`}>
+          <div
+            className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${"bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/30 dark:text-amber-600"}`}
+          >
             <div className="flex items-center gap-2 text-xs font-medium">
               <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
               <span>Stream paused due to higher-priority request.</span>
@@ -163,6 +289,38 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 Retry
               </button>
             )}
+          </div>
+        )}
+        {/* Action Buttons for AI Message */}
+        {!isUser && !hasPauseNotice && (
+          <div className="flex items-center gap-1.5 mt-2 opacity-100 transition-opacity text-text-muted">
+            <button onClick={() => navigator.clipboard.writeText(rawDisplayContent)} className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition" title="Copy">
+              <FiCopy className="w-4 h-4" />
+            </button>
+            <button className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition" title="Good response">
+              <FiThumbsUp className="w-4 h-4" />
+            </button>
+            <button className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition" title="Bad response">
+              <FiThumbsDown className="w-4 h-4" />
+            </button>
+            {onRetry && (
+              <button onClick={() => onRetry()} className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition" title="Regenerate">
+                <FiRotateCw className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+        </div>
+
+        {/* Action Buttons for User Message */}
+        {isUser && !isEditing && (
+          <div className="flex items-center gap-1 mt-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            <button onClick={() => navigator.clipboard.writeText(content)} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text-primary transition" title="Copy">
+              <FiCopy className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setIsEditing(true)} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text-primary transition" title="Edit">
+              <FiEdit2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
       </div>
