@@ -110,7 +110,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
 
   return (
     <div
-      className={`flex items-start gap-1.5 lg:gap-4 ${isUser ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[70%]" : "mr-auto w-full max-w-full"} my-2.5 min-w-0`}
+      className={`flex items-start gap-1 lg:gap-1.5 ${isUser ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[70%]" : "mr-auto w-full max-w-full"} my-2.5 min-w-0`}
     >
       {/* Avatar (Only for AI) */}
       {!isUser && (
@@ -129,7 +129,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
       <div className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'} max-w-full min-w-0`}>
         <div
           className={`min-w-0 max-w-full leading-relaxed text-[15px] overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
-            isUser ? "rounded-3xl px-5 py-3 bg-[#f4f4f4] dark:bg-surface-secondary text-text-primary dark:text-white border-none" : "rounded-2xl py-2 text-text-primary dark:text-white/90 bg-transparent border-transparent"
+            isUser ? "rounded-3xl px-5 py-3 bg-[#f4f4f4] dark:bg-surface-secondary text-text-primary dark:text-white border-none" : "rounded-2xl pt-1 pb-2 text-text-primary dark:text-white/90 bg-transparent border-transparent"
           }`}
         >
           {isEditing && isUser ? (
@@ -187,13 +187,13 @@ const MessageBubble = ({ role, content, onRetry }) => {
             ),
             th: ({ node, ...props }) => (
               <th
-                className="px-4 py-3 font-semibold select-none whitespace-normal break-words align-middle"
+                className={`px-4 py-3 font-semibold select-none whitespace-nowrap align-middle first:sticky first:left-0 first:z-20 ${isDark ? "first:bg-[#252525]" : "first:bg-gray-50"} first:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}
                 {...props}
               />
             ),
             td: ({ node, ...props }) => (
               <td
-                className={`px-4 py-3 border-b align-middle break-words [overflow-wrap:anywhere] ${isDark ? "text-gray-300 border-white/10" : "text-gray-700 border-border-primary/50"}`}
+                className={`px-4 py-3 border-b align-middle whitespace-nowrap first:sticky first:left-0 first:z-10 ${isDark ? "text-gray-300 border-white/10 first:bg-[#202020]" : "text-gray-700 border-border-primary/50 first:bg-white"} first:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}
                 {...props}
               />
             ),
@@ -269,6 +269,12 @@ const MessageBubble = ({ role, content, onRetry }) => {
             li: ({ node, ...props }) => (
               <li
                 className={`break-words mb-1 ${isDark ? "text-gray-200" : "text-text-primary"}`}
+                {...props}
+              />
+            ),
+            hr: ({ node, ...props }) => (
+              <hr
+                className={`my-6 border-t ${isDark ? "border-white/50" : "border-black/50"}`}
                 {...props}
               />
             ),

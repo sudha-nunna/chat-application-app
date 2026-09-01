@@ -459,20 +459,29 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             );
           })}
 
-          {isSearching && (
-            <div className="flex justify-start">
-              <div className={`p-3 rounded-2xl border italic text-xs animate-pulse ${"bg-surface-secondary dark:bg-interactive-base border-border-primary text-text-primary"
-                }`}>
-                Thinking...
+          {(isSearching || (isBotTyping && !streamingReply)) && (
+            <div className="flex items-start gap-1 mr-auto w-full max-w-full my-2.5 min-w-0">
+              <div className={`w-6 lg:w-8 h-6 lg:h-8 rounded-full flex items-center justify-center shrink-0 bg-transparent border border-border-primary/50 text-text-primary mt-1`}>
+                <img
+                  src="/mini-logo2.png"
+                  alt="logo"
+                  className={`w-4 lg:w-5 h-4 lg:h-5 object-contain animate-[spin_3s_linear_infinite] ${isDark ? "invert" : ""}`}
+                />
+              </div>
+              <div className="flex items-center h-8 lg:h-10">
+                <div className="flex gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-primary/40 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-primary/40 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-primary/40 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                </div>
               </div>
             </div>
           )}
 
-
-          {isBotTyping && (
+          {isBotTyping && streamingReply && (
             <MessageBubble
               role="assistant"
-              content={streamingReply || "Loading response..."}
+              content={streamingReply}
             />
           )}
         </div>

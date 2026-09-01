@@ -1063,7 +1063,7 @@ const AppLayout = ({ children }) => {
                   navigate("/chat");
                   setActivePopover(null);
                 }}
-                className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "chat" ? "bg-surface-secondary dark:bg-white/10 text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"} ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
+                className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${location.pathname === "/chat" && !activeChatId ? "bg-surface-secondary dark:bg-white/10 text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"} ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
               >
                 <div className="w-6 h-6 flex items-center justify-center shrink-0">
                   <FiPlus className="text-lg" />
