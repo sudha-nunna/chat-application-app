@@ -83,6 +83,13 @@ const MessageBubble = ({ role, content, onRetry }) => {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(content);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   const hasPauseNotice =
     content &&
@@ -164,35 +171,35 @@ const MessageBubble = ({ role, content, onRetry }) => {
               components={{
                 table: ({ node, ...props }) => (
               <div
-                className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${"border-border-primary"}`}
+                className={`w-full max-w-full overflow-x-auto my-4 rounded-xl border custom-scrollbar shadow-sm ${isDark ? "border-white/10 bg-white/5" : "border-border-primary bg-white"}`}
               >
                 <table
-                  className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0"
+                  className="w-full border-collapse text-left text-[13px] min-w-full table-auto"
                   {...props}
                 />
               </div>
             ),
             thead: ({ node, ...props }) => (
               <thead
-                className={`uppercase text-[10px] tracking-wider border-b ${"bg-surface-secondary dark:bg-interactive-active text-text-primary dark:text-text-muted border-border-primary"}`}
+                className={`uppercase text-[11px] font-bold tracking-wider border-b ${isDark ? "bg-[#252525] text-gray-300 border-white/10" : "bg-gray-50 text-gray-600 border-border-primary"}`}
                 {...props}
               />
             ),
             th: ({ node, ...props }) => (
               <th
-                className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]"
+                className="px-4 py-3 font-semibold select-none whitespace-normal break-words align-middle"
                 {...props}
               />
             ),
             td: ({ node, ...props }) => (
               <td
-                className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${"text-text-primary dark:text-text-muted border-border-primary dark:border-border-primary/50"}`}
+                className={`px-4 py-3 border-b align-middle break-words [overflow-wrap:anywhere] ${isDark ? "text-gray-300 border-white/10" : "text-gray-700 border-border-primary/50"}`}
                 {...props}
               />
             ),
             tr: ({ node, ...props }) => (
               <tr
-                className={`transition-colors last:border-none ${"hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"}`}
+                className={`transition-colors last:border-none ${isDark ? "hover:bg-white/5 even:bg-white/[0.02]" : "hover:bg-gray-50 even:bg-gray-50/50"}`}
                 {...props}
               />
             ),
@@ -229,7 +236,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
             code: (props) => <CodeBlock {...props} isUser={isUser} isDark={isDark} />,
             p: ({ node, ...props }) => (
               <p
-                className="mb-3 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed"
+                className={`mb-3 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed ${isDark ? "text-gray-200" : "text-text-primary"}`}
                 {...props}
               />
             ),
@@ -249,19 +256,19 @@ const MessageBubble = ({ role, content, onRetry }) => {
             ),
             ul: ({ node, ...props }) => (
               <ul
-                className="list-disc pl-6 my-4 space-y-1.5 break-words text-[15px] leading-relaxed marker:text-text-muted"
+                className={`list-disc pl-6 my-4 space-y-1.5 break-words text-[15px] leading-relaxed marker:text-text-muted ${isDark ? "text-gray-200" : "text-text-primary"}`}
                 {...props}
               />
             ),
             ol: ({ node, ...props }) => (
               <ol
-                className="list-decimal pl-6 my-4 space-y-1.5 break-words text-[15px] leading-relaxed marker:text-text-muted text-text-primary"
+                className={`list-decimal pl-6 my-4 space-y-1.5 break-words text-[15px] leading-relaxed marker:text-text-muted ${isDark ? "text-gray-200" : "text-text-primary"}`}
                 {...props}
               />
             ),
             li: ({ node, ...props }) => (
               <li
-                className="break-words mb-1 text-text-primary"
+                className={`break-words mb-1 ${isDark ? "text-gray-200" : "text-text-primary"}`}
                 {...props}
               />
             ),
@@ -294,8 +301,18 @@ const MessageBubble = ({ role, content, onRetry }) => {
         {/* Action Buttons for AI Message */}
         {!isUser && !hasPauseNotice && (
           <div className="flex items-center gap-1.5 mt-2 opacity-100 transition-opacity text-text-muted">
-            <button onClick={() => navigator.clipboard.writeText(rawDisplayContent)} className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition" title="Copy">
-              <FiCopy className="w-4 h-4" />
+            <button onClick={() => handleCopy(rawDisplayContent)} className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition flex items-center gap-1.5" title="Copy">
+              {isCopied ? (
+                <>
+                  <FiCheck className="w-4 h-4 text-green-500" />
+                  <span className="text-[11px] font-medium text-green-500">Copied</span>
+                </>
+              ) : (
+                <>
+                  <FiCopy className="w-4 h-4" />
+                  <span className="text-[11px] font-medium">Copy</span>
+                </>
+              )}
             </button>
             <button className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition" title="Good response">
               <FiThumbsUp className="w-4 h-4" />
@@ -315,8 +332,15 @@ const MessageBubble = ({ role, content, onRetry }) => {
         {/* Action Buttons for User Message */}
         {isUser && !isEditing && (
           <div className="flex items-center gap-1 mt-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <button onClick={() => navigator.clipboard.writeText(content)} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text-primary transition" title="Copy">
-              <FiCopy className="w-3.5 h-3.5" />
+            <button onClick={() => handleCopy(content)} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text-primary transition flex items-center gap-1.5" title="Copy">
+              {isCopied ? (
+                <>
+                  <FiCheck className="w-3.5 h-3.5 text-green-500" />
+                  <span className="text-[10px] font-medium text-green-500">Copied</span>
+                </>
+              ) : (
+                <FiCopy className="w-3.5 h-3.5" />
+              )}
             </button>
             <button onClick={() => setIsEditing(true)} className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text-primary transition" title="Edit">
               <FiEdit2 className="w-3.5 h-3.5" />
