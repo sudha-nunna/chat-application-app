@@ -85,7 +85,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   };
 
   return (
-    <div className={`p-4 md:p-6 pb-6 md:pb-3 bg-transparent w-full`}>
+    <div className={`p-4 md:p-6 pb-3 md:pb-3 bg-transparent w-full`}>
       <div className={`
         w-full max-w-4xl mx-auto relative
         flex flex-row items-center gap-2 p-2 
@@ -161,7 +161,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           ) : null}
         </div>
       </div>
-      <div className="text-center mt-3">
+      <div className="text-center mt-3 hidden md:block">
         <span className="text-[11px] font-medium text-text-muted dark:text-[#a1a1a1]">
           Nexora is AI and can make mistakes.
         </span>
