@@ -179,7 +179,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
               components={{
                 table: ({ node, ...props }) => (
                   <div
-                    className={`w-full max-w-full overflow-x-auto my-4 rounded-xl border custom-scrollbar shadow-sm ${isDark ? "border-white/10 bg-white/5" : "border-border-primary bg-white"}`}
+                    className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm"
                   >
                     <table
                       className="w-full border-collapse text-left text-[13px] min-w-full table-auto"
@@ -189,25 +189,25 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 thead: ({ node, ...props }) => (
                   <thead
-                    className={`uppercase text-[11px] font-bold tracking-wider border-b ${isDark ? "bg-[#252525] text-gray-300 border-white/10" : "bg-gray-50 text-gray-600 border-border-primary"}`}
+                    className="uppercase text-[11px] font-bold tracking-wider border-b border-border-primary dark:border-white/10 bg-surface-secondary dark:bg-[#1c1d27] text-text-muted dark:text-[#a1a1aa]"
                     {...props}
                   />
                 ),
                 th: ({ node, ...props }) => (
                   <th
-                    className={`px-4 py-3 font-semibold select-none whitespace-nowrap align-middle first:sticky first:left-0 first:z-20 ${isDark ? "first:bg-[#252525]" : "first:bg-gray-50"} first:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}
+                    className="px-4 py-3 font-semibold select-none whitespace-nowrap align-middle"
                     {...props}
                   />
                 ),
                 td: ({ node, ...props }) => (
                   <td
-                    className={`px-4 py-3 border-b align-middle whitespace-nowrap first:sticky first:left-0 first:z-10 ${isDark ? "text-gray-300 border-white/10 first:bg-[#202020]" : "text-gray-700 border-border-primary/50 first:bg-white"} first:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}
+                    className="px-4 py-3 border-b align-middle whitespace-nowrap text-text-primary dark:text-[#d1d1d6] border-border-primary/50 dark:border-white/5"
                     {...props}
                   />
                 ),
                 tr: ({ node, ...props }) => (
                   <tr
-                    className={`transition-colors last:border-none ${isDark ? "hover:bg-white/5 even:bg-white/[0.02]" : "hover:bg-gray-50 even:bg-gray-50/50"}`}
+                    className="transition-colors last:border-none hover:bg-black/5 dark:hover:bg-white/5 even:bg-black/[0.02] dark:even:bg-white/[0.02]"
                     {...props}
                   />
                 ),
