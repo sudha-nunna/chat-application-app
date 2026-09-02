@@ -30,32 +30,33 @@
    Theme Variables
    ========================================= */
 [data-theme="dark"] {
-  --body-bg: #121212;
-  --surface-primary: #121212;
-  --surface-secondary: #000000;
-  --surface-tertiary: #030303;
+  --body-bg: #0b0c12;
+  --surface-primary: #0b0c12;
+  --surface-secondary: #090a10;
+  --surface-tertiary: #171923;
   --surface-inverse: #ffffff;
 
-  --text-primary: #ececec;
-  --text-secondary: #b4b4b4;
-  --text-muted: #9b9b9b;
-  --text-inverse: #121212;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-inverse: #0b0c12;
 
-  --border-primary: #151515;
-  --border-secondary: #0d0d0d;
-  --border-focus: #ececec;
+  --border-primary: rgba(255, 255, 255, 0.07);
+  --border-secondary: rgba(255, 255, 255, 0.04);
+  --border-focus: rgba(255, 255, 255, 0.2);
 
-  --interactive-base: #0c0c0c;
-  /* --interactive-base: #030303; */
-  --interactive-hover: #424242;
-  --interactive-active: #0f0f0f;
-  --interactive-inverse: #ececec;
+  --interactive-base: #171923;
+  --interactive-hover: #1e212d;
+  --interactive-active: #232736;
+  --interactive-inverse: #f4f4f5;
   --interactive-inverse-hover: #ffffff;
 
-  /* --surface-dropdown: #2f2f2f; */
-  --surface-dropdown: #0e0d0d;
-  --interactive-selected: #181818;
-  --accent-primary: #146bea;
+  --surface-dropdown: #090a10;
+  --interactive-selected: #1c1f2e;
+  --accent-primary: #7c83f6;
+
+  --chat-bg-image: none;
+  --chat-bg-size: auto;
 }
 
 [data-theme="light"] {
@@ -82,7 +83,10 @@
 
   --surface-dropdown: #ffffff;
   --interactive-selected: #f3f4f6;
-  --accent-primary: #276dd3;
+  --accent-primary: #494eaa;
+
+  --chat-bg-image: radial-gradient(circle, #d4d4d4 1.5px, transparent 1.5px);
+  --chat-bg-size: 28px 28px;
 }
 
 /* =========================================
@@ -103,6 +107,7 @@ body {
     sans-serif;
   background-color: var(--body-bg);
   color: var(--text-primary);
+  font-weight: 500;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -163,4 +168,27 @@ body {
 button,
 a {
   cursor: pointer;
+}
+
+/* =========================================
+   Dotted Background
+   ========================================= */
+.bg-dotted {
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.15) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+@keyframes typingDot {
+  0%, 20% { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+.animate-typing-dot {
+  animation: typingDot 1.4s infinite;
+}
+
+[data-theme="light"] .bg-dotted {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.15) 1px, transparent 1px);
 }

@@ -42,7 +42,7 @@ const ClusterStatusWidget = ({ clusterNodes = [], isDark = false, isLoading = fa
         {showLoading ? (
           <>
             <FiRefreshCw className="text-xs animate-spin text-text-primary" />
-            <span>Connecting...</span>
+            <span className="hidden md:inline">Connecting...</span>
           </>
         ) : (
           <>
@@ -59,7 +59,7 @@ const ClusterStatusWidget = ({ clusterNodes = [], isDark = false, isLoading = fa
               ></span>
             </span>
             <FiServer className="text-xs" />
-            <span>{hasNodes ? `${healthyCount}/${clusterNodes.length} Online` : "Offline"}</span>
+            <span className="hidden md:inline">{hasNodes ? `${healthyCount}/${clusterNodes.length} Online` : "Offline"}</span>
           </>
         )}
       </button>

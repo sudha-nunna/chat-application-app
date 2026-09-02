@@ -2,7 +2,7 @@ import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { NobackEndCallObj, setJwt } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
-import { FiCpu, FiDatabase, FiMessageSquare } from "react-icons/fi";
+import { FiMessageSquare, FiZap, FiCode } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 const AuthModal = ({ onAuthSuccess }) => {
@@ -46,16 +46,16 @@ const AuthModal = ({ onAuthSuccess }) => {
           </div>
 
           <Link to="/" className="hidden md:flex relative z-10 items-center gap-1">
-            <img src="/mini-logo2.png" alt="Nexora Logo" className={`w-9 h-9 object-contain shrink-0 ${isDark? "invert": ""}`}/>
-            <span className="text-white font-medium text-sm tracking-wide">NEXORA</span>
+            <img src="/mini-logo2.png" alt="Nexora Logo" className={`w-12 h-12 object-contain shrink-0`}/>
+            <span className="text-white font-medium text-sm tracking-wide">CODEGENE</span>
           </Link>
 
           <div className="hidden md:block relative z-10 mt-auto">
             <h2 className="text-2xl md:text-4xl font-display font-medium text-white mb-4 leading-[1.1] tracking-tight">
-              Build. Automate.<br />Scale.
+              Think. Reason.<br />Create.
             </h2>
             <p className="text-white/50 text-[15px] max-w-xs leading-relaxed">
-              A unified platform for AI agents, knowledge, and automation.
+              Your intelligent companion for coding, reasoning, and problem-solving.
             </p>
           </div>
         </div>
@@ -103,16 +103,16 @@ const AuthModal = ({ onAuthSuccess }) => {
 
             <div className="space-y-4 mb-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-5 flex justify-center"><FiCpu className="text-purple-400/80 text-sm" /></div>
-                <span className="text-[13px] text-white/60">Deploy autonomous AI agents instantly</span>
+                <div className="w-5 flex justify-center"><FiZap className="text-purple-400/80 text-sm" /></div>
+                <span className="text-[13px] text-white/60">Advanced reasoning and problem-solving</span>
               </div>
               <div className="flex items-center gap-3.5">
-                <div className="w-5 flex justify-center"><FiDatabase className="text-purple-400/80 text-sm" /></div>
-                <span className="text-[13px] text-white/60">Connect your custom knowledge base</span>
+                <div className="w-5 flex justify-center"><FiCode className="text-purple-400/80 text-sm" /></div>
+                <span className="text-[13px] text-white/60">Generate and analyze code instantly</span>
               </div>
               <div className="flex items-center gap-3.5">
                 <div className="w-5 flex justify-center"><FiMessageSquare className="text-purple-400/80 text-sm" /></div>
-                <span className="text-[13px] text-white/60">Automate multi-step workflows & chats</span>
+                <span className="text-[13px] text-white/60">Seamless conversational experience</span>
               </div>
             </div>
 

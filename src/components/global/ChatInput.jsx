@@ -9,6 +9,25 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const voiceRecorderRef = useRef(new VoiceRecorder());
   const { isDark } = useTheme();
 
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("CG-1.1 · Balanced");
+  const modelMenuRef = useRef(null);
+
+  const modelsList = [
+    "CG-1.1 · Balanced",
+    "CG-1.2 · Default"
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(event.target)) {
+        setIsModelMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Initialize Speech Recognition on component mount
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -85,85 +104,203 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   };
 
   return (
-    <div className={`p-4 md:p-6 pb-3 md:pb-3 bg-transparent w-full`}>
-      <div className={`
-        w-full max-w-4xl mx-auto relative
-        flex flex-row items-center gap-2 p-2 
-        bg-white dark:bg-[#1e1e1e] border border-border-primary dark:border-[#383838] 
-        rounded-3xl shadow-[0_0_20px_rgba(0,0,0,0.05)] dark:shadow-[0_0_20px_rgba(0,0,0,0.2)] 
-        hover:shadow-[0_0_25px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_0_25px_rgba(0,0,0,0.3)] 
-        transition-shadow duration-300
-      `}>
+    <div className={`p-4 pt-0! md:p-6 pb-0! md:pb-3 bg-transparent w-full`}>
+      <div
+        className={`
+        w-full max-w-3xl mx-auto relative flex flex-col p-3
+        bg-white dark:bg-[#191A24] border border-border-primary dark:border-white/5
+        rounded-2xl shadow-lg focus-within:border-border-focus dark:focus-within:border-white/10
+        transition-all duration-300
+      `}
+      >
         <input
           type="text"
           value={text}
-          placeholder={isListening ? "Listening..." : "Ask anything..."}
+          placeholder={
+            isListening
+              ? "Listening..."
+              : "Ask Codegene to build, explain, or explore..."
+          }
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !isGenerating && handleSend()}
           disabled={isGenerating}
           className={`
-            outline-none transition placeholder:text-text-secondary disabled:opacity-75
-            w-full py-2.5 px-4 text-[15px] bg-transparent border-0 text-text-primary dark:text-white flex-1
+            outline-none transition placeholder:text-text-muted disabled:opacity-75
+            w-full py-3 px-3 text-[15px] bg-transparent border-0 text-text-primary dark:text-white mb-2
           `}
         />
 
-        <div className="flex items-center gap-1.5 pr-2 shrink-0">
-          {/* Microphone Button */}
-          <button
-            onClick={handleVoiceClick}
-            type="button"
-            disabled={isGenerating}
-            className={`
-              transition-colors duration-200 cursor-pointer flex items-center justify-center
-              w-9 h-9 rounded-full
-              ${isListening 
-                ? "bg-text-primary text-text-inverse animate-pulse dark:bg-white dark:text-black" 
-                : "text-text-muted hover:bg-black/5 dark:hover:bg-white/10"
-              }
-            `}
-            title={isListening ? "Stop Recording" : "Record Voice"}
-          >
-            {isListening ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 0 3-3v-6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
-              </svg>
-            )}
-          </button>
+        <div className="flex items-center justify-between w-full mt-1">
+          <div className="flex items-center gap-2 md:pl-2">
+            <button className="group flex items-center gap-3 cursor-pointer">
+              <div className="flex items-center justify-center w-8 h-8 rounded-[10px] border border-border-primary dark:border-white/5 group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors duration-200 shadow-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2.5}
+                  stroke="currentColor"
+                  className="w-4 h-4 text-text-muted dark:text-[#8A8A93] group-hover:text-text-primary dark:group-hover:text-white transition-colors duration-200"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"
+                  />
+                </svg>
+              </div>
+              <span className="text-text-muted dark:text-[#8A8A93] group-hover:text-text-primary dark:group-hover:text-white text-[13px] font-medium tracking-wide transition-colors duration-200">
+                Attach
+              </span>
+            </button>
+          </div>
 
-          {/* Send / Stop Button */}
-          {isGenerating ? (
+          <div className="flex items-center gap-1 md:gap-2">
+            {/* Model Selector */}
+            <div className="relative" ref={modelMenuRef}>
+              <button 
+                onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
+                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+              >
+                {selectedModel}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className={`w-3 h-3 ml-0.5 transition-transform duration-200 ${isModelMenuOpen ? "rotate-180" : ""}`}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                  />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              <div 
+                className={`absolute bottom-full right-0 mb-2 w-48 bg-surface-dropdown dark:bg-[#191A24] border border-border-primary dark:border-white/10 rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-bottom-right ${isModelMenuOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
+              >
+                <div className="p-1.5 flex flex-col gap-0.5">
+                  {modelsList.map((model) => (
+                    <button
+                      key={model}
+                      onClick={() => {
+                        setSelectedModel(model);
+                        setIsModelMenuOpen(false);
+                      }}
+                      className={`text-left px-3 py-2 text-[11px] md:text-[13px] font-medium rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+                        selectedModel === model 
+                          ? "bg-accent-primary/10 text-text-primary dark:text-[#e5e5e5]" 
+                          : "text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-[#e5e5e5]"
+                      }`}
+                    >
+                      {model}
+                      {selectedModel === model && (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent-primary">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Microphone Button */}
             <button
-              onClick={onStop}
+              onClick={handleVoiceClick}
               type="button"
-              className="w-9 h-9 rounded-full bg-black hover:bg-black/80 dark:bg-white dark:hover:bg-white/80 flex items-center justify-center transition cursor-pointer active:scale-95 text-white dark:text-black"
-              title="Stop Generating"
-            >
-              <div className="w-3.5 h-3.5 bg-white dark:bg-black rounded-[2px]" />
-            </button>
-          ) : text.trim() ? (
-            <button
-              onClick={handleSend}
-              type="button"
+              disabled={isGenerating}
               className={`
-                shrink-0 font-medium transition-all cursor-pointer flex items-center justify-center
-                w-9 h-9 rounded-full bg-text-primary text-text-inverse dark:bg-white dark:text-black shadow-sm
-                hover:opacity-90 active:scale-95
+                transition-colors duration-200 cursor-pointer flex items-center justify-center
+                w-8 h-8 rounded-lg
+                ${
+                  isListening
+                    ? "bg-accent-primary text-white animate-pulse"
+                    : "text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
+                }
               `}
+              title={isListening ? "Stop Recording" : "Record Voice"}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                <path fillRule="evenodd" d="M10 17a.75.75 0 0 1-.75-.75V5.612L5.29 9.77a.75.75 0 0 1-1.08-1.04l5.25-5.5a.75.75 0 0 1 1.08 0l5.25 5.5a.75.75 0 1 1-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0 1 10 17Z" clipRule="evenodd" />
-              </svg>
+              {isListening ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 0 3-3v-6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"
+                  />
+                </svg>
+              )}
             </button>
-          ) : null}
+
+            {/* Send / Stop Button */}
+            {isGenerating ? (
+              <button
+                onClick={onStop}
+                type="button"
+                className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center transition cursor-pointer active:scale-95 text-white"
+                title="Stop Generating"
+              >
+                <div className="w-2.5 h-2.5 bg-white rounded-[2px]" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                type="button"
+                className={`
+                  shrink-0 font-medium transition-all cursor-pointer flex items-center justify-center
+                  w-8 h-8 rounded-lg bg-accent-primary text-white hover:opacity-90 shadow-sm
+                  active:scale-95 ${!text.trim() ? "opacity-50" : ""}
+                `}
+                disabled={!text.trim()}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2.5}
+                  stroke="currentColor"
+                  className="w-3.5 h-3.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
-      <div className="text-center mt-3 hidden md:block">
-        <span className="text-[11px] font-medium text-text-muted dark:text-[#a1a1a1]">
-          Nexora is AI and can make mistakes.
+      <div className="text-center mt-1">
+        <span className="text-[10px] md:text-[11px] font-medium text-text-muted dark:text-[#a1a1a1]">
+          Design preview - responses are illustrative.
         </span>
       </div>
     </div>

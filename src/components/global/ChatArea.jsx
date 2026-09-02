@@ -1,14 +1,29 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiArrowDown } from "react-icons/fi";
+import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle,FiImage, FiArrowDown, FiFileText, FiShare2, FiUpload, FiSun, FiMoon } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
 import { useTheme } from "../../context/ThemeContext";
-import { useTanStackQueryClient } from "../../hooks/useTanStackData";
+import { useTanStackQueryClient, useTanStackData } from "../../hooks/useTanStackData";
+import { NobackEndCall } from "../../services/authService";
 
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const queryClient = useTanStackQueryClient();
+  const authToken = localStorage.getItem("token");
+  const { data: chats = [] } = useTanStackData(
+    ["chats"],
+    async () => {
+      if (!authToken) return [];
+      const res = await NobackEndCall("/chats");
+      return Array.isArray(res) ? res : res?.data || [];
+    },
+    { enabled: !!authToken }
+  );
+
+  const currentChat = chats.find(c => c._id === currentChatId);
+  const chatTitle = currentChat ? currentChat.title : "New conversation";
+
   const [messages, setMessages] = useState([]);
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -351,79 +366,113 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   return (
-    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${"bg-white dark:bg-interactive-active/40 text-text-primary dark:text-text-muted"
-      }`}>
-
+    <div
+      className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative bg-[#F5F6FB] dark:bg-interactive-active/40 text-text-primary dark:text-text-muted`}
+      style={{
+        backgroundImage: "var(--chat-bg-image)",
+        backgroundSize: "var(--chat-bg-size)",
+      }}
+    >
       {/* Fixed Sticky Header Bar */}
-      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary dark:border-border-primary/60"
-        }`}>
+      <div
+        className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${"bg-interactive-base dark:bg-[#0D0E15] border-border-primary dark:border-border-primary"}`}
+      >
         <div className="flex items-center gap-2 truncate">
-          {onToggleMobileSidebar && (
-            <button
-              onClick={onToggleMobileSidebar}
-              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 cursor-pointer transition ${"bg-surface-secondary dark:bg-interactive-active hover:bg-interactive-base text-text-primary border-border-primary"
-                }`}
-              title="Toggle Threads List"
-            >
-              <FiMessageSquare className="text-sm" />
-              <span className="text-[11px] font-medium">Threads</span>
-            </button>
-          )}
-          <span className={`font-semibold text-xs tracking-wide truncate ${"text-text-primary dark:text-text-muted"}`}>
-            General AI Assistant 
+          <button
+            onClick={() => {
+              if (onToggleMobileSidebar) {
+                onToggleMobileSidebar();
+              } else {
+                window.dispatchEvent(new CustomEvent("toggleMobileSidebar"));
+              }
+            }}
+            className={`md:hidden p-2 rounded-lg border flex items-center justify-center shrink-0 cursor-pointer transition ${"bg-transparent dark:bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] border-border-primary dark:border-white/10"}`}
+            title="Toggle Sidebar"
+          >
+            <FiMenu className="text-lg" />
+          </button>
+          <span className="font-semibold text-[13px] tracking-wide text-text-primary dark:text-[#e5e5e5]">
+            {chatTitle}
           </span>
+          {(() => {
+            let suffix = "";
+            if (!currentChat) {
+              suffix = "drafting now";
+            } else {
+              let pinnedItemIds = [];
+              try {
+                const saved = localStorage.getItem("pinnedChats");
+                pinnedItemIds = saved ? JSON.parse(saved) : [];
+              } catch (e) {}
+
+              if (pinnedItemIds.includes(currentChat._id)) {
+                suffix = "pinned";
+              } else {
+                const recentChats = chats.filter(
+                  (c) => !pinnedItemIds.includes(c._id),
+                );
+                const idx = recentChats.findIndex(
+                  (c) => c._id === currentChat._id,
+                );
+                if (idx !== -1) {
+                  if (idx < 2) suffix = "today";
+                  else if (idx < 4) suffix = "yesterday";
+                  else suffix = "earlier";
+                }
+              }
+            }
+            if (suffix) {
+              return (
+                <span className="text-[13px] font-serif italic text-[#7c83f6] ml-1">
+                  — {suffix}
+                </span>
+              );
+            }
+            return null;
+          })()}
         </div>
 
-        <div className="flex items-center gap-3 relative">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Reusable Cluster Status Widget */}
-          <ClusterStatusWidget clusterNodes={clusterNodes} isDark={isDark} isLoading={isClusterLoading} />
+          <ClusterStatusWidget
+            clusterNodes={clusterNodes}
+            isDark={isDark}
+            isLoading={isClusterLoading}
+          />
 
-          {/* Fixed Always-Visible Voice Over Control Toggle Button */}
+          <div className="hidden md:flex items-center gap-2">
+            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-colors cursor-pointer">
+              <FiShare2 className="text-[14px]" />
+              Share
+            </button>
+            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-colors cursor-pointer">
+              <FiUpload className="text-[14px]" />
+              Export
+            </button>
+          </div>
           <button
-            onClick={toggleVoiceOver}
-            className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer active:scale-95 ${isVoicePaused
-              ? "bg-surface-secondary text-text-primary border-border-primary hover:bg-surface-secondary hover:text-text-primary dark:bg-interactive-active dark:text-text-primary dark:border-border-primary dark:hover:bg-interactive-base dark:hover:text-text-muted"
-              : isAudioActive
-                ? "bg-interactive-base/20 hover:bg-interactive-base/30 text-text-primary border-border-primary/30 shadow-sm"
-                : "bg-interactive-base/20 hover:bg-interactive-base/30 text-text-primary border-border-primary/30"
-              }`}
-            title={
-              isVoicePaused
-                ? "Voice Muted. Click to Enable Voice Over"
-                : isAudioActive
-                  ? "Voice Playing. Click to Stop Voice"
-                  : "Voice Enabled. Click to Mute Voice"
-            }
+            onClick={toggleTheme}
+            className="flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-white/20 border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer"
+            title="Toggle Theme"
           >
-            {isVoicePaused ? (
-              <>
-                <FiVolumeX className="text-sm" />
-                <span className="hidden lg:block">Voice Muted</span>
-              </>
-            ) : isAudioActive ? (
-              <>
-                <FiVolume2 className="text-sm animate-pulse text-text-primary" />
-                <span>Stop Voice</span>
-              </>
+            {isDark ? (
+              <FiSun className="text-[14px]" />
             ) : (
-              <>
-                <FiVolume2 className="text-sm" />
-                <span>Voice On</span>
-              </>
+              <FiMoon className="text-[14px]" />
             )}
           </button>
         </div>
       </div>
 
-      {(!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping) && <div className="flex-1"></div>}
-
       {/* Messages Scroll Area - ONLY this section scrolls */}
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className={`${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "flex-none" : "flex-1"} min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col relative`}
+        className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col relative"
       >
-        <div className="w-full flex-1 max-w-4xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-3">
+        <div
+          className={`w-full flex-1 max-w-3xl mx-auto px-4 md:px-10 py-6 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-3"}`}
+        >
           {isFetchingMessages && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
               <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
@@ -431,64 +480,169 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             </div>
           )}
 
-          {!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping && (
-            <div className="flex flex-col items-center justify-center px-4 w-full max-w-3xl mx-auto">
-              <h2 className={`text-[28px] md:text-[34px] font-medium tracking-tight mb-4 ${"text-text-primary dark:text-[#e3e3e3]"}`}>
-                What can I help with, Yadagiri?
-              </h2>
-            </div>
-          )}
+          {!isFetchingMessages &&
+            messages.length === 0 &&
+            !isSearching &&
+            !isBotTyping && (
+              <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-3xl mx-auto py-8 md:py-14">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-[1px] w-8 bg-accent-primary"></div>
+                  <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-muted">
+                    Intelligence, without the noise
+                  </span>
+                </div>
+                <h2
+                  className={`text-[30px] md:text-[45px] font-serif leading-tight tracking-tight mb-6 ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                >
+                  What can we{" "}
+                  <span className="text-accent-primary italic font-normal">
+                    make clear
+                  </span>{" "}
+                  today?
+                </h2>
+                <p className="text-sm md:text-base text-text-muted max-w-md leading-relaxed mb-8">
+                  Codegene helps you reason through hard problems, build useful
+                  things, and move from a blank page to a precise result.
+                </p>
+
+                {/* Quick Actions */}
+                <div className="flex flex-col md:flex-row w-full max-w-[800px] rounded-xl border border-border-primary dark:border-white/5 overflow-hidden shadow-sm bg-white dark:bg-[#191a24]">
+                  {/* Build Card */}
+                  <button
+                    onClick={() =>
+                      handleSendSubmit("Help me build a prototype.")
+                    }
+                    className="flex-1 group flex flex-col p-5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                  >
+                    <div className="w-8 h-8 rounded-[10px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-5 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                      <FiCode className="text-[15px]" />
+                    </div>
+                    <span className="font-semibold text-[15px] mb-2 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                      Build a prototype
+                    </span>
+                    <span className="text-[13px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                      Turn an idea into a working
+                      <br />
+                      interface
+                    </span>
+                  </button>
+                  {/* Analyze Card */}
+                  <button
+                    onClick={() =>
+                      handleSendSubmit("Help me analyze a document.")
+                    }
+                    className="flex-1 group flex flex-col p-5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                  >
+                    <div className="w-8 h-8 rounded-[10px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-5 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                      <FiFileText className="text-[15px]" />
+                    </div>
+                    <span className="font-semibold text-[15px] mb-2 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                      Analyze a document
+                    </span>
+                    <span className="text-[13px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                      Find the signal in a long file
+                    </span>
+                  </button>
+                  {/* Create Card */}
+                  <button
+                    onClick={() =>
+                      handleSendSubmit("Help me explore a visual direction.")
+                    }
+                    className="flex-1 group flex flex-col p-5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-[10px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-5 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                      <FiImage className="text-[15px]" />
+                    </div>
+                    <span className="font-semibold text-[15px] mb-2 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                      Create an image
+                    </span>
+                    <span className="text-[13px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                      Explore a visual direction
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
 
           {!isFetchingMessages && messages.length > 0 && (
             <div className="w-full flex justify-center py-2">
               <span className="text-xs font-semibold text-text-muted">
-                {new Intl.DateTimeFormat('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' }).format(new Date())}
+                {new Intl.DateTimeFormat("en-US", {
+                  weekday: "long",
+                  hour: "numeric",
+                  minute: "numeric",
+                }).format(new Date())}
               </span>
             </div>
           )}
 
-          {!isFetchingMessages && messages.map((m, index) => {
-            const userMsg = [...messages.slice(0, index)].reverse().find(msg => msg.role === "user");
-            return (
-              <MessageBubble
-                key={index}
-                role={m.role}
-                content={m.content}
-                onRetry={userMsg ? (newContent) => handleSendSubmit(newContent || userMsg.content) : undefined}
-              />
-            );
-          })}
+          {!isFetchingMessages &&
+            messages.map((m, index) => {
+              const userMsg = [...messages.slice(0, index)]
+                .reverse()
+                .find((msg) => msg.role === "user");
+              return (
+                <MessageBubble
+                  key={index}
+                  role={m.role}
+                  content={m.content}
+                  onRetry={
+                    userMsg
+                      ? (newContent) =>
+                          handleSendSubmit(newContent || userMsg.content)
+                      : undefined
+                  }
+                />
+              );
+            })}
 
           {(isSearching || (isBotTyping && !streamingReply)) && (
             <div className="flex items-start gap-1 mr-auto w-full max-w-full my-2.5 min-w-0">
-              <div className={`w-6 lg:w-8 h-6 lg:h-8 rounded-full flex items-center justify-center shrink-0 bg-transparent border border-border-primary/50 text-text-primary mt-1`}>
-                <img
-                  src="/mini-logo2.png"
-                  alt="logo"
-                  className={`w-4 lg:w-5 h-4 lg:h-5 object-contain animate-[spin_3s_linear_infinite] ${isDark ? "invert" : ""}`}
-                />
+              <div
+                className={`w-5 lg:w-7 h-5 lg:h-7 flex items-center justify-center shrink-0 bg-transparent text-text-primary mt-1`}
+              >
+                <svg
+                  className="animate-spin w-5 h-5 text-[#8a8a93]"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
               </div>
               <div className="flex items-center h-8 lg:h-10">
-                <div className="flex gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-text-primary/40 animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-text-primary/40 animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-text-primary/40 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                <div className="flex items-center">
+                  <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93]">Processing</span>
+                  <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93] flex ml-[1px]">
+                    <span className="animate-typing-dot" style={{ animationDelay: '0s' }}>.</span>
+                    <span className="animate-typing-dot" style={{ animationDelay: '0.2s' }}>.</span>
+                    <span className="animate-typing-dot" style={{ animationDelay: '0.4s' }}>.</span>
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
           {isBotTyping && streamingReply && (
-            <MessageBubble
-              role="assistant"
-              content={streamingReply}
-            />
+            <MessageBubble role="assistant" content={streamingReply} />
           )}
         </div>
       </div>
 
       {/* Fixed Input Area with ChatGPT style Stop Button inside */}
-      <div className="shrink-0 z-10 relative">
+      <div className="shrink-0 z-10 relative pb-2 md:pb-4 bg-[#fafafa] dark:bg-[#15161e]">
         {showScrollBottom && (
           <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50">
             <button
@@ -505,8 +659,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           onStop={handleStopGeneration}
         />
       </div>
-
-      {(!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping) && <div className="flex-[1.5]"></div>}
     </div>
   );
 };

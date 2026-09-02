@@ -119,10 +119,32 @@ const AppLayout = ({ children }) => {
       setActiveSidebarTab("servers");
     }
 
-    if (location.pathname !== "/" && location.pathname !== "/login" && !location.pathname.startsWith("/auth/")) {
-      localStorage.setItem("lastActivePath", location.pathname + location.search);
+    if (
+      location.pathname !== "/" &&
+      location.pathname !== "/login" &&
+      !location.pathname.startsWith("/auth/")
+    ) {
+      localStorage.setItem(
+        "lastActivePath",
+        location.pathname + location.search,
+      );
     }
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const handleToggleMobileSidebar = () => {
+      setIsMobileMenuOpen((prev) => !prev);
+    };
+
+    window.addEventListener("toggleMobileSidebar", handleToggleMobileSidebar);
+
+    return () => {
+      window.removeEventListener(
+        "toggleMobileSidebar",
+        handleToggleMobileSidebar,
+      );
+    };
+  }, []);
 
   const [pinnedItemIds, setPinnedItemIds] = useState(() => {
     try {
@@ -373,10 +395,10 @@ const AppLayout = ({ children }) => {
           key={item._id}
           onClick={() => !isEditing && handleSelectItem(item._id, type)}
           title={title}
-          className={`group relative flex items-center justify-between py-2 rounded-lg cursor-pointer text-sm transition select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-3"} ${
+          className={`group relative flex items-center justify-between py-1.5 rounded-lg cursor-pointer text-[13px] transition select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-2.5"} ${
             isActive
               ? "bg-black/5 dark:bg-interactive-active text-text-primary font-medium"
-              : "hover:bg-surface-secondary dark:hover:bg-interactive-active/50 text-text-primary dark:text-text-muted dark:hover:text-text-primary"
+              : "hover:bg-surface-secondary dark:hover:bg-interactive-active/30 text-text-primary dark:text-text-muted dark:hover:text-text-primary"
           }`}
         >
           <div
@@ -396,11 +418,13 @@ const AppLayout = ({ children }) => {
               >
                 <TbRobotFace className="text-[12px]" />
               </div>
-            ) : isPinned ? (
-              <div className="w-5 h-5 inline-flex items-center justify-start shrink-0 text-text-primary">
-                <FiMessageCircle className="text-[14px]" />
+            ) : (
+              <div className="w-4 h-5 inline-flex items-center justify-center shrink-0">
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-text-primary" : "bg-text-muted/40 group-hover:bg-text-muted/60 transition-colors"}`}
+                ></div>
               </div>
-            ) : null}
+            )}
 
             {isEditing && !collapseUI ? (
               <form
@@ -725,7 +749,7 @@ const AppLayout = ({ children }) => {
 
             <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-            <button
+            {/* <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsProfileDropdownOpen(false);
@@ -734,7 +758,7 @@ const AppLayout = ({ children }) => {
               className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
             >
               <FiZap className="text-sm" /> Upgrade plan
-            </button>
+            </button> */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -890,12 +914,6 @@ const AppLayout = ({ children }) => {
         >
           {isMobile ? (
             <div className="p-4 border-b border-border-primary/40 flex items-center gap-3 shrink-0 relative">
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-1 rounded-lg hover:bg-surface-secondary text-text-primary shrink-0 transition cursor-pointer"
-              >
-                <FiChevronLeft className="text-xl" />
-              </button>
               <div
                 className="profile-btn flex items-center justify-between w-full cursor-pointer group"
                 onClick={(e) => {
@@ -903,26 +921,20 @@ const AppLayout = ({ children }) => {
                   setIsProfileDropdownOpen(!isProfileDropdownOpen);
                 }}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  {user?.image ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 bg-accent-primary rounded-xl flex items-center justify-center shrink-0">
                     <img
-                      src={user.image}
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary"
+                      src="/mini-logo2.png"
+                      alt="Codegene Logo"
+                      className="w-5 h-5 object-contain"
                     />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-[11px] shrink-0 border border-border-primary">
-                      {user?.name ? user.name.slice(0, 2).toUpperCase() : "YN"}
-                    </div>
-                  )}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[13px] font-bold truncate tracking-wide text-text-primary">
-                      {user?.name || "Yadagiri Nousu"}
-                    </span>
-                    <span className="text-[11px] text-text-primary/70">
-                      Free
-                    </span>
                   </div>
+                  <span className="text-[18px] font-serif font-medium text-text-primary leading-tight flex items-start gap-0.5 tracking-tight">
+                    Codegene
+                    <sup className="text-[9px] mt-1 font-sans text-text-muted font-semibold tracking-wider">
+                      AI
+                    </sup>
+                  </span>
                 </div>
                 <FiChevronDown className="text-text-primary/70 text-lg shrink-0 group-hover:text-text-primary transition-colors" />
               </div>
@@ -960,7 +972,7 @@ const AppLayout = ({ children }) => {
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-                  <button
+                  {/* <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
@@ -969,7 +981,7 @@ const AppLayout = ({ children }) => {
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
-                  </button>
+                  </button> */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1008,14 +1020,19 @@ const AppLayout = ({ children }) => {
               className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed ? "justify-center px-2!" : "justify-between"}`}
             >
               {!isSidebarCollapsed && (
-                <div className="flex items-center gap-1">
-                  <img
-                    src="/mini-logo2.png"
-                    alt="Nexora Logo"
-                    className={`w-8 h-8 object-contain shrink-0 ${isDark ? "invert" : ""}`}
-                  />
-                  <span className="text-[15px] font-bold text-text-muted leading-tight">
-                    NEXORA
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-accent-primary rounded-xl flex items-center justify-center shrink-0">
+                    <img
+                      src="/mini-logo2.png"
+                      alt="Codegene Logo"
+                      className="w-5 h-5 object-contain"
+                    />
+                  </div>
+                  <span className="text-[18px] font-serif font-medium text-text-primary leading-tight flex items-start gap-0.5 tracking-tight">
+                    Codegene
+                    <sup className="text-[9px] mt-1 font-sans text-text-muted font-semibold tracking-wider">
+                      AI
+                    </sup>
                   </span>
                 </div>
               )}
@@ -1034,7 +1051,7 @@ const AppLayout = ({ children }) => {
                       <img
                         src="/mini-logo2.png"
                         alt="Nexora Logo"
-                        className={`w-9 h-9 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute ${isDark ? "invert" : ""}`}
+                        className={`w-9 h-9 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute ${isDark ? "" : "invert"}`}
                       />
                       <FiSidebar className="text-lg opacity-0 group-hover:opacity-100 transition-opacity absolute" />
                     </>
@@ -1052,55 +1069,52 @@ const AppLayout = ({ children }) => {
           )}
 
           <div
-            className={`flex-1 relative ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-y-auto custom-scrollbar"}`}
+            className={`pt-3 pb-3 flex flex-col gap-3 shrink-0 ${isSidebarCollapsed ? "px-1 items-center" : "px-4"}`}
           >
-            <div
-              className={`pt-3 flex flex-col gap-1 ${isSidebarCollapsed ? "px-1 items-center" : "px-3"}`}
+            <button
+              onClick={() => {
+                setActiveSidebarTab("chat");
+                navigate("/chat");
+                setActivePopover(null);
+              }}
+              className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-medium shadow-sm ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
             >
-              <button
-                onClick={() => {
-                  setActiveSidebarTab("chat");
-                  navigate("/chat");
-                  setActivePopover(null);
-                }}
-                className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${location.pathname === "/chat" && !activeChatId ? "bg-surface-secondary dark:bg-white/10 text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"} ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
-              >
-                <div className="w-6 h-6 flex items-center justify-center shrink-0">
-                  <FiPlus className="text-lg" />
+              <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                <FiPlus className="text-lg" />
+              </div>
+              {!isSidebarCollapsed && (
+                <span className="text-sm font-medium opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                  New chat
+                </span>
+              )}
+              {isSidebarCollapsed && !isMobile && (
+                <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
+                  New chat
                 </div>
-                {!isSidebarCollapsed && (
-                  <span className="text-sm font-medium opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                    New chat
-                  </span>
-                )}
-                {isSidebarCollapsed && !isMobile && (
-                  <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                    New chat
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setIsSearchModalOpen(true);
-                  setActivePopover(null);
-                }}
-                className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer text-text-primary hover:bg-black/5 dark:hover:bg-white/10 ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
-              >
-                <div className="w-6 h-6 flex items-center justify-center shrink-0">
-                  <FiSearch className="text-lg" />
+              )}
+            </button>
+            <div
+              onClick={() => {
+                setIsSearchModalOpen(true);
+                setActivePopover(null);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all cursor-pointer text-text-muted bg-surface-tertiary border border-border-primary/30 hover:border-border-primary shadow-sm ${isSidebarCollapsed ? "justify-center px-0!" : ""} group relative`}
+            >
+              <FiSearch
+                className={`shrink-0 ${isSidebarCollapsed ? "text-lg" : "text-sm"}`}
+              />
+              {!isSidebarCollapsed && (
+                <span className="text-[13px] opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                  Search conversations
+                </span>
+              )}
+              {isSidebarCollapsed && !isMobile && (
+                <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
+                  Search
                 </div>
-                {!isSidebarCollapsed && (
-                  <span className="text-sm font-medium opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                    Search
-                  </span>
-                )}
-                {isSidebarCollapsed && !isMobile && (
-                  <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                    Search
-                  </div>
-                )}
-              </button>
-              <button
+              )}
+            </div>
+            {/* <button
                 onClick={() => {
                   setActiveSidebarTab("subscription");
                   navigate("/subscription");
@@ -1121,13 +1135,16 @@ const AppLayout = ({ children }) => {
                     Subscription
                   </div>
                 )}
-              </button>
-            </div>
+              </button> */}
+          </div>
 
+          <div
+            className={`flex-1 relative ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-y-auto custom-scrollbar"}`}
+          >
             {(activeSidebarTab === "chat" || activeSidebarTab === "agents") && (
               <>
                 <div
-                  className={`pt-15 pb-32 space-y-6 custom-scrollbar ${isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"}`}
+                  className={`pt-2 pb-32 space-y-6 ${isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"}`}
                 >
                   {pinnedChats.length > 0 && (
                     <div>
@@ -1258,21 +1275,7 @@ const AppLayout = ({ children }) => {
                   )} */}
 
                   {true && (
-                    <div>
-                      {(!isSidebarCollapsed || isMobile) && (
-                        <div
-                          className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1 cursor-pointer hover:text-text-muted transition select-none"
-                          onClick={() => setIsRecentsOpen(!isRecentsOpen)}
-                        >
-                          <span>Recents</span>
-                          {isRecentsOpen ? (
-                            <FiChevronDown className="text-[10px]" />
-                          ) : (
-                            <FiChevronRight className="text-[10px]" />
-                          )}
-                        </div>
-                      )}
-
+                    <div className="mt-2">
                       {isSidebarCollapsed && !isMobile ? (
                         <div className="relative group flex justify-center">
                           <button
@@ -1312,22 +1315,45 @@ const AppLayout = ({ children }) => {
                           )}
                         </div>
                       ) : (
-                        <div
-                          className={`grid transition-all duration-300 ease-in-out ${isRecentsOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-                        >
-                          <div className="overflow-hidden">
-                            <div className="space-y-0.5">
-                              {recentChats.length === 0 ? (
-                                <div className="text-xs text-text-primary px-3 py-2">
-                                  No recent chats
-                                </div>
-                              ) : (
-                                recentChats.map((c) =>
-                                  renderSidebarItem(c, "chat"),
-                                )
-                              )}
+                        <div className="flex flex-col gap-4 mt-2">
+                          {recentChats.length === 0 ? (
+                            <div className="text-xs text-text-primary px-3 py-2">
+                              No recent chats
                             </div>
-                          </div>
+                          ) : (
+                            <>
+                              <div className="flex flex-col gap-0.5">
+                                <h4 className="text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1">
+                                  today
+                                </h4>
+                                {recentChats
+                                  .slice(0, 2)
+                                  .map((c) => renderSidebarItem(c, "chat"))}
+                              </div>
+
+                              {recentChats.length > 2 && (
+                                <div className="flex flex-col gap-0.5">
+                                  <h4 className="text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 mt-2">
+                                    yesterday
+                                  </h4>
+                                  {recentChats
+                                    .slice(2, 4)
+                                    .map((c) => renderSidebarItem(c, "chat"))}
+                                </div>
+                              )}
+
+                              {recentChats.length > 4 && (
+                                <div className="flex flex-col gap-0.5">
+                                  <h4 className="text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 mt-2">
+                                    earlier
+                                  </h4>
+                                  {recentChats
+                                    .slice(4)
+                                    .map((c) => renderSidebarItem(c, "chat"))}
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1450,7 +1476,7 @@ const AppLayout = ({ children }) => {
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-                  <button
+                  {/* <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
@@ -1459,7 +1485,7 @@ const AppLayout = ({ children }) => {
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
-                  </button>
+                  </button> */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1495,7 +1521,7 @@ const AppLayout = ({ children }) => {
 
               <div
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className={`profile-btn p-1.5 rounded-xl transition hover:bg-surface-secondary dark:hover:bg-surface-dropdown bg-transparent flex items-center group-hover:justify-start cursor-pointer w-full ${isSidebarCollapsed ? "px-0 justify-center" : ""}`}
+                className={`profile-btn px-1 transition hover:bg-surface-secondary dark:hover:bg-surface-dropdown bg-transparent flex items-center group-hover:justify-start cursor-pointer w-full ${isSidebarCollapsed ? "px-0 justify-center" : ""}`}
               >
                 <div className="flex items-center shrink-0">
                   {user?.image ? (
@@ -1505,19 +1531,19 @@ const AppLayout = ({ children }) => {
                       className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary/50"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-[13px] shrink-0 border border-border-primary/50">
-                      {user?.name ? user.name.slice(0, 2).toUpperCase() : "YN"}
+                    <div className="w-8 h-8 rounded-full bg-accent-primary text-white dark:text-[#090a10] flex items-center justify-center font-bold text-[12px] shrink-0">
+                      {user?.name ? user.name.slice(0, 2).toUpperCase() : "AV"}
                     </div>
                   )}
                 </div>
 
                 {!isSidebarCollapsed && (
-                  <div className="flex-col whitespace-nowrap overflow-hidden ml-3 flex transition-opacity duration-300">
-                    <p className="text-[13px] font-bold truncate tracking-wide text-text-primary">
-                      {user?.name || "Yadagiri Nousu"}
+                  <div className="flex-col whitespace-nowrap overflow-hidden ml-3 flex transition-opacity duration-300 items-start">
+                    <p className="text-[13px] font-bold truncate tracking-tight  leading-tight">
+                      {user?.name || "Ari Vance"}
                     </p>
-                    <p className="text-[12px] text-text-primary/70 truncate">
-                      Free
+                    <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
+                      Studio plan
                     </p>
                   </div>
                 )}
@@ -1531,10 +1557,9 @@ const AppLayout = ({ children }) => {
 
   if (location.pathname === "/") {
     if (isAuthenticated) {
-      const lastPath = localStorage.getItem("lastActivePath") || "/chat";
-      return <Navigate to={lastPath} replace />;
+      return <Navigate to="/chat" replace />;
     }
-    return <>{children}</>;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isAuthenticated && !isGoogleCallbackRoute) {
@@ -1551,34 +1576,6 @@ const AppLayout = ({ children }) => {
     >
       <SubscriptionModal />
 
-      <div
-        className={`md:hidden flex items-center justify-between p-3 border-b shrink-0 ${"bg-surface-secondary border-border-primary"}`}
-      >
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-1.5 rounded-lg bg-interactive-active text-text-primary dark:text-white hover:bg-interactive-base transition cursor-pointer"
-          >
-            <FiMenu className="text-lg" />
-          </button>
-          <div className="flex items-center gap-1">
-            <img
-              src="/mini-logo2.png"
-              alt="Nexora Logo"
-              className={`w-7 h-7 rounded-md object-contain ${isDark ? "invert" : ""}`}
-            />
-            <span className="font-bold text-xs tracking-tight">NEXORA</span>
-          </div>
-        </div>
-        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-interactive-base/20 text-text-primary border border-border-primary/30">
-          {location.pathname === "/chat"
-            ? "General Chat"
-            : location.pathname.startsWith("/bots")
-              ? "Bot Detail"
-              : "Dashboard"}
-        </span>
-      </div>
-
       {/* Main Sidebar (Desktop) */}
       <div className="hidden md:flex h-full z-30 relative">
         {renderSecondarySidebar()}
@@ -1588,7 +1585,7 @@ const AppLayout = ({ children }) => {
         className={`md:hidden fixed inset-0 z-50 flex transition-all duration-300 ${isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
       >
         <div
-          className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100" : "opacity-0"}`}
+          className={`fixed inset-0 bg-accent-primary/10 transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100" : "opacity-0"}`}
           onClick={() => setIsMobileMenuOpen(false)}
         ></div>
         <div
@@ -1601,7 +1598,7 @@ const AppLayout = ({ children }) => {
         </div>
       </div>
 
-      <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative">
+      <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-dotted">
         {children}
       </main>
 
