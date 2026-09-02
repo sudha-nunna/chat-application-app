@@ -36,7 +36,7 @@ export const PerformanceMonitor = ({ onFpsReport = null, showOverlay = false }) 
   if (!showOverlay) return null;
 
   return (
-    <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-mono text-emerald-400 border border-emerald-500/30 z-20">
+    <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-mono text-text-primary border border-border-primary/30 z-20">
       <span>{fps} FPS</span>
     </div>
   );

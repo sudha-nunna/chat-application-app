@@ -22,8 +22,10 @@ import {
   FiVolume2,
   FiVolumeX
 } from "react-icons/fi";
+import { TbRobotFace } from "react-icons/tb";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import { useSearchParams } from "react-router-dom";
 import ClusterStatusWidget from "../global/ClusterStatusWidget";
 import { formatMarkdownBreaks } from "../../services/externalBotService";
 import VisemeAvatarPlayer from "../global/VisemeAvatarPlayer";
@@ -31,15 +33,30 @@ import VoiceConversationManager from "../avatar/VoiceConversationManager";
 import AvatarContainer from "../avatar/AvatarContainer";
 
 const BotChatTab = ({ bot }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
-  const [activeConvId, setActiveConvId] = useState(null);
+  const [activeConvId, setActiveConvId] = useState(searchParams.get("convId") || null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isFetchingMessages, setIsFetchingMessages] = useState(false);
   const [openSourcesIdx, setOpenSourcesIdx] = useState(null);
-  const [showHistorySidebar, setShowHistorySidebar] = useState(true);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isDark } = useTheme();
+
+  const urlConvId = searchParams.get("convId");
+
+  useEffect(() => {
+    if (urlConvId && urlConvId !== activeConvId) {
+      setActiveConvId(urlConvId);
+    }
+  }, [urlConvId]);
+
+  useEffect(() => {
+    if (activeConvId && activeConvId !== urlConvId) {
+      setSearchParams({ convId: activeConvId }, { replace: true });
+    }
+  }, [activeConvId]);
 
   // Avatar stage capability (enabled for AVATAR and HYBRID bot types)
   const isAvatarBot = Boolean(
@@ -166,7 +183,7 @@ const BotChatTab = ({ bot }) => {
       const res = await NobackEndCall(`/bots/${bot._id}/conversations`);
       const list = Array.isArray(res) ? res : res?.data || [];
       setConversations(list);
-      if (selectLatest && list.length > 0) {
+      if (selectLatest && list.length > 0 && !activeConvId) {
         setActiveConvId(list[0]._id);
       }
     } catch (err) {
@@ -176,11 +193,15 @@ const BotChatTab = ({ bot }) => {
 
   const fetchMessages = async (convId) => {
     try {
+      setIsFetchingMessages(true);
+      setMessages([]);
       const res = await NobackEndCall(`/bots/${bot._id}/conversations/${convId}/messages`);
       const list = Array.isArray(res) ? res : res?.data || [];
       setMessages(list);
     } catch (err) {
       console.error("Failed to load bot messages:", err);
+    } finally {
+      setIsFetchingMessages(false);
     }
   };
 
@@ -367,40 +388,38 @@ const BotChatTab = ({ bot }) => {
   // Shared Markdown Components Styling
   const markdownComponents = {
     p: ({ node, ...props }) => (
-      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]" {...props} />
+      <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm" {...props} />
     ),
     a: ({ node, ...props }) => (
-      <a className="text-blue-400 hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
+      <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
     ),
     strong: ({ node, ...props }) => (
       <strong
         className={`font-extrabold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-2xs ${
-          isDark
-            ? "text-amber-300 bg-amber-500/20 border border-amber-500/30 font-extrabold"
-            : "text-indigo-700 bg-indigo-100 border border-indigo-300 font-extrabold"
+          "text-text-primary bg-surface-secondary border border-border-primary font-extrabold dark:text-amber-600 dark:bg-amber-900/20 dark:border dark:border-amber-800/30 dark:font-extrabold"
           }`}
         {...props}
       />
     ),
     em: ({ node, ...props }) => (
-      <em className={`italic font-medium ${isDark ? "text-amber-200" : "text-indigo-600"}`} {...props} />
+      <em className={`italic font-medium ${"text-text-primary dark:text-amber-200"}`} {...props} />
     ),
     table: ({ node, ...props }) => (
-      <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${isDark ? "border-slate-800" : "border-slate-300"}`}>
+      <div className={`w-full max-w-full overflow-x-auto my-2.5 rounded-lg border custom-scrollbar ${"border-border-primary dark:border-border-primary"}`}>
         <table className="w-full border-collapse text-left text-xs min-w-full table-auto border-spacing-0" {...props} />
       </div>
     ),
     thead: ({ node, ...props }) => (
-      <thead className={`uppercase text-[10px] tracking-wider border-b ${isDark ? "bg-slate-900 text-slate-200 border-slate-800" : "bg-slate-200 text-slate-700 border-slate-300"}`} {...props} />
+      <thead className={`uppercase text-[10px] tracking-wider border-b ${"bg-surface-secondary text-text-primary border-border-primary dark:bg-interactive-active dark:text-text-muted dark:border-border-primary"}`} {...props} />
     ),
     th: ({ node, ...props }) => (
       <th className="px-3.5 py-2.5 font-semibold select-none whitespace-normal break-words align-top min-w-[120px]" {...props} />
     ),
     td: ({ node, ...props }) => (
-      <td className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${isDark ? "text-slate-300 border-slate-800/50" : "text-slate-700 border-slate-200"}`} {...props} />
+      <td className={`px-3.5 py-2.5 border-b align-top break-words [overflow-wrap:anywhere] min-w-[120px] ${"text-text-primary border-border-primary dark:text-text-muted dark:border-border-primary/50"}`} {...props} />
     ),
     tr: ({ node, ...props }) => (
-      <tr className={`transition-colors last:border-none ${isDark ? "hover:bg-slate-800/30 even:bg-slate-900/40" : "hover:bg-slate-200/50 even:bg-slate-50"}`} {...props} />
+      <tr className={`transition-colors last:border-none ${"hover:bg-surface-secondary/50 even:bg-interactive-base dark:hover:bg-interactive-active/30 dark:even:bg-interactive-active/40"}`} {...props} />
     ),
     ul: ({ node, ...props }) => (
       <ul className="list-disc list-outside my-2 space-y-1 pl-4" {...props} />
@@ -409,100 +428,40 @@ const BotChatTab = ({ bot }) => {
       <ol className="list-decimal list-outside my-2 space-y-1 pl-4" {...props} />
     ),
     li: ({ node, ...props }) => (
-      <li className="leading-relaxed marker:text-blue-500 font-normal pl-0.5" {...props} />
+      <li className="leading-relaxed marker:text-text-primary font-normal pl-0.5" {...props} />
     ),
   };
 
   return (
     <div className="flex-1 flex h-full min-h-0 overflow-hidden relative">
 
-      {/* THREADS HISTORY SIDEBAR */}
-      <div className={`${showHistorySidebar ? "w-64" : "w-0 overflow-hidden"} ${isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-slate-100/80"
-        } border-r transition-all duration-300 shrink-0 hidden md:flex flex-col h-full`}>
-        <div className="p-3 border-b border-inherit flex items-center justify-between">
-          <button
-            onClick={handleCreateNewChat}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm transition"
-          >
-            <FiPlus /> New Conversation
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-          {conversations.length === 0 ? (
-            <p className={`text-center text-xs p-4 italic ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-              No conversation history
-            </p>
-          ) : (
-            conversations.map((c) => {
-              const isActive = activeConvId === c._id;
-              return (
-                <div
-                  key={c._id}
-                  onClick={() => setActiveConvId(c._id)}
-                  className={`group flex items-center justify-between p-2.5 rounded-lg text-xs cursor-pointer transition ${isActive
-                    ? "bg-blue-600/10 text-blue-500 font-semibold"
-                    : isDark
-                      ? "hover:bg-slate-900 text-slate-400 hover:text-slate-200"
-                      : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
-                    }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <FiMessageSquare className={isActive ? "text-blue-500 shrink-0" : isDark ? "text-slate-600 shrink-0" : "text-slate-400 shrink-0"} />
-                    <span className="truncate text-[11px]">{c.title || "New Conversation"}</span>
-                  </div>
-
-                  <button
-                    onClick={(e) => handleDeleteConversation(e, c._id)}
-                    className={`opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition ${isDark ? "text-slate-500" : "text-slate-400"}`}
-                    title="Delete Thread"
-                  >
-                    <FiTrash2 className="text-xs" />
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
       {/* MAIN CHAT AREA */}
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
 
         {/* Fixed Controls Header */}
-        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+        <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${"bg-interactive-base border-border-primary dark:bg-interactive-base/60 dark:border-border-primary/60"
           }`}>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${isDark ? "text-slate-300 hover:text-white bg-slate-900 border-slate-800" : "text-slate-700 hover:text-slate-900 bg-white border-slate-200 shadow-sm"
+              className={`md:hidden flex items-center justify-center p-1.5 border rounded-lg ${"text-text-primary hover:text-text-primary bg-white border-border-primary shadow-sm dark:text-text-muted dark:hover:text-white dark:bg-interactive-active dark:border-border-primary"
                 }`}
               title="Toggle Threads Menu"
             >
               <FiMenu className="text-base" />
             </button>
-
-            <button
-              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-              className={`hidden md:flex items-center gap-1.5 text-xs ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              <FiSidebar />
-              <span>{showHistorySidebar ? "Hide History" : "Show History"}</span>
-            </button>
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-3 relative">
             {/* Mode Switcher: Text Chat vs Voice Avatar Assistant Mode (Avatar & Hybrid Bots) */}
             {isAvatarBot && (
-              <div className={`flex items-center p-1 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800" : "bg-slate-200/70 border-slate-300"}`}>
+              <div className={`flex items-center p-1 rounded-xl border ${"bg-surface-secondary/70 border-border-primary dark:bg-interactive-active dark:border-border-primary"}`}>
                 <button
                   onClick={() => toggleVoiceMode("TEXT_CHAT")}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                     activeMode === "TEXT_CHAT"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : isDark
-                      ? "text-slate-400 hover:text-slate-200"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-interactive-base text-text-primary dark:text-white shadow-sm"
+                      : "text-text-primary hover:text-text-primary dark:text-text-primary dark:hover:text-text-muted"
                   }`}
                 >
                   <FiMessageSquare className="text-xs" />
@@ -512,10 +471,8 @@ const BotChatTab = ({ bot }) => {
                   onClick={() => toggleVoiceMode("VOICE_AVATAR")}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                     activeMode === "VOICE_AVATAR"
-                      ? "bg-emerald-500 text-slate-950 shadow-sm animate-pulse"
-                      : isDark
-                      ? "text-slate-400 hover:text-slate-200"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-interactive-base text-text-primary shadow-sm animate-pulse"
+                      : "text-text-primary hover:text-text-primary dark:text-text-primary dark:hover:text-text-muted"
                   }`}
                 >
                   <FiMic className="text-xs" />
@@ -529,39 +486,39 @@ const BotChatTab = ({ bot }) => {
 
         {/* BOT-TYPE SPECIFIC CAPABILITY STATUS BAR */}
         {bot?.botType === "ACTION" && (
-          <div className={`px-4 py-2 text-xs border-b flex items-center justify-between font-medium ${isDark ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+          <div className={`px-4 py-2 text-xs border-b flex items-center justify-between font-medium ${"bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/10 dark:border-amber-800/20 dark:text-amber-600"}`}>
             <span className="flex items-center gap-1.5 font-bold">
               ⚡ Action Tool Calling Agent Active: 
               <span className="font-normal opacity-90">Executing configured REST APIs & Workflows ({bot.apiCount || bot.apis?.length || 0} APIs ready)</span>
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-amber-500/20 border border-amber-500/30 font-bold">REST Tools</span>
+            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-amber-900/20 border border-amber-800/30 font-bold">REST Tools</span>
           </div>
         )}
 
         {bot?.botType === "VOICE" && (
-          <div className={`px-4 py-2 text-xs border-b flex items-center justify-between font-medium ${isDark ? "bg-purple-500/10 border-purple-500/20 text-purple-300" : "bg-purple-50 border-purple-200 text-purple-800"}`}>
+          <div className={`px-4 py-2 text-xs border-b flex items-center justify-between font-medium ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base/10 dark:border-border-primary/20 dark:text-text-muted"}`}>
             <span className="flex items-center gap-1.5 font-bold">
               🎙️ Voice Agent Synthesis Active: 
               <span className="font-normal opacity-90">Voice Profile [{bot.voiceProfile?.voiceId || "default-en"}] with hands-free microphone input</span>
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-purple-500/20 border border-purple-500/30 font-bold">Audio Speech</span>
+            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-interactive-base/20 border border-border-primary/30 font-bold">Audio Speech</span>
           </div>
         )}
 
         {bot?.botType === "CHAT" && (
-          <div className={`px-4 py-2 text-xs border-b flex items-center justify-between font-medium ${isDark ? "bg-blue-500/10 border-blue-500/20 text-blue-300" : "bg-blue-50 border-blue-200 text-blue-800"}`}>
+          <div className={`px-4 py-2 text-xs border-b flex items-center justify-between font-medium ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base/10 dark:border-border-primary/20 dark:text-text-muted"}`}>
             <span className="flex items-center gap-1.5 font-bold">
               💬 Knowledge Chatbot Active: 
               <span className="font-normal opacity-90">Indexed RAG document search ({bot.fileCount || 0} Knowledge files attached)</span>
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-blue-500/20 border border-blue-500/30 font-bold">RAG Search</span>
+            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-interactive-base/20 border border-border-primary/30 font-bold">RAG Search</span>
           </div>
         )}
 
         {/* HERO 3D DIGITAL HUMAN AVATAR VIEWPORT (VOICE AVATAR MODE) */}
         {isAvatarBot && activeMode === "VOICE_AVATAR" && (
-          <div className={`flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col items-center justify-start gap-6 ${isDark ? "bg-slate-950/90" : "bg-slate-100"}`}>
-            <div className="w-full max-w-2xl h-80 relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 shrink-0 bg-slate-900/50">
+          <div className={`flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col items-center justify-start gap-6 ${"bg-surface-secondary dark:bg-interactive-base/90"}`}>
+            <div className="w-full max-w-2xl h-80 relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 shrink-0 bg-interactive-active/50">
               <AvatarContainer
                 modelUrl={bot?.avatar3DModel || bot?.avatarConfig?.faceModelUrl}
                 speechData={messages[messages.length - 1]?.speechData || messages[messages.length - 1]?.metadata?.speechData}
@@ -577,42 +534,42 @@ const BotChatTab = ({ bot }) => {
               <div className="flex items-center gap-2">
                 <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase border ${
                   voiceState === "LISTENING"
-                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 animate-pulse"
+                    ? "bg-interactive-base/20 text-text-primary border-border-primary/40 animate-pulse"
                     : voiceState === "THINKING"
-                    ? "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse"
+                    ? "bg-amber-900/20 text-amber-600 border-amber-800/40 animate-pulse"
                     : voiceState === "SPEAKING"
-                    ? "bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse"
-                    : "bg-blue-500/20 text-blue-400 border-blue-500/40"
+                    ? "bg-interactive-base/20 text-text-primary border-border-primary/40 animate-pulse"
+                    : "bg-interactive-base/20 text-text-primary border-border-primary/40"
                 }`}>
                   {voiceState}
                 </span>
-                <span className={`text-xs ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                <span className={`text-xs ${"text-text-primary dark:text-text-primary"}`}>
                   Real-Time AI Voice Assistant
                 </span>
               </div>
 
               {micPermissionError ? (
-                <p className="text-xs text-rose-400 font-semibold">{micPermissionError}</p>
+                <p className="text-xs text-text-primary font-semibold">{micPermissionError}</p>
               ) : (
                 <div className={`w-full max-h-48 overflow-y-auto custom-scrollbar p-4 rounded-2xl border text-xs leading-relaxed transition shadow-lg text-left ${
-                  isDark ? "bg-slate-900/90 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
+                  "bg-white border-border-primary text-text-primary dark:bg-interactive-active/90 dark:border-border-primary dark:text-text-muted"
                 }`}>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2.5 flex items-center justify-between">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-primary mb-2.5 flex items-center justify-between">
                     <span>{sttInterimText ? "User Speech Transcript" : voiceState === "SPEAKING" ? "Avatar Subtitles" : "Live Subtitle Stream"}</span>
-                    <span className="text-[9px] text-slate-500 normal-case italic font-normal">Scrollable subtitle log</span>
+                    <span className="text-[9px] text-text-primary normal-case italic font-normal">Scrollable subtitle log</span>
                   </p>
 
                   {sttInterimText ? (
-                    <p className="italic font-sans text-sm font-medium text-emerald-400">"{sttInterimText}"</p>
+                    <p className="italic font-sans text-sm font-medium text-text-primary">"{sttInterimText}"</p>
                   ) : messages.length === 0 ? (
-                    <p className="italic font-sans text-xs text-slate-400">Microphone is listening continuously. Speak anytime to converse with avatar...</p>
+                    <p className="italic font-sans text-xs text-text-primary">Microphone is listening continuously. Speak anytime to converse with avatar...</p>
                   ) : (
                     <div className="space-y-3">
                       {messages.slice(-4).map((m, idx) => (
                         <div key={m._id || idx} className={`p-2 rounded-lg text-xs ${
-                          m.role === "user" ? "bg-blue-600/10 text-blue-400 border border-blue-500/20" : isDark ? "bg-slate-800/60 text-slate-200" : "bg-slate-100 text-slate-800"
+                          m.role === "user" ? "bg-interactive-base/10 text-text-primary border border-border-primary/20" : "bg-surface-secondary text-text-primary dark:bg-interactive-active/60 dark:text-text-muted"
                         }`}>
-                          <strong className="block text-[10px] uppercase text-slate-400 mb-0.5">{m.role === "user" ? "You" : bot.name}:</strong>
+                          <strong className="block text-[10px] uppercase text-text-primary mb-0.5">{m.role === "user" ? "You" : bot.name}:</strong>
                           <p className="whitespace-pre-wrap">{m.content}</p>
                         </div>
                       ))}
@@ -628,8 +585,8 @@ const BotChatTab = ({ bot }) => {
                   onClick={() => toggleVoiceMode("VOICE_AVATAR")}
                   className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all shadow-xl cursor-pointer ${
                     isVoiceModeActive
-                      ? "bg-emerald-500 text-slate-950 shadow-emerald-500/40 animate-pulse ring-4 ring-emerald-500/20"
-                      : "bg-rose-600 text-white hover:bg-rose-500 shadow-rose-600/40"
+                      ? "bg-interactive-base text-text-primary shadow-black/10/40 animate-pulse ring-4 ring-border-focus/20"
+                      : "bg-interactive-base text-text-primary dark:text-white hover:bg-interactive-base shadow-black/10/40"
                   }`}
                   title={isVoiceModeActive ? "Click to Stop / Pause Voice Assistant" : "Click to Start Voice Assistant"}
                 >
@@ -641,10 +598,8 @@ const BotChatTab = ({ bot }) => {
                   onClick={() => setIsMuted(!isMuted)}
                   className={`p-3.5 rounded-full border text-sm font-bold transition cursor-pointer shadow-md ${
                     isMuted
-                      ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
-                      : isDark
-                      ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white"
-                      : "bg-white border-slate-300 text-slate-700 hover:text-slate-900"
+                      ? "bg-interactive-base/20 border-border-primary/40 text-text-primary"
+                      : "bg-white border-border-primary text-text-primary hover:text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted dark:hover:text-white"
                   }`}
                   title={isMuted ? "Unmute avatar voice" : "Mute avatar voice"}
                 >
@@ -659,15 +614,21 @@ const BotChatTab = ({ bot }) => {
         {activeMode === "TEXT_CHAT" && (
         <div
           ref={messagesContainerRef}
-          className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar"
+          className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col bg-white dark:bg-interactive-active/40"
         >
-          {messages.length === 0 ? (
-            <div className={`flex flex-col items-center justify-center h-full text-center p-8 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-500 text-2xl mb-3">
+          <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-6">
+          {isFetchingMessages ? (
+            <div className="flex flex-col items-center justify-center flex-1 text-center">
+              <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
+              <p className="text-xs text-text-primary">Loading chat...</p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className={`flex flex-col items-center justify-center h-full text-center p-8 ${"text-text-primary dark:text-text-primary"}`}>
+              <div className="w-14 h-14 rounded-2xl bg-interactive-base/10 border border-border-primary/20 flex items-center justify-center text-text-primary text-2xl mb-3">
                 <FiCpu />
               </div>
-              <h3 className={`text-base font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>Chat with {bot.name}</h3>
-              <p className={`text-xs max-w-md mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <h3 className={`text-base font-bold ${"text-text-primary dark:text-text-muted"}`}>Chat with {bot.name}</h3>
+              <p className={`text-xs max-w-md mt-1 ${"text-text-primary dark:text-text-primary"}`}>
                 Ask anything about uploaded knowledge base files and integrated APIs.
               </p>
             </div>
@@ -679,18 +640,16 @@ const BotChatTab = ({ bot }) => {
               return (
                 <div
                   key={msg._id || index}
-                  className={`flex gap-3 items-start ${isUser ? "ml-auto flex-row-reverse max-w-[75%]" : "mr-auto max-w-[85%] md:max-w-[80%]"} min-w-0`}
+                  className={`flex gap-1.5 lg:gap-3 items-start ${isUser ? "ml-auto flex-row-reverse max-w-[75%]" : "mr-auto max-w-[85%] md:max-w-[80%]"} min-w-0`}
                 >
                   {/* Avatar */}
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isUser
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                      : isDark
-                        ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
-                        : "bg-indigo-100 text-indigo-700 border border-indigo-200"
+                    className={`w-6 lg:w-8 h-6 lg:h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${isUser
+                      ? "bg-interactive-base text-text-primary dark:text-white shadow-md shadow-black/10/20"
+                      : "bg-surface-secondary text-text-primary border border-border-primary dark:bg-interactive-base/20 dark:text-text-primary dark:border dark:border-border-primary/30"
                       }`}
                   >
-                    {isUser ? <FiUser /> : <FiCpu />}
+                    {isUser ? <FiUser /> :  <TbRobotFace className=" text-sm lg:text-base" />}
                   </div>
 
                   {/* Bubble Container */}
@@ -698,11 +657,9 @@ const BotChatTab = ({ bot }) => {
 
                     {/* DIRECT MARKDOWN RENDERER */}
                     <div
-                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-md ${isUser
-                        ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-blue-600/20"
-                        : isDark
-                          ? "bg-slate-950 border border-slate-800 text-slate-100 rounded-tl-none"
-                          : "bg-slate-100 border border-slate-200 text-slate-800 rounded-tl-none"
+                      className={`min-w-0 max-w-full p-3.5 px-4 rounded-2xl text-xs leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-sm ${isUser
+                        ? "bg-gray-100 border border-gray-200 dark:bg-[#222222] text-text-primary dark:text-white font-medium rounded-tr-none dark:border-white/5"
+                        : "bg-white dark:bg-[#0a0a0a] border border-border-primary dark:border-white/10 text-text-primary dark:text-text-muted rounded-tl-none"
                         }`}
                     >
                       {isUser ? (
@@ -734,10 +691,10 @@ const BotChatTab = ({ bot }) => {
 
                       {/* Source Citations Toggle Button */}
                       {msg.metadata?.sources && msg.metadata.sources.length > 0 && (
-                        <div className="mt-2.5 pt-2 border-t border-slate-800/40">
+                        <div className="mt-2.5 pt-2 border-t border-border-primary/40">
                           <button
                             onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                            className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition"
+                            className="flex items-center gap-1.5 text-[11px] font-semibold text-text-primary hover:text-text-muted transition"
                           >
                             <FiFileText />
                             <span>{msg.metadata.sources.length} Verified Sources</span>
@@ -745,12 +702,12 @@ const BotChatTab = ({ bot }) => {
                           </button>
 
                           {isSourcesOpen && (
-                            <div className="mt-2 space-y-1.5 pl-2 border-l-2 border-blue-500/40 text-[11px]">
+                            <div className="mt-2 space-y-1.5 pl-2 border-l-2 border-border-primary/40 text-[11px]">
                               {msg.metadata.sources.map((s, sIdx) => (
-                                <div key={sIdx} className={`p-2 rounded-lg ${isDark ? "bg-slate-900/60 border border-slate-800/60" : "bg-white border border-slate-200"
+                                <div key={sIdx} className={`p-2 rounded-lg ${"bg-white border border-border-primary dark:bg-interactive-active/60 dark:border dark:border-border-primary/60"
                                   }`}>
-                                  <p className="font-bold text-blue-500">{s.fileName}</p>
-                                  <p className={`mt-0.5 line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{s.snippet}</p>
+                                  <p className="font-bold text-text-primary">{s.fileName}</p>
+                                  <p className={`mt-0.5 line-clamp-2 ${"text-text-primary dark:text-text-primary"}`}>{s.snippet}</p>
                                 </div>
                               ))}
                             </div>
@@ -760,7 +717,7 @@ const BotChatTab = ({ bot }) => {
                       
                       {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
                       {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
-                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isDark ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-50 border-amber-300 text-amber-900"
+                        <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${"bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/30 dark:text-amber-600"
                           }`}>
                           <div className="flex items-center gap-2 text-xs font-medium">
                             <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
@@ -773,7 +730,7 @@ const BotChatTab = ({ bot }) => {
                                 handleSendMessage(null, userMsg.content);
                               }
                             }}
-                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                            className="px-3 py-1.5 bg-amber-900 hover:bg-amber-600 text-text-primary font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
                           >
                             <FiRotateCw className="w-3.5 h-3.5" />
                             Retry
@@ -787,24 +744,22 @@ const BotChatTab = ({ bot }) => {
                       <div className="pt-0.5">
                         <button
                           onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${isDark
-                            ? "text-slate-400 hover:text-blue-400 bg-slate-950 border-slate-800"
-                            : "text-slate-600 hover:text-blue-600 bg-slate-100 border-slate-200"
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${"text-text-primary hover:text-text-primary bg-surface-secondary border-border-primary dark:text-text-primary dark:hover:text-text-primary dark:bg-interactive-base dark:border-border-primary"
                             }`}
                         >
-                          <FiFileText className="text-blue-500" />
+                          <FiFileText className="text-text-primary" />
                           <span>View Sources</span>
                           {isSourcesOpen ? <FiChevronUp /> : <FiChevronDown />}
                         </button>
 
                         {isSourcesOpen && (
-                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${"bg-surface-secondary border-border-primary dark:bg-interactive-base dark:border-border-primary"
                             }`}>
                             {msg.sources.map((s, sIdx) => (
-                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${isDark ? "bg-slate-900" : "bg-white border border-slate-200"
+                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${"bg-white border border-border-primary dark:bg-interactive-active"
                                 }`}>
-                                <p className="font-bold text-blue-500">{s.fileName}</p>
-                                <p className={`mt-0.5 line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{s.snippet}</p>
+                                <p className="font-bold text-text-primary">{s.fileName}</p>
+                                <p className={`mt-0.5 line-clamp-2 ${"text-text-primary dark:text-text-primary"}`}>{s.snippet}</p>
                               </div>
                             ))}
                           </div>
@@ -819,49 +774,48 @@ const BotChatTab = ({ bot }) => {
 
           {/* Loading Indicator */}
           {loading && messages[messages.length - 1]?.content === "" && (
-            <div className={`flex items-center gap-2 text-xs p-2 italic ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <div className={`flex items-center gap-2 text-xs p-2 italic ${"text-text-primary dark:text-text-primary"}`}>
+              <span className="w-2 h-2 rounded-full bg-amber-800 animate-pulse" />
               <span>Retrieving chunks & generating grounded response...</span>
             </div>
           )}
+          </div>
         </div>
         )}
 
         {/* STICKY INPUT FORM BAR (TEXT CHAT MODE ONLY) */}
         {activeMode === "TEXT_CHAT" && (
-          <div className={`p-4 border-t shrink-0 ${isDark ? "border-slate-800/80 bg-slate-950" : "border-slate-200 bg-slate-50"}`}>
+          <div className={`p-4 border-t shrink-0 ${"border-border-primary bg-interactive-base dark:border-border-primary/80 dark:bg-interactive-base"}`}>
           {/* Live Voice Mode Speech-to-Text Banner Indicator */}
           {isVoiceModeActive && activeMode === "TEXT_CHAT" && (
-            <div className="max-w-4xl mx-auto mb-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-400 animate-pulse">
+            <div className="max-w-3xl mx-auto mb-3 p-2.5 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-between text-xs text-text-primary animate-pulse">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="w-2.5 h-2.5 rounded-full bg-interactive-base animate-ping" />
                 <span className="font-semibold uppercase tracking-wider text-[10px]">
                   {voiceState === "LISTENING" ? "Listening..." : voiceState === "THINKING" ? "Thinking..." : "Active"}
                 </span>
-                <span className="italic text-slate-300 font-mono text-[11px] truncate max-w-xs md:max-w-md">
+                <span className="italic text-text-muted font-mono text-[11px] truncate max-w-xs md:max-w-md">
                   {sttInterimText ? `"${sttInterimText}"` : "Speak naturally into your microphone..."}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={toggleVoiceMode}
-                className="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 font-bold px-2 py-0.5 rounded-md transition"
+                className="text-[10px] bg-interactive-base/20 hover:bg-interactive-base/40 text-text-muted font-bold px-2 py-0.5 rounded-md transition"
               >
                 Exit Voice Mode
               </button>
             </div>
           )}
 
-          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-center gap-2">
+          <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex items-center gap-2">
             <button
               type="button"
               onClick={toggleVoiceMode}
               className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center shrink-0 cursor-pointer ${
                 isVoiceModeActive
-                  ? "bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30 animate-pulse"
-                  : isDark
-                  ? "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                  : "bg-white border-slate-300 text-slate-600 hover:text-slate-900 shadow-xs"
+                  ? "bg-interactive-base text-text-primary border-border-primary shadow-md shadow-black/10/30 animate-pulse"
+                  : "bg-white border-border-primary text-text-primary hover:text-text-primary shadow-xs dark:bg-interactive-active dark:border-border-primary dark:text-text-primary dark:hover:text-white"
               }`}
               title="Toggle Live Hands-Free Voice Mode"
             >
@@ -874,9 +828,7 @@ const BotChatTab = ({ bot }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
-              className={`flex-1 px-4 py-2.5 rounded-xl text-xs focus:outline-none transition ${isDark
-                ? "bg-slate-900 border border-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
-                : "bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
+              className={`flex-1 px-4 py-2.5 rounded-xl text-xs focus:outline-none transition ${"bg-white border border-border-primary text-text-primary placeholder:text-text-muted focus:border-border-focus dark:bg-interactive-active dark:border dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted dark:focus:border-border-focus"
                 }`}
             />
 
@@ -884,7 +836,7 @@ const BotChatTab = ({ bot }) => {
               <button
                 type="button"
                 onClick={handleStopBotGeneration}
-                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                className="px-4 py-2.5 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
                 title="Stop Streaming Generation"
               >
                 <FiStopCircle className="text-sm" />
@@ -894,7 +846,7 @@ const BotChatTab = ({ bot }) => {
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="p-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold rounded-xl text-xs transition shrink-0 shadow-md shadow-blue-600/20 active:scale-95 cursor-pointer"
+                className="p-2.5 bg-accent-primary hover:opacity-90 disabled:opacity-40 text-white font-bold rounded-xl text-xs transition shrink-0 shadow-md shadow-black/10/20 active:scale-95 cursor-pointer"
               >
                 <FiSend />
               </button>

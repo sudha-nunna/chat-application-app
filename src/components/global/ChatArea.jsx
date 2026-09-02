@@ -1,13 +1,27 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMessageSquare, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle } from "react-icons/fi";
+import { FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
+import ModelSelectorDropdown from "../chat/ModelSelectorDropdown";
+import ModelSelectionModal from "../chat/ModelSelectionModal";
+import InsufficientCreditsModal from "../chat/InsufficientCreditsModal";
+import UsageModal from "../chat/UsageModal";
 import { useTheme } from "../../context/ThemeContext";
+import { useTanStackQueryClient } from "../../hooks/useTanStackData";
 
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
   const { isDark } = useTheme();
+  const queryClient = useTanStackQueryClient();
   const [messages, setMessages] = useState([]);
+  const [isFetchingMessages, setIsFetchingMessages] = useState(false);
+
+  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem("preferred_ai_model") || "auto");
+  const [modelSelectionModalOpen, setModelSelectionModalOpen] = useState(false);
+  const [userCredits, setUserCredits] = useState(null);
+  const [creditModalOpen, setCreditModalOpen] = useState(false);
+  const [creditModalData, setCreditModalData] = useState({ required: 1, available: 0, modelName: "" });
+  const [usageModalOpen, setUsageModalOpen] = useState(false);
 
   const [isSearching, setIsSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -164,6 +178,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
   const loadSavedMessages = async () => {
     try {
+      setIsFetchingMessages(true);
+      setMessages([]);
       const token = localStorage.getItem("token");
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${currentChatId}/messages`,
@@ -177,6 +193,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setMessages(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error reading history collections:", err);
+    } finally {
+      setIsFetchingMessages(false);
     }
   };
 
@@ -218,11 +236,43 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           },
           body: JSON.stringify({
             message: textPayload,
+            model: selectedModel,
             mode: conversationMode
           }),
           signal: abortControllerRef.current.signal
         }
       );
+
+      // Handle 402 Insufficient Credits or 429 Daily Free Limit Reached
+      if (response.status === 402 || response.status === 429) {
+        const errorData = await response.json().catch(() => ({}));
+        const isDailyLimit = response.status === 429 || errorData.error === "DAILY_FREE_LIMIT_REACHED";
+        const availCredits = errorData.availableCredits ?? 0;
+
+        setCreditModalData({
+          required: errorData.requiredCredits || 0.05,
+          available: availCredits,
+          modelName: selectedModel,
+          isDailyLimit
+        });
+        setCreditModalOpen(true);
+        setIsSearching(false);
+        setIsBotTyping(false);
+
+        // Keep optimistic user message and append user-friendly in-chat warning message
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            isCreditWarning: true,
+            isDailyLimit,
+            content: isDailyLimit
+              ? "⚠️ **Daily Limit Reached**: You have reached your free daily message limit (50 msgs/day). Top up your wallet or upgrade your plan to continue chatting."
+              : `⚠️ **Insufficient Credits**: Your balance (${availCredits} cr) is depleted. Please top up your wallet to continue chatting.`
+          }
+        ]);
+        return;
+      }
 
       if (!response.ok) throw new Error(`Server returned status code: ${response.status}`);
       if (!response.body) throw new Error("Readable stream tracking failure.");
@@ -260,18 +310,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               if (parsed.type === "meta") {
                 if (!currentChatId || currentChatId === "new") {
                   setCurrentChatId(parsed.chatId);
+                  queryClient.invalidateQueries({ queryKey: ["chats"] });
                 }
-              } else if (parsed.type === "chunk") {
-                const textBit = parsed.text || "";
-                if (!firstTokenTime) {
-                  firstTokenTime = performance.now();
-                  const ttftMs = (firstTokenTime - t0).toFixed(2);
-                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
-                }
+              } else if (parsed.type === "chunk" || parsed.text || parsed.chunk) {
+                const textBit = parsed.text || parsed.chunk || "";
+                if (textBit) {
+                  if (!firstTokenTime) {
+                    firstTokenTime = performance.now();
+                    const ttftMs = (firstTokenTime - t0).toFixed(2);
+                    console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
+                  }
 
-                currentStreamingTextRef.current += textBit;
-                setStreamingReply(currentStreamingTextRef.current);
-                handleIncomingTextChunk(textBit);
+                  currentStreamingTextRef.current += textBit;
+                  setStreamingReply(currentStreamingTextRef.current);
+                  handleIncomingTextChunk(textBit);
+                }
+              } else if (parsed.type === "credit_update") {
+                if (parsed.creditsRemaining !== undefined) {
+                  setUserCredits(parsed.creditsRemaining);
+                }
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
                   ...prev,
@@ -333,17 +390,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   return (
-    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${isDark ? "bg-slate-900/50 text-slate-100" : "bg-white text-slate-900"
+    <div className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative ${"bg-white dark:bg-interactive-active/40 text-text-primary dark:text-text-muted"
       }`}>
 
       {/* Fixed Sticky Header Bar */}
-      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${isDark ? "bg-slate-950/60 border-slate-800/60" : "bg-slate-50 border-slate-200"
+      <div className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md relative z-30 ${"bg-interactive-base dark:bg-interactive-base/80 border-border-primary dark:border-border-primary/60"
         }`}>
-        <div className="flex items-center gap-2 truncate">
+        <div className="flex items-center gap-3">
           {onToggleMobileSidebar && (
             <button
               onClick={onToggleMobileSidebar}
-              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 ${isDark ? "bg-slate-800 hover:bg-slate-700 text-blue-400 border-slate-700" : "bg-slate-200 hover:bg-slate-300 text-blue-600 border-slate-300"
+              className={`md:hidden p-1.5 rounded-lg border flex items-center gap-1 text-xs shrink-0 cursor-pointer transition ${"bg-surface-secondary dark:bg-interactive-active hover:bg-interactive-base text-text-primary border-border-primary"
                 }`}
               title="Toggle Threads List"
             >
@@ -351,25 +408,39 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               <span className="text-[11px] font-medium">Threads</span>
             </button>
           )}
-          <span className={`font-semibold text-xs tracking-wide truncate ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-            General AI Assistant (ChatGPT Mode)
-          </span>
+
+          {/* Dynamic AI Model Selector Dropdown */}
+          <ModelSelectorDropdown
+            selectedModel={selectedModel}
+            onSelectModel={(modelId) => {
+              setSelectedModel(modelId);
+              localStorage.setItem("preferred_ai_model", modelId);
+              localStorage.setItem("preferred_ai_model_configured", "true");
+            }}
+            userCredits={userCredits}
+            onOpenSelectionModal={() => setModelSelectionModalOpen(true)}
+          />
+
+          {/* Usage & Limits Quick Trigger */}
+          <button
+            onClick={() => setUsageModalOpen(true)}
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full border border-border-primary/70 bg-interactive-active/40 hover:bg-interactive-active text-text-primary text-xs font-semibold shadow-xs transition active:scale-95 cursor-pointer backdrop-blur-sm"
+            title="View Real-Time Usage & Limits"
+          >
+            <FiActivity className="text-amber-400 text-xs shrink-0" />
+            <span className="truncate text-xs font-semibold">Usage</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3 relative">
-          {/* Reusable Cluster Status Widget */}
-          <ClusterStatusWidget clusterNodes={clusterNodes} isDark={isDark} isLoading={isClusterLoading} />
-
           {/* Fixed Always-Visible Voice Over Control Toggle Button */}
           <button
             onClick={toggleVoiceOver}
             className={`flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer active:scale-95 ${isVoicePaused
-              ? isDark
-                ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200"
-                : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200 hover:text-slate-800"
+              ? "bg-surface-secondary text-text-primary border-border-primary hover:bg-surface-secondary hover:text-text-primary dark:bg-interactive-active dark:text-text-primary dark:border-border-primary dark:hover:bg-interactive-base dark:hover:text-text-muted"
               : isAudioActive
-                ? "bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 border-rose-500/30 shadow-sm"
-                : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 border-blue-500/30"
+                ? "bg-interactive-base/20 hover:bg-interactive-base/30 text-text-primary border-border-primary/30 shadow-sm"
+                : "bg-interactive-base/20 hover:bg-interactive-base/30 text-text-primary border-border-primary/30"
               }`}
             title={
               isVoicePaused
@@ -382,11 +453,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             {isVoicePaused ? (
               <>
                 <FiVolumeX className="text-sm" />
-                <span>Voice Muted</span>
+                <span className="hidden lg:block">Voice Muted</span>
               </>
             ) : isAudioActive ? (
               <>
-                <FiVolume2 className="text-sm animate-pulse text-rose-500" />
+                <FiVolume2 className="text-sm animate-pulse text-text-primary" />
                 <span>Stop Voice</span>
               </>
             ) : (
@@ -402,43 +473,90 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       {/* Messages Scroll Area - ONLY this section scrolls */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6 space-y-3 custom-scrollbar"
+        className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col"
       >
-        {messages.length === 0 && !isSearching && !isBotTyping && (
-          <div className={`h-full flex items-center justify-center font-medium text-xs ${isDark ? "text-slate-500" : "text-slate-400"
-            }`}>
-            Start a conversation with the General AI Assistant...
-          </div>
-        )}
-
-        {messages.map((m, index) => {
-          const userMsg = [...messages.slice(0, index)].reverse().find(msg => msg.role === "user");
-          return (
-            <MessageBubble
-              key={index}
-              role={m.role}
-              content={m.content}
-              onRetry={userMsg ? () => handleSendSubmit(userMsg.content) : undefined}
-            />
-          );
-        })}
-
-        {isSearching && (
-          <div className="flex justify-start">
-            <div className={`p-3 rounded-2xl border italic text-xs animate-pulse ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-100 border-slate-200 text-slate-600"
-              }`}>
-              Thinking...
+        <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-3">
+          {isFetchingMessages && (
+            <div className="flex flex-col items-center justify-center flex-1 text-center">
+              <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
+              <p className="text-xs text-text-primary">Loading chat...</p>
             </div>
-          </div>
-        )}
+          )}
+
+          {!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping && (
+            <div className="h-full flex flex-col items-center justify-center pt-10 pb-8 px-4 w-full max-w-2xl mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-interactive-base/80 flex items-center justify-center mb-6 shadow-sm border border-border-primary/50">
+                {/* <FiCpu className={`text-3xl ${"text-text-primary dark:text-text-muted"}`} /> */}
+                <img src="/mini-logo2.png" alt="logo" className={`w-9 h-9 ${isDark? "invert" : ""}`}/>
+              </div>
+              <h2 className={`text-2xl font-bold mb-2 tracking-tight ${"text-text-primary dark:text-text-muted"}`}>
+                General AI Assistant
+              </h2>
+              <p className={`text-sm mb-6 lg:mb-10 text-center ${"text-text-muted dark:text-text-primary"}`}>
+                Start a conversation or choose a suggestion below.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                {[
+                  { title: "Write Code", icon: FiCode, prompt: "Write a React functional component for a modern landing page." },
+                  { title: "Design Landing Page", icon: FiLayout, prompt: "Create a modern layout structure and color palette for a SaaS product." },
+                  { title: "Explain a Concept", icon: FiBookOpen, prompt: "Explain quantum computing in simple terms for a beginner." },
+                  { title: "Draft an Email", icon: FiMail, prompt: "Write a professional email requesting a project status update." }
+                ].map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSendSubmit(item.prompt)}
+                    className={`flex flex-col text-left p-4 rounded-xl border transition-all duration-200 group ${
+                      "bg-surface-secondary hover:bg-white cursor-pointer border-border-primary shadow-sm hover:shadow-md dark:bg-[#131212] dark:hover:bg-[#0e0d0d] dark:border-border-primary/40 dark:hover:border-border-primary"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="p-1.5 rounded-lg border bg-white border-border-primary/60 dark:bg-[#222222] dark:border-border-primary/40 shadow-sm flex items-center justify-center shrink-0">
+                        <item.icon className={`text-[15px] ${"text-text-primary dark:text-text-muted"}`} />
+                      </div>
+                      <span className={`font-semibold text-sm ${"text-text-primary dark:text-text-muted"}`}>{item.title}</span>
+                    </div>
+                    <span className={`text-xs leading-relaxed tracking-wide line-clamp-2 ${"text-text-muted dark:text-text-primary/60"}`}>
+                      {item.prompt}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!isFetchingMessages && messages.map((m, index) => {
+            const userMsg = [...messages.slice(0, index)].reverse().find(msg => msg.role === "user");
+            return (
+              <MessageBubble
+                key={index}
+                role={m.role}
+                content={m.content}
+                isCreditWarning={m.isCreditWarning}
+                isDailyLimit={m.isDailyLimit}
+                onRecharge={() => setCreditModalOpen(true)}
+                onRetry={userMsg ? () => handleSendSubmit(userMsg.content) : undefined}
+              />
+            );
+          })}
+
+          {isSearching && (
+            <div className="flex justify-start">
+              <div className={`p-3 rounded-2xl border italic text-xs animate-pulse ${"bg-surface-secondary dark:bg-interactive-base border-border-primary text-text-primary"
+                }`}>
+                Thinking...
+              </div>
+            </div>
+          )}
 
 
-        {isBotTyping && (
-          <MessageBubble
-            role="assistant"
-            content={streamingReply || "Loading response..."}
-          />
-        )}
+          {isBotTyping && (
+            <MessageBubble
+              role="assistant"
+              content={streamingReply || "Loading response..."}
+            />
+          )}
+        </div>
       </div>
 
       {/* Fixed Input Area with ChatGPT style Stop Button inside */}
@@ -449,6 +567,39 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           onStop={handleStopGeneration}
         />
       </div>
+
+      {/* Insufficient Credits Dialog */}
+      <InsufficientCreditsModal
+        isOpen={creditModalOpen}
+        onClose={() => setCreditModalOpen(false)}
+        requiredCredits={creditModalData.required}
+        availableCredits={creditModalData.available}
+        isDailyLimit={creditModalData.isDailyLimit}
+        onCreditsPurchased={(newBalance) => {
+          if (typeof newBalance === "number") {
+            setUserCredits(newBalance);
+          }
+        }}
+      />
+
+      {/* Pre-conversation AI Engine & Model Selection Modal */}
+      <ModelSelectionModal
+        isOpen={modelSelectionModalOpen}
+        onClose={() => setModelSelectionModalOpen(false)}
+        selectedModel={selectedModel}
+        onSelectModel={(modelId) => {
+          setSelectedModel(modelId);
+          localStorage.setItem("preferred_ai_model", modelId);
+          localStorage.setItem("preferred_ai_model_configured", "true");
+        }}
+        userCredits={userCredits}
+      />
+
+      {/* Real-time Usage & Limits Analytics Modal */}
+      <UsageModal
+        isOpen={usageModalOpen}
+        onClose={() => setUsageModalOpen(false)}
+      />
     </div>
   );
 };

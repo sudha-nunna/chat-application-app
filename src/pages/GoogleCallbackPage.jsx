@@ -44,11 +44,11 @@ const GoogleCallbackPage = () => {
 
   return (
     <div className={`flex h-screen items-center justify-center ${
-      isDark ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"
+      isDark ? "bg-interactive-base text-text-primary dark:text-white" : "bg-interactive-base text-text-primary"
     }`}>
       <div className="text-center">
-        <div className="mb-3 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto" />
-        <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Finishing Google sign-in…</p>
+        <div className="mb-3 h-8 w-8 animate-spin rounded-full border-4 border-border-primary border-t-transparent mx-auto" />
+        <p className={`text-sm ${isDark ? "text-text-primary" : "text-text-primary"}`}>Finishing Google sign-in…</p>
       </div>
     </div>
   );

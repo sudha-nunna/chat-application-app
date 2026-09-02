@@ -42,10 +42,11 @@ export function Navbar({ onSignInClick, onBookDemoClick }) {
             : "bg-transparent border-transparent"
         }`}
       >
-        <div className="flex items-center gap-2 relative z-[101]">
-          <div className="w-10 h-10 p-1 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
-            <img src="/mini-logo.png" />
-          </div>
+        <div className="flex items-center gap-1 relative z-[101]">
+          {/* <div className="w-10 h-10 p-1 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
+            <img src="/mini-logo2.png" className="invert"/>
+          </div> */}
+          <img src="/mini-logo2.png" className="invert w-10 h-10"/>
           <h5 className="font-display font-semibold text-2xl tracking-tight">
             Nexora <span className="text-gradient-accent">AI</span>
           </h5>
@@ -152,10 +153,11 @@ export function Footer() {
 
       <div className="max-w-7xl mx-auto relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2 relative mb-6">
-            <div className="w-10 h-10 p-1 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
-              <img src="/mini-logo.png" />
-            </div>
+          <div className="flex items-center gap-1 relative mb-6">
+            {/* <div className="w-10 h-10 p-1 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
+              <img src="/mini-logo2.png" />
+            </div> */}
+            <img src="/mini-logo2.png" className="invert w-10 h-10"/>
             <h5 className="font-display font-semibold text-2xl tracking-tight">
               Nexora <span className="text-gradient-accent">AI</span>
             </h5>
@@ -166,31 +168,31 @@ export function Footer() {
           <div className="flex gap-4">
             <a
               href="#"
-              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:border-violet-400/40"
+              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(37,99,235,0.45)] hover:border-border-primary/40"
             >
               <Facebook
                 size={18}
-                className="text-white/80 transition-all duration-300 group-hover:text-violet-300 group-hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]"
+                className="text-white/80 transition-all duration-300 group-hover:text-text-muted group-hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]"
               />
             </a>
 
             <a
               href="#"
-              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:border-violet-400/40"
+              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(37,99,235,0.45)] hover:border-border-primary/40"
             >
               <Linkedin
                 size={18}
-                className="text-white/80 transition-all duration-300 group-hover:text-cyan-300 group-hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]"
+                className="text-white/80 transition-all duration-300 group-hover:text-text-muted group-hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]"
               />
             </a>
 
             <a
               href="#"
-              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:border-violet-400/40"
+              className="group w-10 h-10 rounded-full glass-panel flex items-center justify-center cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(37,99,235,0.45)] hover:border-border-primary/40"
             >
               <Github
                 size={18}
-                className="text-white/80 transition-all duration-300 group-hover:text-violet-300 group-hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]"
+                className="text-white/80 transition-all duration-300 group-hover:text-text-muted group-hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]"
               />
             </a>
           </div>

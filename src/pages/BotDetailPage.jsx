@@ -73,7 +73,7 @@ const BotDetailPage = () => {
 
   if (loading) {
     return (
-      <div className={`flex-1 flex items-center justify-center text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"
+      <div className={`flex-1 flex items-center justify-center text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"
         }`}>
         Loading Bot Configuration...
       </div>
@@ -83,13 +83,13 @@ const BotDetailPage = () => {
   if (!bot) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <h3 className={`text-base font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>Bot Not Found</h3>
-        <p className={`text-xs mt-1 mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+        <h3 className={`text-base font-bold ${isDark ? "text-text-muted" : "text-text-primary"}`}>Bot Not Found</h3>
+        <p className={`text-xs mt-1 mb-4 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
           This AI Agent does not exist or you do not have permission.
         </p>
         <button
           onClick={() => navigate("/dashboard")}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
+          className="flex items-center gap-2 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
         >
           <FiArrowLeft /> Back to Dashboard
         </button>
@@ -100,39 +100,39 @@ const BotDetailPage = () => {
   const currentBotType = bot?.botType || "HYBRID";
 
   return (
-    <div className={`flex-1 flex flex-col h-full overflow-hidden ${isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+    <div className={`flex-1 flex flex-col h-full overflow-hidden ${"bg-transparent text-text-primary"
       }`}>
 
       {/* BOT HEADER BAR */}
-      <div className={`p-4 md:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-white"
+      <div className={` p-2 md:p-3 md:p-5 border-b flex flex-col xl:flex-row xl:items-center justify-between gap-2 lg:gap-4 ${isDark ? "border-border-primary bg-interactive-base" : "border-border-primary bg-white"
         }`}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-start sm:items-center gap-1.5 lg:gap-3 w-full xl:w-auto min-w-0">
           <button
             onClick={() => navigate("/dashboard")}
-            className={`p-2 rounded-lg transition ${isDark ? "text-slate-400 hover:text-white hover:bg-slate-800" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            className={`shrink-0 p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-white hover:bg-interactive-active" : "text-text-primary hover:text-text-primary hover:bg-surface-secondary"
               }`}
             title="Back to Dashboard"
           >
             <FiArrowLeft className="text-lg" />
           </button>
 
-          <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-500 text-xl font-bold">
+          <div className="shrink-0 w-10 h-10 rounded-xl bg-interactive-base/20 border border-border-primary/30 flex items-center justify-center text-text-primary text-xl font-bold">
             <FiCpu />
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className={`text-base font-bold ${isDark ? "text-slate-100" : "text-slate-900"}`}>{bot.name}</h1>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase font-semibold ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className={`text-base font-bold truncate max-w-full ${isDark ? "text-text-muted" : "text-text-primary"}`}>{bot.name}</h1>
+              <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded font-mono uppercase font-semibold ${"bg-surface-primary text-text-primary"
                 }`}>
                 {bot.model}
               </span>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
-                currentBotType === "VOICE" ? "bg-purple-500/10 text-purple-400 border-purple-500/30" :
-                currentBotType === "ACTION" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
-                currentBotType === "AVATAR" ? "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30" :
-                currentBotType === "CHAT" ? "bg-blue-500/10 text-blue-400 border-blue-500/30" :
-                "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                currentBotType === "VOICE" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                currentBotType === "ACTION" ? "bg-amber-900/10 text-amber-800 border-amber-800/30" :
+                currentBotType === "AVATAR" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                currentBotType === "CHAT" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                "bg-interactive-base/10 text-text-primary border-border-primary/30"
               }`}>
                 {currentBotType === "VOICE" ? "🎙️ Voice Agent" :
                  currentBotType === "ACTION" ? "⚡ Action Agent" :
@@ -140,33 +140,33 @@ const BotDetailPage = () => {
                  currentBotType === "CHAT" ? "💬 Knowledge Chatbot" : "🌐 Hybrid Assistant"}
               </span>
             </div>
-            <p className={`text-xs truncate max-w-md mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`text-xs truncate max-w-full mt-0.5 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
               {bot.description || "Isolated multi-tenant RAG bot with dedicated knowledge base."}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-3 text-xs px-3 py-1.5 rounded-lg border ${isDark ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-slate-100 border-slate-200"
+        <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar w-full xl:w-auto pb-1">
+          <div className={`shrink-0 flex items-center gap-3 text-xs px-3 py-1.5 rounded-lg border ${isDark ? "text-text-primary bg-interactive-active border-border-primary" : "text-text-primary bg-surface-secondary border-border-primary"
             }`}>
             {(["CHAT", "HYBRID"].includes(currentBotType)) && (
               <span className="flex items-center gap-1">
-                <FiFileText className="text-blue-500" />
-                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
+                <FiFileText className="text-text-primary" />
+                <strong className={isDark ? "text-text-muted" : "text-text-primary"}>{bot.fileCount || 0}</strong> Files
               </span>
             )}
 
             {(["ACTION", "HYBRID"].includes(currentBotType)) && (
               <span className="flex items-center gap-1">
-                <FiCode className="text-indigo-500" />
-                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.apiCount || 0}</strong> APIs
+                <FiCode className="text-text-primary" />
+                <strong className={isDark ? "text-text-muted" : "text-text-primary"}>{bot.apiCount || 0}</strong> APIs
               </span>
             )}
 
             {(["AVATAR", "VOICE"].includes(currentBotType)) && (
               <span className="flex items-center gap-1">
-                <span className="text-fuchsia-400">🎭</span>
-                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>
+                <span className="text-text-primary">🎭</span>
+                <strong className={isDark ? "text-text-muted" : "text-text-primary"}>
                   {currentBotType === "AVATAR" ? (bot.avatarProvider || "3D VRM Canvas") : (bot.voiceProfile?.voiceId || "Voice Enabled")}
                 </strong>
               </span>
@@ -174,15 +174,15 @@ const BotDetailPage = () => {
 
             {bot.rulesConfig?.rulesCount !== undefined && (
               <span className="flex items-center gap-1">
-                <span className="text-amber-400">📜</span>
-                <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.rulesConfig.rulesCount}</strong> Rules
+                <span className="text-amber-800">📜</span>
+                <strong className={isDark ? "text-text-muted" : "text-text-primary"}>{bot.rulesConfig.rulesCount}</strong> Rules
               </span>
             )}
           </div>
 
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
+            className="shrink-0 flex items-center gap-1.5 bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary border border-border-primary/30 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
             title="Upgrade Agent Capabilities (Enable Voice, Avatar, REST Actions)"
           >
             <FiEdit2 className="text-xs" />
@@ -191,7 +191,7 @@ const BotDetailPage = () => {
 
           <button
             onClick={handleDeleteBot}
-            className={`p-2 rounded-lg transition ${isDark ? "text-slate-500 hover:text-rose-400 hover:bg-rose-950/40" : "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+            className={`shrink-0 p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-text-primary hover:bg-interactive-base/40" : "text-text-primary hover:text-text-primary hover:bg-interactive-base"
               }`}
             title="Delete Bot"
           >
@@ -210,14 +210,14 @@ const BotDetailPage = () => {
       )}
 
       {/* TAB NAVIGATION BAR (Dynamic based on botType) */}
-      <div className={`flex border-b px-4 ${isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-100/60"
+      <div className={`flex border-b px-4 text-nowrap overflow-x-auto overflow-y-hidden ${isDark ? "border-border-primary bg-interactive-base/60" : "border-border-primary bg-surface-secondary/60"
         }`}>
         {/* Primary Studio Chat Tab */}
         <button
           onClick={() => setActiveTab("chat")}
           className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "chat"
-              ? "border-blue-500 text-blue-500 bg-blue-500/10"
-              : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+              ? "border-border-primary text-text-primary bg-interactive-base/10"
+              : isDark ? "border-transparent text-text-primary hover:text-text-muted" : "border-transparent text-text-primary hover:text-text-primary"
             }`}
         >
           <FiMessageSquare />
@@ -234,8 +234,8 @@ const BotDetailPage = () => {
           <button
             onClick={() => setActiveTab("avatar")}
             className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "avatar"
-                ? "border-blue-500 text-blue-500 bg-blue-500/10"
-                : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-border-primary text-text-primary bg-interactive-base/10"
+                : isDark ? "border-transparent text-text-primary hover:text-text-muted" : "border-transparent text-text-primary hover:text-text-primary"
               }`}
           >
             <FiCpu />
@@ -248,8 +248,8 @@ const BotDetailPage = () => {
           <button
             onClick={() => setActiveTab("knowledge")}
             className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "knowledge"
-                ? "border-blue-500 text-blue-500 bg-blue-500/10"
-                : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-border-primary text-text-primary bg-interactive-base/10"
+                : isDark ? "border-transparent text-text-primary hover:text-text-muted" : "border-transparent text-text-primary hover:text-text-primary"
               }`}
           >
             <FiFileText />
@@ -262,8 +262,8 @@ const BotDetailPage = () => {
           <button
             onClick={() => setActiveTab("apis")}
             className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${activeTab === "apis"
-                ? "border-blue-500 text-blue-500 bg-blue-500/10"
-                : isDark ? "border-transparent text-slate-400 hover:text-slate-200" : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-border-primary text-text-primary bg-interactive-base/10"
+                : isDark ? "border-transparent text-text-primary hover:text-text-muted" : "border-transparent text-text-primary hover:text-text-primary"
               }`}
           >
             <FiCode />

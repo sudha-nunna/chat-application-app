@@ -102,7 +102,7 @@ export const AvatarContainer = ({
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`relative w-full h-full min-h-[220px] flex items-center justify-center overflow-hidden rounded-2xl bg-slate-950 ${className}`}
+      className={`relative w-full h-full min-h-[220px] flex items-center justify-center overflow-hidden rounded-2xl bg-interactive-base ${className}`}
     >
       <AvatarErrorBoundary>
         <AvatarRenderer
@@ -118,8 +118,8 @@ export const AvatarContainer = ({
 
       {/* Loading Overlay */}
       {loadingModel && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm text-white text-xs gap-2 z-10">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-interactive-base/80 backdrop-blur-sm text-white text-xs gap-2 z-10">
+          <div className="w-6 h-6 border-2 border-border-primary border-t-transparent rounded-full animate-spin" />
           <span>Loading 3D Digital Human Avatar...</span>
         </div>
       )}
@@ -129,12 +129,12 @@ export const AvatarContainer = ({
         <span
           className={`w-2 h-2 rounded-full ${
             avatarState === AVATAR_STATES.SPEAKING
-              ? "bg-rose-500 animate-ping"
+              ? "bg-interactive-base animate-ping"
               : avatarState === AVATAR_STATES.THINKING
               ? "bg-amber-400 animate-pulse"
               : avatarState === AVATAR_STATES.LISTENING
-              ? "bg-emerald-400 animate-pulse"
-              : "bg-blue-400"
+              ? "bg-interactive-base animate-pulse"
+              : "bg-interactive-base"
           }`}
         />
         <span className="uppercase tracking-wider font-mono">{avatarState}</span>

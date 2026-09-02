@@ -279,17 +279,17 @@ const BotApiTab = ({ bot }) => {
 
   return (
     <div className={`flex-1 h-full overflow-y-auto p-6 space-y-6 custom-scrollbar ${
-      isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+      "bg-interactive-base text-text-primary dark:bg-interactive-active dark:text-text-muted"
     }`}>
       
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-base font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-            <FiCode className="text-blue-500 text-lg" />
+          <h2 className={`text-base font-bold flex items-center gap-2 ${"text-text-primary dark:text-text-muted"}`}>
+            <FiCode className="text-text-primary text-lg" />
             <span>External API & Tool Integrations</span>
           </h2>
-          <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          <p className={`text-xs mt-1 ${"text-text-primary dark:text-text-primary"}`}>
             Manage REST APIs and Postman collections available for this agent to execute.
           </p>
         </div>
@@ -297,7 +297,7 @@ const BotApiTab = ({ bot }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsPostmanModalOpen(true)}
-            className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-md transition"
+            className="flex items-center gap-1.5 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-md transition"
           >
             <FiUploadCloud className="text-sm" />
             <span>Import Postman</span>
@@ -308,7 +308,7 @@ const BotApiTab = ({ bot }) => {
               setEditingApi(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-md transition"
+            className="flex items-center gap-1.5 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-md transition"
           >
             <FiPlus className="text-sm" />
             <span>Add Manual API</span>
@@ -318,14 +318,14 @@ const BotApiTab = ({ bot }) => {
 
       {/* Segment Switcher */}
       <div className={`flex items-center p-1 rounded-xl border w-fit ${
-        isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200"
+        "bg-white border-border-primary dark:bg-interactive-base/60 dark:border-border-primary"
       }`}>
         <button
           onClick={() => setActiveSegment("postman")}
           className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
             activeSegment === "postman"
-              ? "bg-indigo-600 text-white shadow-sm"
-              : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+              ? "bg-interactive-base text-text-primary dark:text-white shadow-sm"
+              : "text-text-primary hover:text-text-primary dark:text-text-primary dark:hover:text-text-muted"
           }`}
         >
           <FiLayers className="text-xs" />
@@ -336,8 +336,8 @@ const BotApiTab = ({ bot }) => {
           onClick={() => setActiveSegment("manual")}
           className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
             activeSegment === "manual"
-              ? "bg-indigo-600 text-white shadow-sm"
-              : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+              ? "bg-interactive-base text-text-primary dark:text-white shadow-sm"
+              : "text-text-primary hover:text-text-primary dark:text-text-primary dark:hover:text-text-muted"
           }`}
         >
           <FiCode className="text-xs" />
@@ -347,21 +347,21 @@ const BotApiTab = ({ bot }) => {
 
       {/* Content Area */}
       {loading ? (
-        <div className={`flex items-center justify-center h-48 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-          <FiRefreshCw className="animate-spin text-lg text-indigo-500 mr-2" />
+        <div className={`flex items-center justify-center h-48 text-xs font-medium ${"text-text-primary dark:text-text-primary"}`}>
+          <FiRefreshCw className="animate-spin text-lg text-text-primary mr-2" />
           <span>Loading API Integrations...</span>
         </div>
       ) : activeSegment === "postman" ? (
         postmanApis.length === 0 ? (
-          <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
-            <FiUploadCloud className="text-3xl text-orange-400 mx-auto mb-2" />
+          <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/30"}`}>
+            <FiUploadCloud className="text-3xl text-text-primary mx-auto mb-2" />
             <h4 className="text-xs font-bold mb-1">No Postman APIs Imported</h4>
-            <p className={`text-[11px] max-w-xs mx-auto mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`text-[11px] max-w-xs mx-auto mb-4 ${"text-text-primary dark:text-text-primary"}`}>
               Import your Postman Collection JSON file to automatically register all endpoints for this bot.
             </p>
             <button
               onClick={() => setIsPostmanModalOpen(true)}
-              className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition"
+              className="bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition"
             >
               Import Postman Collection
             </button>
@@ -372,17 +372,17 @@ const BotApiTab = ({ bot }) => {
               <div
                 key={apiItem._id}
                 className={`p-4 rounded-2xl border flex flex-col justify-between ${
-                  isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200"
+                  "bg-white border-border-primary dark:bg-interactive-base/60 dark:border-border-primary"
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 truncate">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
-                        apiItem.method === "GET" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                        apiItem.method === "POST" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
-                        apiItem.method === "PUT" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                        "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                        apiItem.method === "GET" ? "bg-interactive-base/10 text-text-primary border border-border-primary/20" :
+                        apiItem.method === "POST" ? "bg-interactive-base/10 text-text-primary border border-border-primary/20" :
+                        apiItem.method === "PUT" ? "bg-amber-900/10 text-amber-800 border border-amber-800/20" :
+                        "bg-interactive-base/10 text-text-primary border border-border-primary/20"
                       }`}>
                         {apiItem.method}
                       </span>
@@ -393,7 +393,7 @@ const BotApiTab = ({ bot }) => {
                       <button
                         onClick={() => openEditModal(apiItem, true)}
                         className={`p-1.5 rounded-lg text-xs transition ${
-                          isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                          "text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
                         }`}
                         title="Edit Endpoint"
                       >
@@ -401,7 +401,7 @@ const BotApiTab = ({ bot }) => {
                       </button>
                       <button
                         onClick={() => handleDeletePostmanApi(apiItem._id)}
-                        className="p-1.5 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 transition"
+                        className="p-1.5 rounded-lg text-xs text-text-primary hover:bg-interactive-base/10 transition"
                         title="Delete Endpoint"
                       >
                         <FiTrash2 />
@@ -410,7 +410,7 @@ const BotApiTab = ({ bot }) => {
                   </div>
 
                   <p className={`text-[11px] font-mono truncate p-2 rounded-lg border ${
-                    isDark ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-700"
+                    "bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"
                   }`}>
                     {apiItem.url}
                   </p>
@@ -421,10 +421,10 @@ const BotApiTab = ({ bot }) => {
         )
       ) : (
         apis.length === 0 ? (
-          <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${isDark ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
-            <FiCode className="text-3xl text-indigo-400 mx-auto mb-2" />
+          <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/30"}`}>
+            <FiCode className="text-3xl text-text-primary mx-auto mb-2" />
             <h4 className="text-xs font-bold mb-1">No Custom APIs Added</h4>
-            <p className={`text-[11px] max-w-xs mx-auto mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`text-[11px] max-w-xs mx-auto mb-4 ${"text-text-primary dark:text-text-primary"}`}>
               Add custom REST API endpoints that this AI Bot can execute automatically during chat.
             </p>
             <button
@@ -432,7 +432,7 @@ const BotApiTab = ({ bot }) => {
                 setEditingApi(null);
                 setIsModalOpen(true);
               }}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition"
+              className="bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition"
             >
               Add Custom API
             </button>
@@ -443,17 +443,17 @@ const BotApiTab = ({ bot }) => {
               <div
                 key={apiItem._id}
                 className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${
-                  isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200"
+                  "bg-white border-border-primary dark:bg-interactive-base/60 dark:border-border-primary"
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 truncate">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
-                        apiItem.method === "GET" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                        apiItem.method === "POST" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
-                        apiItem.method === "PUT" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                        "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                        apiItem.method === "GET" ? "bg-interactive-base/10 text-text-primary border border-border-primary/20" :
+                        apiItem.method === "POST" ? "bg-interactive-base/10 text-text-primary border border-border-primary/20" :
+                        apiItem.method === "PUT" ? "bg-amber-900/10 text-amber-800 border border-amber-800/20" :
+                        "bg-interactive-base/10 text-text-primary border border-border-primary/20"
                       }`}>
                         {apiItem.method}
                       </span>
@@ -464,7 +464,7 @@ const BotApiTab = ({ bot }) => {
                       <button
                         onClick={() => handleTestApi(apiItem._id)}
                         disabled={testingApiId === apiItem._id}
-                        className="p-1.5 rounded-lg text-xs text-indigo-400 hover:bg-indigo-500/10 transition"
+                        className="p-1.5 rounded-lg text-xs text-text-primary hover:bg-interactive-base/10 transition"
                         title="Test Execution"
                       >
                         {testingApiId === apiItem._id ? <FiRefreshCw className="animate-spin" /> : <FiPlay />}
@@ -472,7 +472,7 @@ const BotApiTab = ({ bot }) => {
                       <button
                         onClick={() => openEditModal(apiItem, false)}
                         className={`p-1.5 rounded-lg text-xs transition ${
-                          isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+                          "text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"
                         }`}
                         title="Edit Endpoint"
                       >
@@ -480,7 +480,7 @@ const BotApiTab = ({ bot }) => {
                       </button>
                       <button
                         onClick={() => handleDeleteApi(apiItem._id)}
-                        className="p-1.5 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 transition"
+                        className="p-1.5 rounded-lg text-xs text-text-primary hover:bg-interactive-base/10 transition"
                         title="Delete Endpoint"
                       >
                         <FiTrash2 />
@@ -489,7 +489,7 @@ const BotApiTab = ({ bot }) => {
                   </div>
 
                   <p className={`text-[11px] font-mono truncate p-2 rounded-lg border ${
-                    isDark ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-700"
+                    "bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"
                   }`}>
                     {apiItem.url}
                   </p>
@@ -502,15 +502,15 @@ const BotApiTab = ({ bot }) => {
 
       {/* CREATE / EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-interactive-base/75 backdrop-blur-xs">
           <div className={`w-full max-w-md p-6 rounded-2xl border shadow-2xl ${
-            isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+            "bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"
           }`}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800/40 mb-4">
+            <div className="flex items-center justify-between pb-4 border-b border-border-primary/40 mb-4">
               <h3 className="text-sm font-bold">
                 {editingApi ? "Edit API Endpoint" : "Add Custom API Endpoint"}
               </h3>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-200">
+              <button onClick={closeModal} className="text-text-primary hover:text-text-muted">
                 <FiX className="text-lg" />
               </button>
             </div>
@@ -525,7 +525,7 @@ const BotApiTab = ({ bot }) => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Create User Contact"
                   className={`w-full p-2.5 rounded-xl border text-xs ${
-                    isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                    "bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"
                   }`}
                 />
               </div>
@@ -537,7 +537,7 @@ const BotApiTab = ({ bot }) => {
                     value={method}
                     onChange={(e) => setMethod(e.target.value)}
                     className={`w-full p-2.5 rounded-xl border text-xs font-mono ${
-                      isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                      "bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"
                     }`}
                   >
                     <option value="GET">GET</option>
@@ -556,7 +556,7 @@ const BotApiTab = ({ bot }) => {
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://api.example.com/v1/resource"
                     className={`w-full p-2.5 rounded-xl border text-xs font-mono ${
-                      isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                      "bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"
                     }`}
                   />
                 </div>
@@ -569,7 +569,7 @@ const BotApiTab = ({ bot }) => {
                     value={authType}
                     onChange={(e) => setAuthType(e.target.value)}
                     className={`w-full p-2.5 rounded-xl border text-xs ${
-                      isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                      "bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"
                     }`}
                   >
                     <option value="none">No Auth (Public Endpoint)</option>
@@ -584,18 +584,18 @@ const BotApiTab = ({ bot }) => {
                       onChange={(e) => setApiKeyVal(e.target.value)}
                       placeholder="Enter Auth Token or Secret Key"
                       className={`w-full mt-2 p-2.5 rounded-xl border text-xs font-mono ${
-                        isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                        "bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"
                       }`}
                     />
                   )}
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800/40">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border-primary/40">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200"
+                  className="px-4 py-2 rounded-xl text-text-primary hover:text-text-muted"
                 >
                   Cancel
                 </button>
@@ -603,7 +603,7 @@ const BotApiTab = ({ bot }) => {
                 <button
                   type="submit"
                   disabled={saveApiMutation.isPending}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl transition"
+                  className="bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white font-bold px-4 py-2 rounded-xl transition"
                 >
                   {saveApiMutation.isPending ? "Saving..." : editingApi ? "Update API" : "Save API"}
                 </button>
@@ -615,16 +615,16 @@ const BotApiTab = ({ bot }) => {
 
       {/* IMPORT POSTMAN MODAL */}
       {isPostmanModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-interactive-base/75 backdrop-blur-xs">
           <div className={`w-full max-w-lg p-6 rounded-2xl border shadow-2xl space-y-4 ${
-            isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+            "bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"
           }`}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800/40">
+            <div className="flex items-center justify-between pb-3 border-b border-border-primary/40">
               <h3 className="text-sm font-bold flex items-center gap-2">
-                <FiUploadCloud className="text-orange-500" />
+                <FiUploadCloud className="text-text-primary" />
                 <span>Import Postman Collection</span>
               </h3>
-              <button onClick={() => setIsPostmanModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => setIsPostmanModalOpen(false)} className="text-text-primary hover:text-text-muted">
                 <FiX className="text-lg" />
               </button>
             </div>
@@ -637,7 +637,7 @@ const BotApiTab = ({ bot }) => {
                   accept=".json"
                   onChange={handlePostmanFileChange}
                   className={`w-full p-2 rounded-xl border text-xs ${
-                    isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                    "bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"
                   }`}
                 />
               </div>
@@ -650,7 +650,7 @@ const BotApiTab = ({ bot }) => {
                   onChange={handlePostmanTextChange}
                   placeholder="Paste raw Postman Collection v2.1 JSON here..."
                   className={`w-full p-2.5 rounded-xl border text-xs font-mono custom-scrollbar ${
-                    isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-800"
+                    "bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"
                   }`}
                 />
               </div>
@@ -658,8 +658,8 @@ const BotApiTab = ({ bot }) => {
               {parsedPreview && (
                 <div className={`p-3 rounded-xl border text-xs ${
                   parsedPreview.valid
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                    ? "bg-interactive-base/10 border-border-primary/20 text-text-primary"
+                    : "bg-interactive-base/10 border-border-primary/20 text-text-primary"
                 }`}>
                   {parsedPreview.valid ? (
                     <div>
@@ -672,11 +672,11 @@ const BotApiTab = ({ bot }) => {
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/40">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-primary/40">
                 <button
                   type="button"
                   onClick={() => setIsPostmanModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200"
+                  className="px-4 py-2 rounded-xl text-text-primary hover:text-text-muted"
                 >
                   Cancel
                 </button>
@@ -684,7 +684,7 @@ const BotApiTab = ({ bot }) => {
                 <button
                   type="submit"
                   disabled={importPostmanMutation.isPending || !parsedPreview?.valid}
-                  className="bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl transition"
+                  className="bg-interactive-base hover:bg-interactive-base disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl transition"
                 >
                   {importPostmanMutation.isPending ? "Importing..." : "Import Collection"}
                 </button>

@@ -405,34 +405,34 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4 sm:p-6 ${isDark ? "bg-black/80" : "bg-slate-900/60"}`}>
-      <div className={`border rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] max-h-[800px] ${isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md p-4 sm:p-6 ${"bg-interactive-active/60 dark:bg-black/80"}`}>
+      <div className={`border rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] max-h-[800px] ${"bg-white border-border-primary text-text-primary dark:bg-interactive-active dark:border-border-primary dark:text-text-muted"}`}>
 
         {/* Header */}
-        <div className={`p-4 sm:p-5 border-b flex justify-between items-center shrink-0 ${isDark ? "border-slate-800 bg-slate-950/70" : "border-slate-200 bg-slate-50"}`}>
+        <div className={`p-4 sm:p-5 border-b flex justify-between items-center shrink-0 ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/70"}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-interactive-base to-interactive-hover flex items-center justify-center text-white font-bold shadow-lg shadow-black/10/20">
               <FiCpu className="text-xl" />
             </div>
             <div>
-              <h2 className={`text-base font-bold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+              <h2 className={`text-base font-bold tracking-tight ${"text-text-primary dark:text-text-muted"}`}>
                 Create AI Agent Wizard
               </h2>
-              <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                Capability-Based Dynamic Builder &mdash; <span className="font-semibold text-blue-400">{activePurposeObj.title}</span>
+              <p className={`text-xs ${"text-text-primary dark:text-text-primary"}`}>
+                Capability-Based Dynamic Builder &mdash; <span className="font-semibold text-text-primary">{activePurposeObj.title}</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className={`p-2 rounded-xl transition ${isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"}`}
+            className={`p-2 rounded-xl transition ${"text-text-primary hover:text-text-primary hover:bg-surface-secondary dark:text-text-primary dark:hover:text-text-muted dark:hover:bg-interactive-active"}`}
           >
             <FiX className="text-lg" />
           </button>
         </div>
 
         {/* Dynamic Stepper Navigation */}
-        <div className={`flex items-center text-center text-xs font-semibold border-b overflow-x-auto select-none custom-scrollbar shrink-0 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-100/60"}`}>
+        <div className={`flex items-center text-center text-xs font-semibold border-b overflow-x-auto select-none custom-scrollbar shrink-0 ${"border-border-primary bg-surface-secondary/60 dark:border-border-primary dark:bg-interactive-base/40"}`}>
           {activeSteps.map((s, idx) => {
             const stepNum = idx + 1;
             const isCurrent = currentStep === stepNum;
@@ -445,14 +445,14 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   if (stepNum < currentStep) setCurrentStep(stepNum);
                 }}
                 className={`py-3 px-4 transition border-b-2 shrink-0 cursor-pointer flex items-center gap-1.5 ${isCurrent
-                  ? "border-blue-500 text-blue-500 font-bold bg-blue-500/10"
+                  ? "border-border-primary text-text-primary font-bold bg-interactive-base/10"
                   : isDone
-                    ? "border-emerald-500 text-emerald-500 font-medium"
-                    : isDark ? "border-transparent text-slate-500 hover:text-slate-400" : "border-transparent text-slate-400 hover:text-slate-600"
+                    ? "border-border-primary text-text-primary font-medium"
+                    : "border-transparent text-text-primary hover:text-text-primary dark:border-transparent dark:text-text-primary dark:hover:text-text-primary"
                   }`}
               >
                 <span className={`w-4 h-4 rounded-full text-[10px] inline-flex items-center justify-center font-bold ${
-                  isCurrent ? "bg-blue-500 text-white" : isDone ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400"
+                  isCurrent ? "bg-interactive-base text-text-primary dark:text-white" : isDone ? "bg-interactive-base text-text-primary dark:text-white" : "bg-interactive-active text-text-primary"
                 }`}>
                   {stepNum}
                 </span>
@@ -465,7 +465,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
         {/* Body Content */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar space-y-6">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 font-medium">
+            <div className="p-3.5 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs flex items-center gap-2 font-medium">
               <FiAlertCircle className="shrink-0 text-sm" />
               <span>{error}</span>
             </div>
@@ -475,8 +475,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {currentStepObj.id === "purpose" && (
             <div className="space-y-6">
               <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  1. Choose Bot Purpose & Primary Capability <span className="text-rose-500">*</span>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${"text-text-primary dark:text-text-muted"}`}>
+                  1. Choose Bot Purpose & Primary Capability <span className="text-text-primary">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {BOT_PURPOSES.map((purpose) => (
@@ -484,30 +484,28 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       key={purpose.id}
                       onClick={() => handlePurposeChange(purpose.id)}
                       className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${botType === purpose.id
-                        ? "bg-blue-600/15 border-blue-500 text-blue-400 ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/10 font-semibold"
-                        : isDark
-                          ? "bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900/50"
-                          : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-white"
+                        ? "bg-interactive-base/15 border-border-primary text-text-primary ring-2 ring-border-focus/30 shadow-lg shadow-black/10/10 font-semibold"
+                        : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary hover:bg-white dark:bg-interactive-base/70 dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary dark:hover:bg-interactive-active/50"
                         }`}
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-bold">{purpose.title}</span>
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20 shrink-0 font-semibold">
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-interactive-base/10 text-text-primary font-mono border border-border-primary/20 shrink-0 font-semibold">
                             {purpose.badge}
                           </span>
                         </div>
                         <p className="text-[11px] opacity-80 mt-1.5 leading-relaxed">{purpose.subtitle}</p>
                       </div>
 
-                      <div className="mt-3.5 pt-2.5 border-t border-slate-800/40 text-[10px] space-y-1.5">
+                      <div className="mt-3.5 pt-2.5 border-t border-border-primary/40 text-[10px] space-y-1.5">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-slate-400 font-medium">Required Setup:</span>
-                          <span className="font-semibold text-amber-400">{purpose.requiredFields.join(", ")}</span>
+                          <span className="text-text-primary font-medium">Required Setup:</span>
+                          <span className="font-semibold text-amber-800">{purpose.requiredFields.join(", ")}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-slate-400 font-medium">Supported Formats:</span>
-                          <span className="font-mono text-emerald-400">{purpose.recommendedFiles}</span>
+                          <span className="text-text-primary font-medium">Supported Formats:</span>
+                          <span className="font-mono text-text-primary">{purpose.recommendedFiles}</span>
                         </div>
                       </div>
                     </div>
@@ -516,27 +514,27 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               </div>
 
               <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                  Bot Name <span className="text-rose-500">*</span>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${"text-text-primary dark:text-text-muted"}`}>
+                  Bot Name <span className="text-text-primary">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Sales Assistant / CRM Action Bot / Support Voice Agent"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                  className={`w-full border rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"}`}
                 />
               </div>
 
               {projectsList.length > 0 && (
                 <div>
-                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${"text-text-primary dark:text-text-muted"}`}>
                     Select Project / Brand (Optional)
                   </label>
                   <select
                     value={selectedProjectId}
                     onChange={(e) => setSelectedProjectId(e.target.value)}
-                    className={`w-full border rounded-xl px-3 py-2.5 text-xs outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-xs outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
                   >
                     <option value="">No Project (Standalone Bot)</option>
                     {projectsList.map((p) => (
@@ -549,7 +547,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               )}
 
               <div>
-                <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${"text-text-primary dark:text-text-muted"}`}>
                   Description (Optional)
                 </label>
                 <textarea
@@ -557,7 +555,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   placeholder="Describe what this bot does and its main goal..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 transition ${isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-600" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                  className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-border-focus transition ${"bg-interactive-base border-border-primary text-text-primary placeholder:text-text-muted dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:placeholder:text-text-muted"}`}
                 />
               </div>
             </div>
@@ -566,16 +564,16 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {/* STEP: AVATAR SETUP */}
           {currentStepObj.id === "avatar" && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs flex items-center justify-between">
                 <span>🎭 <strong>3D Avatar Setup</strong> (Required for Avatar Agent)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-interactive-base/20 text-text-muted font-mono font-bold">
                   Files: .vrm, .glb, .png, .jpg
                 </span>
               </div>
 
               {/* Avatar Engine Mode Selector */}
               <div className="space-y-1.5">
-                <label className={`block text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-700"}`}>Avatar Engine Mode</label>
+                <label className={`block text-xs font-bold ${"text-text-primary dark:text-text-muted"}`}>Avatar Engine Mode</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: "THREE_3D", label: "🎭 3D Model Canvas" },
@@ -587,10 +585,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       type="button"
                       onClick={() => setAvatarProvider(prov.id)}
                       className={`p-2.5 rounded-xl border text-center text-xs font-semibold transition ${avatarProvider === prov.id
-                        ? "bg-blue-600/20 border-blue-500 text-blue-400 ring-1 ring-blue-500/30"
-                        : isDark
-                          ? "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
+                        ? "bg-interactive-base/20 border-border-primary text-text-primary ring-1 ring-border-focus/30"
+                        : "bg-interactive-base border-border-primary text-text-primary hover:text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-primary dark:hover:text-text-muted"
                         }`}
                     >
                       {prov.label}
@@ -602,7 +598,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               {/* 3D Presets Selection */}
               {avatarProvider === "THREE_3D" && (
                 <div className="space-y-1.5">
-                  <label className={`block text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-700"}`}>Select Realistic 3D Avatar Preset</label>
+                  <label className={`block text-xs font-bold ${"text-text-primary dark:text-text-muted"}`}>Select Realistic 3D Avatar Preset</label>
                   <div className="grid grid-cols-3 gap-2">
                     {PRESET_3D_MODELS.map((m) => (
                       <button
@@ -613,10 +609,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                           setSelected3DModelUrl(m.presetKey);
                         }}
                         className={`p-2.5 rounded-xl border text-left text-xs transition ${selected3DPresetId === m.id
-                          ? "bg-blue-600/20 border-blue-500 text-blue-400 font-bold ring-1 ring-blue-500/30"
-                          : isDark
-                            ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
-                            : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                          ? "bg-interactive-base/20 border-border-primary text-text-primary font-bold ring-1 ring-border-focus/30"
+                          : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary"
                           }`}
                       >
                         <div className="truncate font-semibold">{m.name}</div>
@@ -627,12 +621,12 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                <div className={`border-2 border-dashed rounded-2xl p-5 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
-                  <FiUser className="text-3xl text-blue-500 mx-auto mb-2" />
-                  <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                <div className={`border-2 border-dashed rounded-2xl p-5 text-center transition ${"border-border-primary bg-interactive-base hover:border-border-primary/50 dark:border-border-primary dark:bg-interactive-base/40 dark:hover:border-border-primary/50"}`}>
+                  <FiUser className="text-3xl text-text-primary mx-auto mb-2" />
+                  <p className={`text-xs font-semibold ${"text-text-primary dark:text-text-muted"}`}>
                     Upload Custom 3D Model or Photo
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-1">.glb, .gltf, .png, or .jpg</p>
+                  <p className="text-[10px] text-text-primary mt-1">.glb, .gltf, .png, or .jpg</p>
                   <input
                     type="file"
                     accept="image/*,video/*,.glb,.gltf"
@@ -642,13 +636,13 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   />
                   <label
                     htmlFor="wizard-avatar-upload"
-                    className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+                    className="mt-3 inline-block bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-black/10/20"
                   >
                     Select File
                   </label>
                 </div>
 
-                <div className="flex flex-col items-center justify-center p-3 border rounded-2xl bg-slate-950/50 border-slate-800 h-44 overflow-hidden relative">
+                <div className="flex flex-col items-center justify-center p-3 border rounded-2xl bg-interactive-base/50 border-border-primary h-44 overflow-hidden relative">
                   {avatarProvider === "THREE_3D" ? (
                     <div className="w-full h-32 rounded-xl overflow-hidden">
                       <ThreeVisemeAvatar
@@ -657,11 +651,11 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       />
                     </div>
                   ) : (
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-md">
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-border-primary/50 shadow-md">
                       <img src={avatarPreviewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
                     </div>
                   )}
-                  <span className="text-[10px] font-bold text-blue-400 mt-1">Active Avatar Preview</span>
+                  <span className="text-[10px] font-bold text-text-primary mt-1">Active Avatar Preview</span>
                 </div>
               </div>
             </div>
@@ -670,9 +664,9 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {/* STEP: VOICE SETUP */}
           {currentStepObj.id === "voice" && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs flex items-center justify-between">
                 <span>🎙️ <strong>Voice Selection</strong> (Required for Speech Output)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-interactive-base/20 text-text-muted font-mono font-bold">
                   Audio: Natural Voice Synthesis
                 </span>
               </div>
@@ -683,10 +677,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                     key={v.id}
                     onClick={() => setSelectedVoiceId(v.id)}
                     className={`p-3.5 rounded-xl border transition cursor-pointer flex items-center justify-between ${selectedVoiceId === v.id
-                      ? "bg-purple-600/15 border-purple-500 text-purple-400 font-semibold ring-2 ring-purple-500/20"
-                      : isDark
-                        ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                      ? "bg-interactive-base/15 border-border-primary text-text-primary font-semibold ring-2 ring-border-focus/20"
+                      : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary"
                       }`}
                   >
                     <div>
@@ -709,15 +701,13 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                     key={m.id}
                     onClick={() => setSelectedModel(m.id)}
                     className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${selectedModel === m.id
-                      ? "bg-blue-600/15 border-blue-500 text-blue-400 ring-2 ring-blue-500/20 font-semibold"
-                      : isDark
-                        ? "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                      ? "bg-interactive-base/15 border-border-primary text-text-primary ring-2 ring-border-focus/20 font-semibold"
+                      : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary"
                       }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold">{m.name}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-interactive-base/10 text-text-primary font-mono border border-border-primary/20">
                         {m.badge}
                       </span>
                     </div>
@@ -733,24 +723,24 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             <div className="space-y-4">
               <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
                 botType === "CHAT"
-                  ? "bg-blue-500/15 border-blue-500/40 text-blue-300"
-                  : "bg-slate-800/40 border-slate-700 text-slate-400"
+                  ? "bg-interactive-base/15 border-border-primary/40 text-text-muted"
+                  : "bg-interactive-active/40 border-border-primary text-text-primary"
               }`}>
                 <span>
                   {botType === "CHAT" ? "📘 REQUIRED / HIGHLY RECOMMENDED FOR RAG SEARCH:" : "ℹ️ OPTIONAL KNOWLEDGE DOCUMENTS:"}{" "}
                   Upload files to build your bot's custom memory bank.
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-interactive-base/20 text-text-muted">
                   PDF, DOCX, TXT, JSON, MD
                 </span>
               </div>
 
-              <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${isDark ? "border-slate-800 bg-slate-950/40 hover:border-blue-500/50" : "border-slate-300 bg-slate-50 hover:border-blue-500/50"}`}>
-                <FiUpload className="text-3xl text-blue-500 mx-auto mb-2" />
-                <p className={`text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+              <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${"border-border-primary bg-interactive-base hover:border-border-primary/50 dark:border-border-primary dark:bg-interactive-base/40 dark:hover:border-border-primary/50"}`}>
+                <FiUpload className="text-3xl text-text-primary mx-auto mb-2" />
+                <p className={`text-xs font-semibold ${"text-text-primary dark:text-text-muted"}`}>
                   Upload Knowledge Base Documents
                 </p>
-                <p className="text-[11px] text-slate-500 mt-1">PDF, DOCX, TXT, JSON, or Markdown (.md)</p>
+                <p className="text-[11px] text-text-primary mt-1">PDF, DOCX, TXT, JSON, or Markdown (.md)</p>
                 <input
                   type="file"
                   multiple
@@ -761,7 +751,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                 />
                 <label
                   htmlFor="modal-knowledge-file-upload"
-                  className="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-blue-500/20"
+                  className="mt-3 inline-block bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-black/10/20"
                 >
                   Browse Knowledge Files
                 </label>
@@ -769,14 +759,14 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
 
               {stagedFiles.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-slate-400">Staged Documents ({stagedFiles.length})</h4>
+                  <h4 className="text-xs font-semibold text-text-primary">Staged Documents ({stagedFiles.length})</h4>
                   {stagedFiles.map((file, idx) => (
-                    <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                    <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${"bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"}`}>
                       <div className="flex items-center gap-2">
-                        <FiFileText className="text-blue-500" />
+                        <FiFileText className="text-text-primary" />
                         <span className="font-medium">{file.fileName}</span>
                       </div>
-                      <button onClick={() => removeStagedFile(idx)} className="text-rose-400 hover:text-rose-300">
+                      <button onClick={() => removeStagedFile(idx)} className="text-text-primary hover:text-text-muted">
                         <FiTrash2 />
                       </button>
                     </div>
@@ -791,23 +781,23 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             <div className="space-y-4">
               <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
                 botType === "ACTION"
-                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                  : "bg-slate-800/40 border-slate-700 text-slate-400"
+                  ? "bg-amber-900/15 border-amber-800/40 text-amber-600"
+                  : "bg-interactive-active/40 border-border-primary text-text-primary"
               }`}>
                 <span>
                   {botType === "ACTION" ? "⚡ REQUIRED FOR TOOL CALLING:" : "ℹ️ OPTIONAL API INTEGRATIONS:"}{" "}
                   Add REST endpoints or import a Postman Collection JSON.
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-900/20 text-amber-600">
                   Postman Collection .json
                 </span>
               </div>
 
               {/* POSTMAN COLLECTION UPLOAD BOX */}
-              <div className={`border-2 border-dashed rounded-2xl p-4 text-center transition ${isDark ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60" : "border-amber-300 bg-amber-50 hover:border-amber-400"}`}>
+              <div className={`border-2 border-dashed rounded-2xl p-4 text-center transition ${"border-amber-300 bg-amber-50 hover:border-amber-400 dark:border-amber-800/30 dark:bg-amber-900/5 dark:hover:border-amber-800/60"}`}>
                 <FiCode className="text-2xl text-amber-500 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-amber-400">Import Postman Collection (.json)</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Automatically parses API requests & endpoints</p>
+                <p className="text-xs font-semibold text-amber-800">Import Postman Collection (.json)</p>
+                <p className="text-[10px] text-text-primary mt-0.5">Automatically parses API requests & endpoints</p>
                 <input
                   type="file"
                   accept=".json"
@@ -817,16 +807,16 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                 />
                 <label
                   htmlFor="wizard-postman-upload"
-                  className="mt-2 inline-block bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition cursor-pointer shadow-md"
+                  className="mt-2 inline-block bg-amber-600 hover:bg-amber-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition cursor-pointer shadow-md"
                 >
                   Select Postman File
                 </label>
               </div>
 
               <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-800"></div>
-                <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">or Add API Manually</span>
-                <div className="flex-grow border-t border-slate-800"></div>
+                <div className="flex-grow border-t border-border-primary"></div>
+                <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-text-primary">or Add API Manually</span>
+                <div className="flex-grow border-t border-border-primary"></div>
               </div>
 
               <div className="space-y-3">
@@ -835,13 +825,13 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   placeholder="API Name (e.g. Check Order Status)"
                   value={apiName}
                   onChange={(e) => setApiName(e.target.value)}
-                  className={`w-full border rounded-xl px-3 py-2 text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-300"}`}
+                  className={`w-full border rounded-xl px-3 py-2 text-xs outline-none ${"bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"}`}
                 />
                 <div className="flex gap-2">
                   <select
                     value={apiMethod}
                     onChange={(e) => setApiMethod(e.target.value)}
-                    className={`border rounded-xl px-3 py-2 text-xs font-bold outline-none ${isDark ? "bg-slate-950 border-slate-800 text-amber-400" : "bg-slate-50 border-slate-300 text-amber-600"}`}
+                    className={`border rounded-xl px-3 py-2 text-xs font-bold outline-none ${"bg-interactive-base border-border-primary text-amber-600 dark:bg-interactive-base dark:border-border-primary dark:text-amber-800"}`}
                   >
                     <option value="GET">GET</option>
                     <option value="POST">POST</option>
@@ -853,7 +843,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                     placeholder="Endpoint URL (https://api.example.com/orders)"
                     value={apiUrl}
                     onChange={(e) => setApiUrl(e.target.value)}
-                    className={`flex-1 border rounded-xl px-3 py-2 text-xs outline-none ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-300"}`}
+                    className={`flex-1 border rounded-xl px-3 py-2 text-xs outline-none ${"bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"}`}
                   />
                 </div>
                 <button
@@ -878,22 +868,22 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                     setApiUrl("");
                     setApiKey("");
                   }}
-                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                  className="bg-amber-600 hover:bg-amber-900 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
                 >
                   Add API Tool
                 </button>
 
                 {stagedApis.length > 0 && (
                   <div className="space-y-2 mt-3">
-                    <h4 className="text-xs font-semibold text-slate-400">Staged APIs ({stagedApis.length})</h4>
+                    <h4 className="text-xs font-semibold text-text-primary">Staged APIs ({stagedApis.length})</h4>
                     {stagedApis.map((api, idx) => (
-                      <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                      <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${"bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"}`}>
                         <div>
-                          <span className="font-bold text-amber-400 mr-2">[{api.method}]</span>
+                          <span className="font-bold text-amber-800 mr-2">[{api.method}]</span>
                           <span className="font-medium">{api.name}</span>
                           <div className="text-[10px] opacity-75 font-mono">{api.url}</div>
                         </div>
-                        <button onClick={() => removeStagedApi(idx)} className="text-rose-400 hover:text-rose-300">
+                        <button onClick={() => removeStagedApi(idx)} className="text-text-primary hover:text-text-muted">
                           <FiTrash2 />
                         </button>
                       </div>
@@ -907,7 +897,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {/* STEP: RULES & POLICIES */}
           {currentStepObj.id === "rules" && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs">
+              <div className="p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs">
                 📜 <strong>System Rules</strong>: Enter specific system instructions & policy constraints. Optional at creation time!
               </div>
 
@@ -916,7 +906,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                 placeholder="e.g. Speak politely, answer concisely, never hallucinate pricing info..."
                 value={rulesEditorContent}
                 onChange={(e) => setRulesEditorContent(e.target.value)}
-                className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500 transition font-mono ${isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"}`}
+                className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-border-focus transition font-mono ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
               />
             </div>
           )}
@@ -924,14 +914,14 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {/* STEP: VOICE & AVATAR (VOICE / AVATAR / HYBRID BOTS) */}
           {currentStepObj.id === "voice_avatar" && (
             <div className="space-y-5">
-              <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-muted text-xs font-medium flex items-center justify-between">
                 <span>🎙️ <strong>Neural Voice Synthesis & Custom Voice Cloning</strong>: Choose a neural voice or upload a custom audio recording to clone.</span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">Studio Engine</span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-interactive-base/20 text-text-muted border border-border-primary/30 shrink-0">Studio Engine</span>
               </div>
 
               {/* Voice Profile Cards Grid */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">1. Select Voice Profile</label>
+                <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">1. Select Voice Profile</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {PRESET_VOICES.map((v) => (
                     <button
@@ -940,10 +930,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       onClick={() => setSelectedVoiceId(v.id)}
                       className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
                         selectedVoiceId === v.id
-                          ? "bg-purple-600/20 border-purple-500 text-purple-300 ring-2 ring-purple-500/30 font-semibold"
-                          : isDark
-                          ? "bg-slate-950/70 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                          ? "bg-interactive-base/20 border-border-primary text-text-muted ring-2 ring-border-focus/30 font-semibold"
+                          : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary hover:text-text-primary dark:bg-interactive-base/70 dark:border-border-primary dark:text-text-primary dark:hover:border-border-primary dark:hover:text-text-muted"
                       }`}
                     >
                       <div className="text-xs font-bold truncate">{v.name}</div>
@@ -956,41 +944,41 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               {/* Avatar Face Photo & Custom Voice Cloning Dropzone Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 {/* Custom Voice Cloning Dropzone */}
-                <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${"bg-interactive-base border-border-primary dark:bg-interactive-base/70 dark:border-border-primary"}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <FiVolume2 className="text-purple-400" />
+                    <span className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                      <FiVolume2 className="text-text-primary" />
                       <span>Custom Voice Clone (.mp3)</span>
                     </span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">Instant Clone</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-interactive-base/10 text-text-primary border border-border-primary/20 font-mono">Instant Clone</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-text-primary leading-relaxed">
                     Upload a 10–30 sec clear audio recording sample. The neural engine extracts vocal timbres for real-time speech cloning.
                   </p>
-                  <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl cursor-pointer bg-purple-500/5 hover:bg-purple-500/10 transition text-center group">
-                    <FiUpload className="text-sm text-purple-400 group-hover:scale-110 transition-transform" />
-                    <span className="text-xs font-semibold text-purple-300">Upload Voice Sample</span>
+                  <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-border-primary/40 hover:border-border-primary rounded-xl cursor-pointer bg-interactive-base/5 hover:bg-interactive-base/10 transition text-center group">
+                    <FiUpload className="text-sm text-text-primary group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-semibold text-text-muted">Upload Voice Sample</span>
                     <input type="file" accept="audio/*" className="hidden" />
                   </label>
                 </div>
 
                 {/* Avatar Portrait Photo Upload */}
-                <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-3 ${"bg-interactive-base border-border-primary dark:bg-interactive-base/70 dark:border-border-primary"}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <FiUser className="text-blue-400" />
+                    <span className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                      <FiUser className="text-text-primary" />
                       <span>Avatar Portrait Photo</span>
                     </span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">Optional</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-interactive-base/10 text-text-primary border border-border-primary/20 font-mono">Optional</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-text-primary leading-relaxed">
                     Upload a front-facing portrait photo or 3D VRM model file for real-time lip-synced avatar generation.
                   </p>
                   <div>
                     <input type="file" accept="image/*,.glb,.vrm" onChange={handleAvatarFileSelected} className="hidden" id="hybrid-avatar-upload" />
-                    <label htmlFor="hybrid-avatar-upload" className="flex items-center justify-center gap-2 p-3 border border-dashed border-blue-500/40 hover:border-blue-400 rounded-xl cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition text-center group">
-                      <FiUpload className="text-sm text-blue-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-semibold text-blue-300">Select Portrait / 3D Model</span>
+                    <label htmlFor="hybrid-avatar-upload" className="flex items-center justify-center gap-2 p-3 border border-dashed border-border-primary/40 hover:border-border-primary rounded-xl cursor-pointer bg-interactive-base/5 hover:bg-interactive-base/10 transition text-center group">
+                      <FiUpload className="text-sm text-text-primary group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-text-muted">Select Portrait / 3D Model</span>
                     </label>
                   </div>
                 </div>
@@ -1001,32 +989,32 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {/* STEP: PUBLISH & FINISH */}
           {currentStepObj.id === "publish" && (
             <div className="space-y-4 text-center py-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/20 animate-pulse">
+              <div className="w-16 h-16 rounded-full bg-interactive-base/20 border-2 border-border-primary text-text-primary flex items-center justify-center mx-auto text-3xl shadow-lg shadow-black/10/20 animate-pulse">
                 <FiCheckCircle />
               </div>
               <div>
-                <h3 className="text-base font-bold text-emerald-400">Ready to Publish AI Agent</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-text-primary">Ready to Publish AI Agent</h3>
+                <p className="text-xs text-text-primary mt-1 max-w-md mx-auto">
                   Your <strong>{name}</strong> agent will be published with dynamic capability architecture.
                 </p>
               </div>
 
-              <div className={`p-4 rounded-2xl border text-left space-y-2 max-w-md mx-auto ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+              <div className={`p-4 rounded-2xl border text-left space-y-2 max-w-md mx-auto ${"bg-interactive-base border-border-primary dark:bg-interactive-base dark:border-border-primary"}`}>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Bot Type:</span>
-                  <span className="font-bold text-blue-400">{activePurposeObj.title}</span>
+                  <span className="text-text-primary">Bot Type:</span>
+                  <span className="font-bold text-text-primary">{activePurposeObj.title}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">AI Model:</span>
-                  <span className="font-bold text-slate-200">{selectedModel}</span>
+                  <span className="text-text-primary">AI Model:</span>
+                  <span className="font-bold text-text-muted">{selectedModel}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Knowledge Files Staged:</span>
-                  <span className="font-bold text-emerald-400">{stagedFiles.length} files</span>
+                  <span className="text-text-primary">Knowledge Files Staged:</span>
+                  <span className="font-bold text-text-primary">{stagedFiles.length} files</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">API Tools Staged:</span>
-                  <span className="font-bold text-amber-400">{stagedApis.length} APIs</span>
+                  <span className="text-text-primary">API Tools Staged:</span>
+                  <span className="font-bold text-amber-800">{stagedApis.length} APIs</span>
                 </div>
               </div>
             </div>
@@ -1035,16 +1023,14 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
         </div>
 
         {/* Footer Navigation */}
-        <div className={`p-4 border-t flex justify-between items-center shrink-0 ${isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-slate-50"}`}>
+        <div className={`p-4 border-t flex justify-between items-center shrink-0 ${"border-border-primary bg-interactive-base dark:border-border-primary dark:bg-interactive-base/80"}`}>
           <button
             type="button"
             onClick={handlePrevStep}
             disabled={currentStep === 1 || loading}
             className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${currentStep === 1 || loading
               ? "opacity-40 cursor-not-allowed border border-transparent"
-              : isDark
-                ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                : "bg-slate-200 text-slate-800 hover:bg-slate-300"
+              : "bg-surface-secondary text-text-primary hover:bg-interactive-base dark:bg-interactive-active dark:text-text-muted dark:hover:bg-interactive-base"
               }`}
           >
             <FiArrowLeft />
@@ -1055,7 +1041,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             <button
               type="button"
               onClick={handleNextStep}
-              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-blue-600/20 cursor-pointer"
+              className="bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-black/10/20 cursor-pointer"
             >
               <span>Next</span>
               <FiArrowRight />
@@ -1065,7 +1051,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
               type="button"
               onClick={handleCompleteBotCreation}
               disabled={loading}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+              className="bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white text-xs font-bold px-6 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-black/10/20 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <>

@@ -68,7 +68,7 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className={`flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar ${isDark ? "bg-slate-900 text-slate-100" : "bg-slate-50 text-slate-900"
+    <div className={`flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar ${"bg-transparent text-text-primary"
       }`}>
 
       {/* Top Header Bar */}
@@ -76,19 +76,19 @@ const DashboardPage = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">Multi-Agent AI Applications</h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-interactive-base/10 text-amber-700 font-normal tracking-wider border border-border-primary/20 font-bold uppercase">
               Production Architecture
             </span>
           </div>
-          <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            Application Workspaces &mdash; Shared Knowledge Base, Shared APIs & Specialized Agents (<span className="font-semibold text-blue-400">Chat, Voice, Avatar, Action, Hybrid</span>).
+          <p className={`text-xs mt-1 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
+            Application Workspaces &mdash; Shared Knowledge Base, Shared APIs & Specialized Agents (<span className="font-semibold text-text-primary">Chat, Voice, Avatar, Action, Hybrid</span>).
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition active:scale-[0.98] cursor-pointer"
+            className="flex items-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-lg shadow-black/10/20 transition active:scale-[0.98] cursor-pointer"
           >
             <FiPlus className="text-sm" />
             <span>Create Agent / Application</span>
@@ -97,24 +97,24 @@ const DashboardPage = () => {
       </div>
 
       {/* Shared Application Architecture Overview Banner */}
-      <div className={`mb-6 p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-white border-slate-200"}`}>
+      <div className={`mb-6 p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? "bg-interactive-base/80 border-border-primary" : "bg-white border-border-primary"}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl font-bold shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-center text-text-primary text-xl font-bold shrink-0">
             <FiLayers />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-200">Application Workspace Shared Resources</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <h4 className="text-xs font-bold text-text-muted">Application Workspace Shared Resources</h4>
+            <p className="text-[11px] text-text-primary mt-0.5">
               Agents inside the same application automatically share PDFs, vector embeddings, system rules & REST APIs without duplicate uploads.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs shrink-0 font-mono">
-          <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-blue-400 font-semibold">
+          <span className="px-2.5 py-1 rounded-lg bg-interactive-active border border-border-primary text-text-primary font-semibold">
             {bots.length} Active Agents
           </span>
-          <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 font-semibold">
+          <span className="px-2.5 py-1 rounded-lg bg-interactive-active border border-border-primary text-text-primary font-semibold">
             Shared Memory Active
           </span>
         </div>
@@ -122,23 +122,23 @@ const DashboardPage = () => {
 
       {/* Main Content View */}
       {loading ? (
-        <div className={`flex items-center justify-center h-64 text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+        <div className={`flex items-center justify-center h-64 text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
           Loading Multi-Agent Applications...
         </div>
       ) : bots.length === 0 ? (
         /* EMPTY STATE: "No Applications / Agents Found" */
-        <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${isDark ? "border-slate-800 bg-slate-950/40" : "border-slate-300 bg-white"
+        <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${isDark ? "border-border-primary bg-interactive-base/40" : "border-border-primary bg-white"
           }`}>
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-500 text-3xl mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-interactive-base/10 border border-border-primary/20 flex items-center justify-center text-text-primary text-3xl mb-4">
             <FiCpu />
           </div>
-          <h3 className={`text-lg font-bold ${isDark ? "text-slate-100" : "text-slate-900"}`}>No AI Applications Found</h3>
-          <p className={`text-xs max-w-sm mt-1 mb-6 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          <h3 className={`text-lg font-bold ${isDark ? "text-text-muted" : "text-text-primary"}`}>No AI Applications Found</h3>
+          <p className={`text-xs max-w-sm mt-1 mb-6 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
             Create your first application workspace with shared knowledge bases, REST API tools, and specialized AI agents.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-3 rounded-xl shadow-lg shadow-blue-500/20 transition cursor-pointer"
+            className="flex items-center gap-2 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-5 py-3 rounded-xl shadow-lg shadow-black/10/20 transition cursor-pointer"
           >
             <FiPlus className="text-base" />
             <span>Create Your First Agent</span>
@@ -151,33 +151,33 @@ const DashboardPage = () => {
             <div
               key={bot._id}
               onClick={() => navigate(`/bots/${bot._id}`)}
-              className={`border rounded-2xl p-5 cursor-pointer transition shadow-lg group relative flex flex-col justify-between ${isDark
-                ? "bg-slate-900/90 border-slate-800 hover:border-slate-700"
-                : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl"
+              className={`border rounded-2xl p-5 cursor-pointer transition shadow-sm group relative flex flex-col justify-between ${isDark
+                ? "bg-interactive-active/70 border-border-primary hover:border-border-primary"
+                : "bg-white border-border-primary hover:border-border-primary hover:shadow-lg"
                 }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-500 font-bold text-lg">
+                    <div className="w-10 h-10 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-center text-text-primary font-bold text-lg">
                       <FiCpu />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${isDark ? "text-slate-100 group-hover:text-blue-400" : "text-slate-900 group-hover:text-blue-600"
+                      <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${isDark ? "text-text-muted group-hover:text-text-primary" : "text-text-primary group-hover:text-text-primary"
                         }`}>
                         {bot.name}
                       </h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-600"
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-interactive-active text-text-primary" : "bg-surface-secondary text-text-primary"
                           }`}>
                           {bot.model}
                         </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
-                          bot.botType === "VOICE" ? "bg-purple-500/10 text-purple-400 border-purple-500/30" :
-                          bot.botType === "ACTION" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
-                          bot.botType === "AVATAR" ? "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30" :
-                          bot.botType === "CHAT" ? "bg-blue-500/10 text-blue-400 border-blue-500/30" :
-                          "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          bot.botType === "VOICE" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                          bot.botType === "ACTION" ? "bg-amber-900/10 text-amber-800 border-amber-800/30" :
+                          bot.botType === "AVATAR" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                          bot.botType === "CHAT" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                          "bg-interactive-base/10 text-text-primary border-border-primary/30"
                         }`}>
                           {bot.botType === "VOICE" ? "🎙️ Voice Agent" :
                            bot.botType === "ACTION" ? "⚡ Action Agent" :
@@ -191,7 +191,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={(e) => handleEditBot(e, bot)}
-                      className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-blue-400" : "text-slate-400 hover:text-blue-600"
+                      className={`p-1.5 transition ${isDark ? "text-text-primary hover:text-text-primary" : "text-text-primary hover:text-text-primary"
                         }`}
                       title="Edit Agent Capabilities & Settings"
                     >
@@ -201,7 +201,7 @@ const DashboardPage = () => {
                     <button
                       onClick={(e) => handleDeleteBot(e, bot._id)}
                       disabled={deleteBotMutation.isPending}
-                      className={`p-1.5 transition ${isDark ? "text-slate-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-600"
+                      className={`p-1.5 transition ${isDark ? "text-text-primary hover:text-text-primary" : "text-text-primary hover:text-text-primary"
                         }`}
                       title="Delete Agent"
                     >
@@ -210,25 +210,25 @@ const DashboardPage = () => {
                   </div>
                 </div>
 
-                <p className={`text-xs line-clamp-2 mb-4 h-8 capitalize ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <p className={`text-xs line-clamp-2 mb-4 h-8 capitalize ${isDark ? "text-text-primary" : "text-text-primary"}`}>
                   {bot.description || "Specialized AI agent sharing application knowledge base & API tools."}
                 </p>
               </div>
 
-              <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-slate-800/80" : "border-slate-100"
+              <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-border-primary/60" : "border-border-primary"
                 }`}>
-                <div className={`flex items-center gap-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <div className={`flex items-center gap-4 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
                   {(["CHAT", "HYBRID"].includes(bot.botType || "HYBRID")) && (
                     <span className="flex items-center gap-1">
-                      <FiFileText className="text-blue-500" />
-                      <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{bot.fileCount || 0}</strong> Files
+                      <FiFileText className="text-text-primary" />
+                      <strong className={isDark ? "text-text-muted" : "text-text-primary"}>{bot.fileCount || 0}</strong> Files
                     </span>
                   )}
 
                   {(["ACTION", "HYBRID"].includes(bot.botType || "HYBRID")) && (
                     <span className="flex items-center gap-1">
-                      <FiCode className="text-indigo-500" />
-                      <strong className={isDark ? "text-slate-200" : "text-slate-800"}>
+                      <FiCode className="text-text-primary" />
+                      <strong className={isDark ? "text-text-muted" : "text-text-primary"}>
                         {bot.apiCount || bot.apis?.length || 0}
                       </strong>{" "}
                       {(bot.apiCount || bot.apis?.length || 0) === 1 ? "API" : "APIs"}
@@ -236,7 +236,7 @@ const DashboardPage = () => {
                   )}
 
                   {(["AVATAR", "VOICE"].includes(bot.botType)) && (
-                    <span className="flex items-center gap-1 font-semibold text-fuchsia-400">
+                    <span className="flex items-center gap-1 font-semibold text-text-primary">
                       <span>🎭</span> {bot.botType === "AVATAR" ? "3D Talking Head" : "Voice Audio"}
                     </span>
                   )}
@@ -248,7 +248,7 @@ const DashboardPage = () => {
                     setSelectedApiBot(bot);
                     setApiModalMode("generate");
                   }}
-                  className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400 hover:underline transition cursor-pointer"
+                  className="flex items-center gap-1 text-xs font-semibold text-text-primary hover:text-text-primary hover:underline transition cursor-pointer"
                 >
                   <FiPlus className="text-xs" />
                   <span>API Keys</span>

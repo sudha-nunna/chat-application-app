@@ -191,6 +191,10 @@ export async function NobackEndCallObj(route, obj, method = "post") {
   }
 }
 
+export async function backEndCallPost(route, body = {}) {
+  return NobackEndCallObj(route, body, "post");
+}
+
 export async function backEndCallObjPut(route, obj) {
   try {
     const { data } = await http.put(apiUrl + route, obj);

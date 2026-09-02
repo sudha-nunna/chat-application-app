@@ -38,7 +38,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section ref={containerRef}
+   <section ref={containerRef}
      className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20 pb-12">
        <ImageRevealBackground />
       {/* Background Gradients */}

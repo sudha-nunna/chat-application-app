@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layouts/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import BotDetailPage from "./pages/BotDetailPage";
+import BotPlaceholderPage from "./pages/BotPlaceholderPage";
 import ChatPage from "./pages/ChatPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import GoogleCallbackPage from "./pages/GoogleCallbackPage";
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/bots" element={<BotPlaceholderPage />} />
             <Route path="/bots/:botId" element={<BotDetailPage />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />

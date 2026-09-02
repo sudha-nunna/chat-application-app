@@ -1,49 +1,71 @@
 import { useState } from "react";
 import { useSubscription } from "../../context/SubscriptionContext";
-import { usePlans } from "../../hooks/usePlans";
-import { FiX, FiZap, FiShield, FiRefreshCw } from "react-icons/fi";
-import PlanCard from "./PlanCard";
-import { useTheme } from "../../context/ThemeContext";
+import { FiX, FiZap, FiShield, FiCheck, FiShoppingBag } from "react-icons/fi";
+import { backEndCallPost, NobackEndCallObj } from "../../services/authService";
+
+const CREDIT_PACKS = [
+  {
+    id: "starter",
+    name: "Starter Pack",
+    credits: 500,
+    price: "$5.00",
+    description: "Great for quick questions, casual coding, and daily assistant tasks.",
+    features: ["500 AI Credits", "Token-based Billing", "Unlocks Paid Tier (No daily message cap)", "All Online Models Included"]
+  },
+  {
+    id: "pro",
+    name: "Pro Pack",
+    credits: 2500,
+    price: "$20.00",
+    popular: true,
+    description: "Best value for heavy developers, creators, and multi-turn workflows.",
+    features: ["2,500 AI Credits", "Save 20% compared to Starter", "Unlocks Paid Tier (Unlimited daily messages)", "Priority Cluster Routing", "All Online Models Included"]
+  },
+  {
+    id: "power",
+    name: "Power Pack",
+    credits: 10000,
+    price: "$70.00",
+    description: "Maximum capacity for enterprise workloads and high token models.",
+    features: ["10,000 AI Credits", "Save 30% volume discount", "Unlocks Paid Tier (Unlimited daily messages)", "Highest Priority Cluster Routing", "Dedicated Model Access"]
+  }
+];
 
 const SubscriptionModal = () => {
-  const {
-    currentPlan,
-    isUpgradeModalOpen,
-    setIsUpgradeModalOpen,
-    upgradePlan,
-    downgradePlan,
-  } = useSubscription();
-
-  const { plans, loading: plansLoading, error: plansError } = usePlans();
-  const { isDark } = useTheme();
-
-  const [isAnnual, setIsAnnual] = useState(true);
+  const { isUpgradeModalOpen, setIsUpgradeModalOpen } = useSubscription();
+  const [selectedPack, setSelectedPack] = useState("pro");
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   if (!isUpgradeModalOpen) return null;
 
-  const handlePlanSelect = async (targetPlan) => {
+  const handlePurchase = async (packId) => {
     setActionLoading(true);
     setFeedback(null);
+    try {
+      let res;
+      try {
+        res = await backEndCallPost("/credits/purchase", { packId });
+      } catch {
+        res = await NobackEndCallObj("/credits/purchase", { packId }, "post");
+      }
 
-    const billingCycle = isAnnual ? "annual" : "monthly";
-    let res;
-    if (targetPlan === "free") {
-      res = await downgradePlan("free");
-    } else {
-      res = await upgradePlan(targetPlan, billingCycle);
-    }
-
-    setActionLoading(false);
-    if (res.success) {
-      setFeedback({ type: "success", message: res.data?.message || "Plan updated successfully!" });
-      setTimeout(() => {
-        setIsUpgradeModalOpen(false);
-        setFeedback(null);
-      }, 1500);
-    } else {
-      setFeedback({ type: "error", message: res.message || "Failed to update plan" });
+      if (res?.success) {
+        setFeedback({
+          type: "success",
+          message: res.message || "Credits added successfully to your wallet!"
+        });
+        setTimeout(() => {
+          setIsUpgradeModalOpen(false);
+          setFeedback(null);
+        }, 1400);
+      } else {
+        setFeedback({ type: "error", message: res?.message || "Purchase failed." });
+      }
+    } catch (err) {
+      setFeedback({ type: "error", message: err.message || "Transaction error." });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -51,118 +73,115 @@ const SubscriptionModal = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 backdrop-blur-md transition-opacity ${
-          isDark ? "bg-slate-950/80" : "bg-slate-900/40"
-        }`}
+        className="fixed inset-0 backdrop-blur-md transition-opacity bg-black/70"
         onClick={() => setIsUpgradeModalOpen(false)}
       />
 
       {/* Dialog */}
-      <div className={`relative w-full max-w-5xl border rounded-3xl shadow-2xl overflow-hidden z-10 my-auto ${
-        isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
-      }`}>
+      <div className="relative w-full max-w-2xl border rounded-2xl shadow-2xl overflow-hidden z-10 my-auto bg-surface-primary dark:bg-interactive-base border-border-primary text-text-primary">
         {/* Header Bar */}
-        <div className={`p-6 border-b flex items-center justify-between ${
-          isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50"
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/20">
-              <FiZap className="animate-pulse" />
+        <div className="p-4 border-b flex items-center justify-between border-border-primary/60 bg-surface-secondary/40">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-base shadow-inner">
+              <FiZap />
             </div>
             <div>
-              <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>Upgrade Your Plan</h2>
-              <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Unlock high priority processing, expanded agent limits, and enterprise features</p>
+              <h2 className="text-sm font-bold tracking-tight text-text-primary">Buy Credits & Top Up Wallet</h2>
+              <p className="text-[10px] text-text-muted">Pay-as-you-go token billing with zero recurring fees.</p>
             </div>
           </div>
 
           <button
             onClick={() => setIsUpgradeModalOpen(false)}
-            className={`p-2 rounded-xl transition ${
-              isDark ? "text-slate-400 hover:text-white hover:bg-slate-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-            }`}
+            className="p-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-interactive-active/40 transition cursor-pointer"
           >
-            <FiX className="text-xl" />
+            <FiX className="text-base" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 sm:p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+        <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
           {/* Feedback banner */}
           {feedback && (
             <div
-              className={`p-3 rounded-xl text-xs font-semibold text-center border ${
+              className={`p-2.5 rounded-lg text-xs font-semibold text-center border ${
                 feedback.type === "success"
-                  ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-500 border-rose-500/30"
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-red-500/10 text-red-400 border-red-500/30"
               }`}
             >
               {feedback.message}
             </div>
           )}
 
-          {/* Billing Cycle Switch */}
-          <div className="flex justify-center items-center gap-3">
-            <span className={`text-xs font-semibold ${!isAnnual ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"}`}>
-              Monthly Billing
-            </span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative w-12 h-6 rounded-full p-1 transition-colors border focus:outline-none ${
-                isDark ? "bg-slate-800 border-slate-700" : "bg-slate-200 border-slate-300"
-              }`}
-            >
-              <div
-                className={`w-4 h-4 rounded-full bg-blue-600 shadow-md transition-transform ${
-                  isAnnual ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-semibold ${isAnnual ? (isDark ? "text-white" : "text-slate-900") : "text-slate-400"}`}>
-                Annual Billing
-              </span>
-              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                Save 20%
-              </span>
-            </div>
+          {/* Credit Packs Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {CREDIT_PACKS.map((pack) => {
+              const isSelected = selectedPack === pack.id;
+              return (
+                <div
+                  key={pack.id}
+                  onClick={() => setSelectedPack(pack.id)}
+                  className={`relative p-3.5 rounded-xl border transition flex flex-col justify-between cursor-pointer ${
+                    isSelected
+                      ? "border-amber-400 bg-amber-500/10 shadow-xs"
+                      : "border-border-primary/50 bg-surface-secondary/20 hover:border-border-primary"
+                  }`}
+                >
+                  {pack.popular && (
+                    <span className="absolute -top-2 right-3 px-1.5 py-0.2 text-[8px] font-extrabold uppercase rounded-full bg-amber-400 text-black tracking-wider shadow-xs">
+                      Best Value
+                    </span>
+                  )}
+
+                  <div>
+                    <h3 className="text-xs font-bold text-text-primary">{pack.name}</h3>
+                    <p className="text-[10px] text-text-muted mt-0.5 leading-tight">{pack.description}</p>
+
+                    <div className="my-2.5 flex items-baseline gap-1">
+                      <span className="text-xl font-extrabold text-amber-400 tracking-tight font-mono">{pack.price}</span>
+                      <span className="text-[10px] text-text-muted">one-time</span>
+                    </div>
+
+                    <div className="space-y-1 pt-2 border-t border-border-primary/40 text-[11px]">
+                      {pack.features.map((feat, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[10px] text-text-secondary">
+                          <FiCheck className="text-emerald-400 text-[10px] mt-0.5 shrink-0" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePurchase(pack.id);
+                    }}
+                    disabled={actionLoading}
+                    className={`mt-3.5 w-full py-1.5 rounded-lg font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      isSelected
+                        ? "bg-amber-400 hover:bg-amber-300 text-black"
+                        : "bg-interactive-active hover:bg-interactive-active/80 text-text-primary"
+                    }`}
+                  >
+                    <FiShoppingBag className="text-xs" />
+                    <span>{actionLoading && isSelected ? "Purchasing..." : `Buy ${pack.credits.toLocaleString()}`}</span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Dynamic Plan Cards Grid */}
-          {plansLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <FiRefreshCw className="text-2xl text-blue-500 animate-spin" />
-              <p className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading subscription plans...</p>
+          {/* Trust Banner */}
+          <div className="pt-2.5 border-t border-border-primary/50 flex flex-wrap items-center justify-between text-[10px] text-text-muted gap-2">
+            <div className="flex items-center gap-1">
+              <FiShield className="text-emerald-400 text-xs" />
+              <span>Purchasing any credit pack unlocks unlimited daily messages.</span>
             </div>
-          ) : plansError ? (
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs text-center">
-              {plansError}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              {plans.map((p) => (
-                <PlanCard
-                  key={p.key}
-                  plan={p}
-                  isAnnual={isAnnual}
-                  currentPlan={currentPlan}
-                  onSelect={handlePlanSelect}
-                  loading={actionLoading}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* SaaS Trust Footer */}
-          <div className={`pt-4 border-t flex flex-wrap items-center justify-between text-xs gap-2 ${
-            isDark ? "border-slate-800/60 text-slate-400" : "border-slate-200 text-slate-500"
-          }`}>
             <div className="flex items-center gap-2">
-              <FiShield className="text-blue-500" />
-              <span>Cancel or downgrade anytime with 1-click</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>🔒 256-Bit SSL Encrypted</span>
-              <span>⚡ Instant Upgrade Activation</span>
+              <span>🔒 256-Bit SSL</span>
+              <span>⚡ Never Expire</span>
             </div>
           </div>
         </div>
@@ -172,3 +191,4 @@ const SubscriptionModal = () => {
 };
 
 export default SubscriptionModal;
+
