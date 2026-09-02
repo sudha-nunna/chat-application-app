@@ -24,11 +24,11 @@ export const SubscriptionProvider = ({ children }) => {
         setSubscription(subData);
 
         if (subData.plan === "free") {
-          const hasShownModal = sessionStorage.getItem("sub_modal_shown_session");
-          if (!hasShownModal) {
-            setIsUpgradeModalOpen(true);
-            sessionStorage.setItem("sub_modal_shown_session", "true");
-          }
+          // const hasShownModal = sessionStorage.getItem("sub_modal_shown_session");
+          // if (!hasShownModal) {
+          //   setIsUpgradeModalOpen(true);
+          //   sessionStorage.setItem("sub_modal_shown_session", "true");
+          // }
         }
       }
     } catch (err) {
