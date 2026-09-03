@@ -40,7 +40,7 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props
   }
   return (
     <div
-      className={`my-5 w-full max-w-full overflow-hidden rounded-xl border ${isDark ? "border-white/5 bg-[#16171d]" : "border-border-primary bg-surface-secondary"}`}
+      className={`my-3 w-full max-w-full overflow-hidden rounded-xl border ${isDark ? "border-white/5 bg-[#16171d]" : "border-border-primary bg-surface-secondary"}`}
     >
       {match && (
         <div className={`flex items-center justify-between px-4 py-2 ${isDark ? "border-b border-white/5 text-gray-400" : "border-b border-border-primary text-text-muted"} text-xs font-sans select-none`}>
@@ -113,12 +113,12 @@ const MessageBubble = ({ role, content, onRetry }) => {
 
   return (
     <div
-      className={`flex items-start ${isUser ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[70%] gap-2" : "mr-auto w-full max-w-3xl gap-2 md:gap-2"} my-3 min-w-0`}
+      className={`flex items-start ${isUser ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[72%] gap-2" : "mr-auto w-full max-w-full gap-2 md:gap-2"} my-2.5 min-w-0`}
     >
       {/* Avatar (Only for AI) */}
       {!isUser && (
-        <div className="w-16 shrink-0 text-left pt-1.5 hidden md:block">
-          <span className="font-serif text-[13px] text-text-muted opacity-80">
+        <div className="w-14 shrink-0 text-left pt-1 hidden md:block">
+          <span className="font-serif text-[12px] text-text-muted opacity-75">
             Codegene
           </span>
         </div>
@@ -131,8 +131,8 @@ const MessageBubble = ({ role, content, onRetry }) => {
         <div
           className={`min-w-0 max-w-full leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
             isUser
-              ? "rounded-lg px-5 py-2 bg-accent-primary text-[#090a10] font-medium text-[15px] shadow-sm border-none"
-              : "rounded-lg pt-1 pb-2 text-[#e5e5e5] bg-transparent border-transparent"
+              ? "rounded-2xl px-4 py-2 bg-accent-primary text-white font-medium text-[14px] shadow-sm border-none"
+              : "rounded-lg pt-0.5 pb-1 text-[#e5e5e5] bg-transparent border-transparent"
           }`}
         >
           {isEditing && isUser ? (
@@ -211,25 +211,25 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 h1: ({ node, ...props }) => (
                   <h1
-                    className={`text-[22px] font-serif font-medium mt-8 mb-4 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[19px] font-serif font-medium mt-4 mb-2 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h2: ({ node, ...props }) => (
                   <h2
-                    className={`text-[20px] font-serif font-medium mt-7 mb-4 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[17px] font-serif font-medium mt-3 mb-2 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h3: ({ node, ...props }) => (
                   <h3
-                    className={`text-[18px] font-serif font-medium mt-6 mb-3 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[15px] font-serif font-medium mt-2.5 mb-1.5 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 img: ({ node, ...props }) => (
                   <div
-                    className={`my-5 rounded-xl overflow-hidden border p-1 max-w-full ${"border-border-primary bg-interactive-base dark:bg-interactive-active"}`}
+                    className={`my-3 rounded-xl overflow-hidden border p-1 max-w-full ${"border-border-primary bg-interactive-base dark:bg-interactive-active"}`}
                   >
                     <img
                       className="max-w-full h-auto object-contain mx-auto rounded-lg"
@@ -244,7 +244,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 p: ({ node, ...props }) => (
                   <p
-                    className={`mb-4 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isDark ? "text-text-primary" : "text-text-primary"}`}
+                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isDark ? "text-text-primary" : "text-text-primary"}`}
                     {...props}
                   />
                 ),
@@ -264,13 +264,13 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 ul: ({ node, ...props }) => (
                   <ul
-                    className={`list-disc pl-5 my-5 space-y-2.5 break-words text-[15px] leading-relaxed marker:text-[#7c83f6] ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed marker:text-[#7c83f6] ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
                     {...props}
                   />
                 ),
                 ol: ({ node, ...props }) => (
                   <ol
-                    className={`list-decimal pl-5 my-5 space-y-2.5 break-words text-[15px] leading-relaxed marker:text-[#7c83f6] ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed marker:text-[#7c83f6] ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
                     {...props}
                   />
                 ),
@@ -282,13 +282,13 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 hr: ({ node, ...props }) => (
                   <hr
-                    className={`my-8 border-t ${isDark ? "border-white/5" : "border-black/10"}`}
+                    className={`my-5 border-t ${isDark ? "border-white/5" : "border-black/10"}`}
                     {...props}
                   />
                 ),
                 blockquote: ({ node, ...props }) => (
                   <blockquote
-                    className={`my-5 px-4 py-3 rounded-xl border text-[13px] font-mono flex items-center gap-3 shadow-sm ${isDark ? "bg-[#16171d] border-white/5 text-[#a1a1aa]" : "bg-gray-50 border-gray-200 text-gray-600"}`}
+                    className={`my-3 px-3.5 py-2 rounded-xl border text-[13px] font-mono flex items-center gap-3 shadow-sm ${isDark ? "bg-[#16171d] border-white/5 text-[#a1a1aa]" : "bg-gray-50 border-gray-200 text-gray-600"}`}
                     {...props}
                   />
                 ),

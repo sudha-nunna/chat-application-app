@@ -186,10 +186,10 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   };
 
   return (
-    <div className={`p-4 pt-0! md:p-6 pb-0! md:pb-3 bg-transparent w-full`}>
+    <div className={`px-4 py-2 md:py-3 bg-transparent w-full`}>
       <div
         className={`
-        w-full max-w-3xl mx-auto relative flex flex-col p-3
+        w-full max-w-2xl md:max-w-[720px] mx-auto relative flex flex-col p-2.5 md:p-3
         bg-white dark:bg-[#191A24] border border-border-primary dark:border-white/5
         rounded-2xl shadow-lg focus-within:border-border-focus dark:focus-within:border-white/10
         transition-all duration-300
@@ -208,7 +208,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           disabled={isGenerating}
           className={`
             outline-none transition placeholder:text-text-muted disabled:opacity-75
-            w-full py-1.5 px-3 text-[15px] bg-transparent border-0 text-text-primary dark:text-white mb-2
+            w-full py-1 px-2.5 text-sm md:text-[14px] bg-transparent border-0 text-text-primary dark:text-white mb-1.5
           `}
         />
 

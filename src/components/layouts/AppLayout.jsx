@@ -378,6 +378,66 @@ const AppLayout = ({ children }) => {
   const pinnedChats = chats.filter((c) => pinnedItemIds.includes(c._id));
   const recentChats = chats.filter((c) => !pinnedItemIds.includes(c._id));
 
+  const getChatDate = (c) => {
+    if (!c) return new Date();
+    const rawDate = c.updatedAt || c.createdAt || c.timestamp;
+    if (rawDate) {
+      const parsed = new Date(rawDate);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    if (c._id && typeof c._id === "string" && c._id.length === 24) {
+      const timestamp = parseInt(c._id.substring(0, 8), 16) * 1000;
+      if (!isNaN(timestamp)) return new Date(timestamp);
+    }
+    return new Date();
+  };
+
+  const groupedRecentChats = (() => {
+    const groups = [
+      { key: "today", label: "today", items: [] },
+      { key: "yesterday", label: "yesterday", items: [] },
+      { key: "previous7Days", label: "previous 7 days", items: [] },
+      { key: "previous30Days", label: "previous 30 days", items: [] },
+      { key: "older", label: "older", items: [] },
+    ];
+
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+    const startOf7Days = new Date(startOfToday);
+    startOf7Days.setDate(startOf7Days.getDate() - 7);
+
+    const startOf30Days = new Date(startOfToday);
+    startOf30Days.setDate(startOf30Days.getDate() - 30);
+
+    const sorted = [...recentChats].sort((a, b) => {
+      return getChatDate(b) - getChatDate(a);
+    });
+
+    sorted.forEach((c) => {
+      const chatDate = getChatDate(c);
+      if (chatDate >= startOfToday) {
+        groups[0].items.push(c);
+      } else if (chatDate >= startOfYesterday) {
+        groups[1].items.push(c);
+      } else if (chatDate >= startOf7Days) {
+        groups[2].items.push(c);
+      } else if (chatDate >= startOf30Days) {
+        groups[3].items.push(c);
+      } else {
+        groups[4].items.push(c);
+      }
+    });
+
+    return groups.filter((g) => g.items.length > 0);
+  })();
+
   const pinnedBots = bots.filter((b) => pinnedItemIds.includes(b._id));
   const otherBots = bots.filter((b) => !pinnedItemIds.includes(b._id));
 
@@ -1328,44 +1388,20 @@ const AppLayout = ({ children }) => {
                           )}
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-4 mt-2">
+                        <div className="flex flex-col gap-3 mt-2">
                           {recentChats.length === 0 ? (
                             <div className="text-xs text-text-primary px-3 py-2">
                               No recent chats
                             </div>
                           ) : (
-                            <>
-                              <div className="flex flex-col gap-0.5">
-                                <h4 className="text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1">
-                                  today
+                            groupedRecentChats.map((group, idx) => (
+                              <div key={group.key} className="flex flex-col gap-0.5">
+                                <h4 className={`text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 ${idx > 0 ? "mt-2" : ""}`}>
+                                  {group.label}
                                 </h4>
-                                {recentChats
-                                  .slice(0, 2)
-                                  .map((c) => renderSidebarItem(c, "chat"))}
+                                {group.items.map((c) => renderSidebarItem(c, "chat"))}
                               </div>
-
-                              {recentChats.length > 2 && (
-                                <div className="flex flex-col gap-0.5">
-                                  <h4 className="text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 mt-2">
-                                    yesterday
-                                  </h4>
-                                  {recentChats
-                                    .slice(2, 4)
-                                    .map((c) => renderSidebarItem(c, "chat"))}
-                                </div>
-                              )}
-
-                              {recentChats.length > 4 && (
-                                <div className="flex flex-col gap-0.5">
-                                  <h4 className="text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 mt-2">
-                                    earlier
-                                  </h4>
-                                  {recentChats
-                                    .slice(4)
-                                    .map((c) => renderSidebarItem(c, "chat"))}
-                                </div>
-                              )}
-                            </>
+                            ))
                           )}
                         </div>
                       )}
