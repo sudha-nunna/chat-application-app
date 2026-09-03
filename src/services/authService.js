@@ -482,6 +482,14 @@ export async function deleteUserVoiceSample(sampleId) {
   return await backEndCallObjDel("/auth/voice-sample", sampleId);
 }
 
+export async function fetchUsageSummary() {
+  return await NobackEndCall("/usage/summary");
+}
+
+export async function fetchMe() {
+  return await NobackEndCall("/auth/me");
+}
+
 const exportedObject = {
   backEndCall,
   backEndCallObj,
@@ -509,6 +517,8 @@ const exportedObject = {
   selectUserVoiceSample,
   deleteUserVoiceSample,
   testBackendcall,
+  fetchUsageSummary,
+  fetchMe,
 };
 
 export default exportedObject;

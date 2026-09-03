@@ -46,6 +46,7 @@ import {
   NobackEndCall,
   backEndCallObjDel,
   NobackEndCallObj,
+  fetchUsageSummary,
 } from "../../services/authService";
 import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
@@ -211,6 +212,7 @@ const AppLayout = ({ children }) => {
       if (currentToken) {
         queryClient.invalidateQueries({ queryKey: ["bots"] });
         queryClient.invalidateQueries({ queryKey: ["chats"] });
+        queryClient.invalidateQueries({ queryKey: ["usage"] });
         backEndCallGet("/auth/me")
           .then((res) => {
             if (res?.success && res?.user) {
@@ -248,8 +250,19 @@ const AppLayout = ({ children }) => {
     ["chats"],
     async () => {
       if (!authToken) return [];
-      const res = await NobackEndCall("/chats");
+      const res = await backEndCallGet("/chats");
       return Array.isArray(res) ? res : res?.data || [];
+    },
+    { enabled: !!authToken },
+  );
+
+  // Fetch Usage
+  const { data: usage = null } = useTanStackData(
+    ["usage"],
+    async () => {
+      if (!authToken) return null;
+      const res = await fetchUsageSummary();
+      return res?.success ? res.data : null;
     },
     { enabled: !!authToken },
   );
@@ -972,7 +985,7 @@ const AppLayout = ({ children }) => {
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-                  {/* <button
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
@@ -981,7 +994,7 @@ const AppLayout = ({ children }) => {
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
-                  </button> */}
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1439,6 +1452,28 @@ const AppLayout = ({ children }) => {
             )}
           </div>
 
+          {/* Usage & Credits Widget (Desktop only) */}
+          {!isMobile && !isSidebarCollapsed && usage && (
+            <div className="mx-4 mb-4 p-3 rounded-xl bg-surface-secondary border border-border-primary">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[11px] font-semibold text-text-primary uppercase tracking-wider">Credits</span>
+                <span className="text-[12px] font-bold text-blue-500">{usage.user?.credits?.toFixed(1) || 0}</span>
+              </div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] text-text-muted">Messages Today</span>
+                <span className="text-[10px] font-medium text-text-primary">
+                  {usage.today?.messagesUsed || 0} / {usage.user?.isPaidUser ? "∞" : (usage.today?.messagesLimit || 50)}
+                </span>
+              </div>
+              <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="bg-blue-500 h-1.5 rounded-full" 
+                  style={{ width: usage.user?.isPaidUser ? "10%" : `${Math.min(((usage.today?.messagesUsed || 0) / (usage.today?.messagesLimit || 50)) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
           {/* Profile Dropdown at bottom of sidebar (Desktop only) */}
           {!isMobile && (
             <div className="mt-auto px-2 py-4 border-t border-border-primary/40 relative">
@@ -1476,7 +1511,7 @@ const AppLayout = ({ children }) => {
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-                  {/* <button
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
@@ -1485,7 +1520,7 @@ const AppLayout = ({ children }) => {
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
-                  </button> */}
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

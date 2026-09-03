@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "../context/SubscriptionContext";
 import { usePlans } from "../hooks/usePlans";
-import { NobackEndCall } from "../services/authService";
+import { NobackEndCall, NobackEndCallObj, fetchUsageSummary } from "../services/authService";
 import PlanBadge from "../components/subscription/PlanBadge";
 import PlanCard from "../components/subscription/PlanCard";
 import { useTheme } from "../context/ThemeContext";
@@ -37,16 +37,31 @@ const SubscriptionPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [creditPacks, setCreditPacks] = useState([]);
 
   useEffect(() => {
     fetchUsage();
+    fetchCreditPacks();
   }, []);
+
+  const fetchCreditPacks = async () => {
+    try {
+      const res = await backEndCallGet("/credits/packs");
+      if (res && res.packs) {
+        setCreditPacks(res.packs);
+      } else if (Array.isArray(res)) {
+        setCreditPacks(res);
+      }
+    } catch (err) {
+      console.error("Failed to fetch credit packs:", err);
+    }
+  };
 
   const fetchUsage = async () => {
     try {
-      const res = await NobackEndCall("/subscription/usage");
-      if (res?.success && res?.usage) {
-        setUsage(res.usage);
+      const res = await fetchUsageSummary();
+      if (res?.success && res?.data) {
+        setUsage(res.data);
       }
     } catch (err) {
       console.error("Error fetching usage statistics:", err);
@@ -90,6 +105,26 @@ const SubscriptionPage = () => {
       setFeedback({ type: "error", message: res.message || "Failed to cancel subscription." });
     }
   };
+
+  const handlePurchaseCredits = async (packId) => {
+    setActionLoading(true);
+    setFeedback(null);
+    try {
+      const res = await NobackEndCallObj("/credits/purchase", { packId }, "post");
+      if (res?.success) {
+        setFeedback({ type: "success", message: `Successfully purchased credit pack: ${packId}` });
+        fetchUsage(); // Refresh usage
+        // Optionally trigger global auth refresh
+        window.dispatchEvent(new Event("auth-change"));
+      } else {
+        setFeedback({ type: "error", message: res?.message || "Failed to purchase credits." });
+      }
+    } catch (err) {
+      setFeedback({ type: "error", message: "Error purchasing credits." });
+    }
+    setActionLoading(false);
+  };
+
 
   return (
     <div className={`flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-8xl mx-auto custom-scrollbar ${
@@ -140,7 +175,7 @@ const SubscriptionPage = () => {
       )}
 
       {/* Subscription Summary Details Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1: Active Tier */}
         <div className={`p-5 rounded-2xl border space-y-2 ${
           isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
@@ -178,11 +213,35 @@ const SubscriptionPage = () => {
             <FiActivity className="text-text-primary" />
           </div>
           <div className={`text-xl font-bold ${isDark ? "text-white" : "text-text-primary"}`}>
-            {usage ? usage.messagesUsedToday : 0} Messages
+            {usage?.today?.messagesUsed ?? 0} Messages
           </div>
           <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            Messages sent today
+            Remaining: {usage?.today?.messagesRemaining ?? "0"}
           </div>
+        </div>
+
+        {/* Card 4: AI Credits */}
+        <div className={`p-5 rounded-2xl border flex flex-col justify-between space-y-2 ${
+          isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
+        }`}>
+          <div>
+            <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
+              <span>AI Credits</span>
+              <FiZap className="text-blue-500" />
+            </div>
+            <div className={`text-xl font-bold ${isDark ? "text-white" : "text-text-primary"}`}>
+              {usage?.user?.credits ?? 0}
+            </div>
+            <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
+              Available Balance
+            </div>
+          </div>
+          <a
+            href="#credit-packs"
+            className="mt-2 w-full text-center block px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition"
+          >
+            Buy More Credits
+          </a>
         </div>
 
         {/* Card 4: Renewal Date */}
@@ -202,6 +261,94 @@ const SubscriptionPage = () => {
             {subscription?.cancelAtPeriodEnd ? "Cancels at end of cycle" : "Auto-renews"}
           </div>
         </div>
+      </div>
+
+      {/* Chart / Usage Analytics Section */}
+      <div className="space-y-6">
+        <div>
+          <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Usage Analytics</h2>
+          <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Your daily usage and limits breakdown.</p>
+        </div>
+        <div className={`p-6 rounded-3xl border flex flex-col gap-6 ${isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"}`}>
+          {/* Messages */}
+          <div>
+            <div className="flex items-center justify-between text-sm font-medium mb-2">
+              <span className={isDark ? "text-text-primary" : "text-text-primary"}>Daily Messages</span>
+              <span className={isDark ? "text-white font-bold" : "text-text-primary font-bold"}>
+                {usage?.today?.messagesUsed || 0} / {usage?.user?.isPaidUser ? "Unlimited" : (usage?.today?.messagesLimit || 50)}
+              </span>
+            </div>
+            <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
+              <div 
+                className="bg-blue-500 h-2.5 rounded-full" 
+                style={{ width: usage?.user?.isPaidUser ? "10%" : `${Math.min(((usage?.today?.messagesUsed || 0) / (usage?.today?.messagesLimit || 50)) * 100, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+          {/* Tokens */}
+          <div>
+            <div className="flex items-center justify-between text-sm font-medium mb-2">
+              <span className={isDark ? "text-text-primary" : "text-text-primary"}>Tokens Used Today</span>
+              <span className={isDark ? "text-white font-bold" : "text-text-primary font-bold"}>
+                {usage?.today?.tokensUsed?.toLocaleString() || 0}
+              </span>
+            </div>
+            <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
+              <div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${Math.min(((usage?.today?.tokensUsed || 0) / 10000) * 100, 100)}%` }}></div>
+            </div>
+          </div>
+          {/* Credits */}
+          <div>
+            <div className="flex items-center justify-between text-sm font-medium mb-2">
+              <span className={isDark ? "text-text-primary" : "text-text-primary"}>Credits Balance</span>
+              <span className={isDark ? "text-white font-bold" : "text-text-primary font-bold"}>
+                {usage?.user?.credits?.toFixed(2) || 0}
+              </span>
+            </div>
+            <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
+              <div className="bg-amber-500 h-2.5 rounded-full" style={{ width: `${Math.min(((usage?.user?.credits || 0) / 100) * 100, 100)}%` }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Credit Packs Section */}
+      <div id="credit-packs" className="space-y-6 pt-4">
+        <div>
+          <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Credit Packs</h2>
+          <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Top up your account instantly with AI credits.</p>
+        </div>
+        
+        {creditPacks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {creditPacks.map((pack) => (
+              <div key={pack.packId} className={`p-6 rounded-3xl border flex flex-col justify-between ${isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"}`}>
+                <div>
+                  <h3 className={`text-xl font-bold mb-1 ${isDark ? "text-white" : "text-text-primary"}`}>{pack.name}</h3>
+                  <p className={`text-xs mb-4 ${isDark ? "text-text-muted" : "text-text-muted"}`}>{pack.description || "Additional AI Credits"}</p>
+                  <div className={`text-3xl font-extrabold mb-4 ${isDark ? "text-white" : "text-text-primary"}`}>
+                    ${pack.price}
+                  </div>
+                  <ul className="text-sm space-y-2 mb-6">
+                    <li className="flex items-center gap-2">
+                      <FiZap className="text-blue-500" />
+                      <span className={isDark ? "text-text-primary" : "text-text-primary"}>{pack.credits} Credits</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => handlePurchaseCredits(pack.packId)}
+                  disabled={actionLoading}
+                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition ${isDark ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+                >
+                  {actionLoading ? "Processing..." : "Purchase Pack"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-text-muted">Loading credit packages...</div>
+        )}
       </div>
 
       {/* Plan Selection Section */}

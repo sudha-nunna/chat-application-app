@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
+import { FiDatabase, FiStar, FiZap } from "react-icons/fi";
 
 const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const [text, setText] = useState("");
@@ -10,17 +11,93 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const { isDark } = useTheme();
 
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("CG-1.1 · Balanced");
+  const [selectedModel, setSelectedModel] = useState({
+    displayName: "Auto Cluster",
+    modelId: "auto",
+    provider: "system",
+  });
+  const [modelsList, setModelsList] = useState([]);
+  const [activeTab, setActiveTab] = useState("All Servers");
+  const [userCredits, setUserCredits] = useState(0);
   const modelMenuRef = useRef(null);
 
-  const modelsList = [
-    "CG-1.1 · Balanced",
-    "CG-1.2 · Default"
+  useEffect(() => {
+    if (isModelMenuOpen) {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u.credits !== undefined) setUserCredits(u.credits);
+        } catch (e) {}
+      }
+    }
+  }, [isModelMenuOpen]);
+
+  const getProvider = (m) => {
+    let p = m.provider || m.serverFormat || "";
+    p = p.toLowerCase().trim();
+    if (!p || p === "system") {
+      const mid = (m.modelId || "").toLowerCase();
+      if (mid.includes("gemini")) return "gemini";
+      if (mid.includes("gpt")) return "openai";
+      if (mid.includes("llama")) return "ollama";
+      if (mid.includes("glm")) return "glm";
+      if (p) return p;
+      return "other";
+    }
+    return p;
+  };
+
+  const providers = [
+    "All Servers",
+    ...new Set(modelsList.map((m) => getProvider(m)).filter(Boolean)),
   ];
+  const filteredModels =
+    activeTab === "All Servers"
+      ? modelsList.filter((m) => m.enabled && m.modelId !== "auto")
+      : modelsList.filter(
+          (m) =>
+            m.enabled && getProvider(m) === activeTab && m.modelId !== "auto",
+        );
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/models/available`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const data = await res.json();
+
+        if (data.success && data.models) {
+          // Log the providers for debugging as requested
+          const allProviders = data.models.map((m) => m.provider);
+          const uniqueProviders = [...new Set(allProviders)];
+          console.log("📦 All Providers from Data:", allProviders);
+          console.log("✨ Unique Providers:", uniqueProviders);
+
+          setModelsList(data.models);
+          const recommended =
+            data.models.find((m) => m.recommended && m.enabled) ||
+            data.models.find((m) => m.enabled);
+          if (recommended) setSelectedModel(recommended);
+        }
+      } catch (err) {
+        console.error("Failed to fetch models:", err);
+      }
+    };
+    fetchModels();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (modelMenuRef.current && !modelMenuRef.current.contains(event.target)) {
+      if (
+        modelMenuRef.current &&
+        !modelMenuRef.current.contains(event.target)
+      ) {
         setIsModelMenuOpen(false);
       }
     };
@@ -30,7 +107,8 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
 
   // Initialize Speech Recognition on component mount
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
       rec.continuous = false; // Stop automatically when the user pauses speaking
@@ -71,11 +149,15 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
       if (isListening) {
         setIsListening(false);
         if (recognition) {
-          try { recognition.stop(); } catch (e) {}
+          try {
+            recognition.stop();
+          } catch (e) {}
         }
-        const audioBlob = await voiceRecorderRef.current.stopRecording().catch(() => null);
+        const audioBlob = await voiceRecorderRef.current
+          .stopRecording()
+          .catch(() => null);
         if (audioBlob && onSend) {
-          onSend(text, audioBlob);
+          onSend(text, audioBlob, selectedModel.modelId);
           setText("");
         }
       } else {
@@ -99,7 +181,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const handleSend = () => {
     if (!text.trim() || isGenerating) return;
 
-    onSend(text);
+    onSend(text, null, selectedModel.modelId);
     setText("");
   };
 
@@ -126,7 +208,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           disabled={isGenerating}
           className={`
             outline-none transition placeholder:text-text-muted disabled:opacity-75
-            w-full py-3 px-3 text-[15px] bg-transparent border-0 text-text-primary dark:text-white mb-2
+            w-full py-1.5 px-3 text-[15px] bg-transparent border-0 text-text-primary dark:text-white mb-2
           `}
         />
 
@@ -158,11 +240,11 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           <div className="flex items-center gap-1 md:gap-2">
             {/* Model Selector */}
             <div className="relative" ref={modelMenuRef}>
-              <button 
+              <button
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
                 className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
               >
-                {selectedModel}
+                {selectedModel.displayName}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -183,28 +265,33 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
               <div 
                 className={`absolute bottom-full right-0 mb-2 w-48 bg-surface-dropdown dark:bg-[#191A24] border border-border-primary dark:border-white/10 rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-bottom-right ${isModelMenuOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
               >
-                <div className="p-1.5 flex flex-col gap-0.5">
-                  {modelsList.map((model) => (
+                <div className="p-1.5 flex flex-col gap-0.5 max-h-[220px] overflow-y-auto custom-scrollbar">
+                  {filteredModels.map((model, index) => (
                     <button
-                      key={model}
+                      key={`${model.modelId}-${model.serverId || index}`}
                       onClick={() => {
                         setSelectedModel(model);
                         setIsModelMenuOpen(false);
                       }}
                       className={`text-left px-3 py-2 text-[11px] md:text-[13px] font-medium rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
-                        selectedModel === model 
+                        selectedModel.modelId === model.modelId 
                           ? "bg-accent-primary/10 text-text-primary dark:text-[#e5e5e5]" 
                           : "text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-[#e5e5e5]"
                       }`}
                     >
-                      {model}
-                      {selectedModel === model && (
+                      {model.displayName || model.modelId}
+                      {selectedModel.modelId === model.modelId && (
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent-primary">
                           <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
                         </svg>
                       )}
                     </button>
                   ))}
+                  {filteredModels.length === 0 && (
+                    <div className="text-center py-4 text-text-muted dark:text-[#888] text-xs">
+                      No models found.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

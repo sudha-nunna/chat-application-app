@@ -178,9 +178,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
               remarkPlugins={[remarkGfm]}
               components={{
                 table: ({ node, ...props }) => (
-                  <div
-                    className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm"
-                  >
+                  <div className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm">
                     <table
                       className="w-full border-collapse text-left text-[13px] min-w-full table-auto"
                       {...props}
@@ -246,7 +244,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 p: ({ node, ...props }) => (
                   <p
-                    className={`mb-4 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isDark ? "text-text-primary" : "text-white"}`}
+                    className={`mb-4 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isDark ? "text-text-primary" : "text-text-primary"}`}
                     {...props}
                   />
                 ),

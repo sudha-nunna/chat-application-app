@@ -212,7 +212,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
-  const handleSendSubmit = async (textPayload) => {
+  const handleSendSubmit = async (textPayload, audioBlob, selectedModelId) => {
     if (!textPayload.trim()) return;
 
     const t0 = performance.now();
@@ -233,6 +233,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     setStreamingReply("");
     currentStreamingTextRef.current = "";
 
+    const typeText = async (text) => {
+      const chunkSize = 3;
+      for (let i = 0; i < text.length; i += chunkSize) {
+        if (isAbortedRef.current) break;
+        const chars = text.slice(i, i + chunkSize);
+        currentStreamingTextRef.current += chars;
+        setStreamingReply(currentStreamingTextRef.current);
+        await new Promise(r => setTimeout(r, 15));
+      }
+    };
+
     try {
       const token = localStorage.getItem("token");
       const targetChatEndpoint = currentChatId && currentChatId !== "new" ? currentChatId : "new";
@@ -246,17 +257,27 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Accept": "text/event-stream",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             message: textPayload,
-            mode: conversationMode
+            mode: conversationMode,
+            model: selectedModelId,
+            modelId: selectedModelId,
+            stream: true
           }),
           signal: abortControllerRef.current.signal
         }
       );
 
-      if (!response.ok) throw new Error(`Server returned status code: ${response.status}`);
+      if (!response.ok) {
+        if (response.status === 402) {
+          const errorData = await response.json();
+          throw new Error(JSON.stringify({ type: "INSUFFICIENT_CREDITS", data: errorData }));
+        }
+        throw new Error(`Server returned status code: ${response.status}`);
+      }
       if (!response.body) throw new Error("Readable stream tracking failure.");
 
       const reader = response.body.getReader();
@@ -271,6 +292,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         if (isAbortedRef.current) break;
         const { value, done } = await reader.read();
         if (done || isAbortedRef.current) break;
+
+        console.log(`[STREAM DEBUG] Received chunk of length ${value.length} at ${performance.now().toFixed(2)}ms`);
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -302,8 +325,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
                 }
 
-                currentStreamingTextRef.current += textBit;
-                setStreamingReply(currentStreamingTextRef.current);
+                await typeText(textBit);
                 handleIncomingTextChunk(textBit);
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
@@ -349,7 +371,20 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsBotTyping(false);
       if (onChatUpdated) onChatUpdated();
     } catch (err) {
-      if (err.name === "AbortError" || err.message?.includes("aborted")) {
+      if (err.message && err.message.includes("INSUFFICIENT_CREDITS")) {
+        try {
+          const parsedError = JSON.parse(err.message);
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: `⚠️ **Credits Exhausted**\n\n${parsedError.data?.message || "You have run out of AI Credits."}\n\n[Click here to top up your credits](/subscription)` }
+          ]);
+        } catch (e) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: `⚠️ Error: Insufficient credits. [Go to Subscription](/subscription)` }
+          ]);
+        }
+      } else if (err.name === "AbortError" || err.message?.includes("aborted")) {
         console.log("🛑 Stream generation stopped by user.");
       } else {
         console.error("Stream parsing exception:", err);
@@ -432,15 +467,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           })()}
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Reusable Cluster Status Widget */}
-          <ClusterStatusWidget
-            clusterNodes={clusterNodes}
-            isDark={isDark}
-            isLoading={isClusterLoading}
-          />
-
-          <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-3">          <div className="hidden md:flex items-center gap-2">
             <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-colors cursor-pointer">
               <FiShare2 className="text-[14px]" />
               Share
