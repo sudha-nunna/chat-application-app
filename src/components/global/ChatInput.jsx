@@ -20,6 +20,13 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const [activeTab, setActiveTab] = useState("All Servers");
   const [userCredits, setUserCredits] = useState(0);
   const modelMenuRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      inputRef.current?.focus();
+    }
+  }, [isGenerating]);
 
   useEffect(() => {
     if (isModelMenuOpen) {
@@ -183,6 +190,9 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
 
     onSend(text, null, selectedModel.modelId);
     setText("");
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
   };
 
   return (
@@ -196,6 +206,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
       `}
       >
         <input
+          ref={inputRef}
           type="text"
           value={text}
           placeholder={
@@ -204,10 +215,14 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
               : "Ask Codegene to build, explain, or explore..."
           }
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !isGenerating && handleSend()}
-          disabled={isGenerating}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              if (!isGenerating) handleSend();
+            }
+          }}
           className={`
-            outline-none transition placeholder:text-text-muted disabled:opacity-75
+            outline-none transition placeholder:text-text-muted
             w-full py-1 px-2.5 text-sm md:text-[14px] bg-transparent border-0 text-text-primary dark:text-white mb-1.5
           `}
         />
@@ -384,11 +399,6 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
             )}
           </div>
         </div>
-      </div>
-      <div className="text-center mt-1">
-        <span className="text-[10px] md:text-[11px] font-medium text-text-muted dark:text-[#a1a1a1]">
-          Design preview - responses are illustrative.
-        </span>
       </div>
     </div>
   );

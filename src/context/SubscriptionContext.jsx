@@ -7,6 +7,7 @@ export const SubscriptionProvider = ({ children }) => {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
 
   const fetchSubscription = async () => {
     const token = localStorage.getItem("token");
@@ -22,14 +23,6 @@ export const SubscriptionProvider = ({ children }) => {
       if (res?.success && res?.subscription) {
         const subData = res.subscription;
         setSubscription(subData);
-
-        if (subData.plan === "free") {
-          const hasShownModal = sessionStorage.getItem("sub_modal_shown_session");
-          if (!hasShownModal) {
-            setIsUpgradeModalOpen(true);
-            sessionStorage.setItem("sub_modal_shown_session", "true");
-          }
-        }
       }
     } catch (err) {
       console.error("Failed to fetch subscription data:", err);
@@ -111,6 +104,8 @@ export const SubscriptionProvider = ({ children }) => {
         loading,
         isUpgradeModalOpen,
         setIsUpgradeModalOpen,
+        isCreditsModalOpen,
+        setIsCreditsModalOpen,
         refreshSubscription: fetchSubscription,
         upgradePlan,
         downgradePlan,

@@ -545,14 +545,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           })()}
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">          <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="hidden md:flex items-center gap-2">
             <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-colors cursor-pointer">
               <FiShare2 className="text-[14px]" />
               Share
-            </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-colors cursor-pointer">
-              <FiUpload className="text-[14px]" />
-              Export
             </button>
           </div>
           <button
@@ -576,7 +573,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col relative"
       >
         <div
-          className={`w-full flex-1 max-w-2xl md:max-w-[720px] mx-auto px-4 md:px-6 py-4 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
+          className={`w-full flex-1 max-w-2xl md:max-w-[720px] mx-auto px-4 py-4 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
         >
           {!isSearching && !isBotTyping && isFetchingMessages && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
@@ -741,7 +738,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       </div>
 
       {/* Fixed Input Area with ChatGPT style Stop Button inside */}
-      <div className="shrink-0 z-10 relative pb-2 md:pb-4 bg-[#fafafa] dark:bg-[#15161e]">
+      <div className="shrink-0 z-10 relative pb-2 md:pb-4 bg-transparent">
         {showScrollBottom && (
           <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50">
             <button

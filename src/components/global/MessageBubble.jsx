@@ -113,28 +113,32 @@ const MessageBubble = ({ role, content, onRetry }) => {
 
   return (
     <div
-      className={`flex items-start ${isUser ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[72%] gap-2" : "mr-auto w-full max-w-full gap-2 md:gap-2"} my-2.5 min-w-0`}
+      className={`flex items-start ${
+        isUser
+          ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[72%] gap-2"
+          : "mr-auto w-full max-w-full"
+      } my-2.5 min-w-0`}
     >
-      {/* Avatar (Only for AI) */}
-      {!isUser && (
-        <div className="w-14 shrink-0 text-left pt-1 hidden md:block">
-          <span className="font-serif text-[12px] text-text-muted opacity-75">
-            Codegene
-          </span>
-        </div>
-      )}
-
       {/* Bubble Container & Actions */}
       <div
-        className={`flex flex-col group ${isUser ? "items-end" : "items-start"} flex-1 min-w-0`}
+        className={`flex flex-col group ${isUser ? "items-end" : "items-start"} w-full min-w-0`}
       >
         <div
-          className={`min-w-0 max-w-full leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
+          className={`min-w-0 w-full leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
             isUser
-              ? "rounded-2xl px-4 py-2 bg-accent-primary text-white font-medium text-[14px] shadow-sm border-none"
-              : "rounded-lg pt-0.5 pb-1 text-[#e5e5e5] bg-transparent border-transparent"
+              ? "rounded-2xl px-4 py-2 bg-accent-primary text-white font-medium text-[14px] shadow-sm border-none ml-auto"
+              : "rounded-lg py-0.5 text-text-primary dark:text-[#e5e5e5] bg-transparent border-transparent flex items-start gap-2.5"
           }`}
         >
+          {!isUser && (
+            <img
+              src="/codegene-mark.png"
+              alt="Codegene"
+              className="w-5 h-5 object-contain rounded-md select-none shrink-0 mt-1"
+            />
+          )}
+
+          <div className="flex-1 min-w-0">
           {isEditing && isUser ? (
             <div className="flex flex-col w-full min-w-[200px] sm:min-w-[300px]">
               <textarea
@@ -211,19 +215,19 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 h1: ({ node, ...props }) => (
                   <h1
-                    className={`text-[19px] font-serif font-medium mt-4 mb-2 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[19px] font-serif font-medium mt-4 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h2: ({ node, ...props }) => (
                   <h2
-                    className={`text-[17px] font-serif font-medium mt-3 mb-2 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[17px] font-serif font-medium mt-3 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h3: ({ node, ...props }) => (
                   <h3
-                    className={`text-[15px] font-serif font-medium mt-2.5 mb-1.5 break-words ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[15px] font-serif font-medium mt-2.5 mb-1.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
@@ -244,19 +248,19 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 p: ({ node, ...props }) => (
                   <p
-                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isDark ? "text-text-primary" : "text-text-primary"}`}
+                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
                     {...props}
                   />
                 ),
                 strong: ({ node, ...props }) => (
                   <strong
-                    className="font-semibold text-text-primary dark:text-[#F4F4F5]"
+                    className={`font-semibold ${isUser ? "text-white font-bold" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 a: ({ node, ...props }) => (
                   <a
-                    className="text-[#7c83f6] hover:underline font-medium break-all"
+                    className={`${isUser ? "text-white underline font-semibold" : "text-[#7c83f6] hover:underline font-medium"} break-all`}
                     target="_blank"
                     rel="noopener noreferrer"
                     {...props}
@@ -264,19 +268,19 @@ const MessageBubble = ({ role, content, onRetry }) => {
                 ),
                 ul: ({ node, ...props }) => (
                   <ul
-                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed marker:text-[#7c83f6] ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
                     {...props}
                   />
                 ),
                 ol: ({ node, ...props }) => (
                   <ol
-                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed marker:text-[#7c83f6] ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
                     {...props}
                   />
                 ),
                 li: ({ node, ...props }) => (
                   <li
-                    className={`break-words pl-1 ${isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                    className={`break-words pl-1 ${isUser ? "text-white" : isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
                     {...props}
                   />
                 ),
@@ -363,6 +367,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
               )}
             </div>
           )}
+        </div>
         </div>
 
         {/* Action Buttons for User Message */}

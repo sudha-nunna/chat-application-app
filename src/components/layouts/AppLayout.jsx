@@ -52,6 +52,7 @@ import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
 import PlanBadge from "../subscription/PlanBadge";
 import SubscriptionModal from "../subscription/SubscriptionModal";
+import CreditsModal from "../subscription/CreditsModal";
 import FloatingExternalBotWidget from "../global/FloatingExternalBotWidget";
 import { useTheme } from "../../context/ThemeContext";
 import { useSubscription } from "../../context/SubscriptionContext";
@@ -63,7 +64,7 @@ import {
 
 const AppLayout = ({ children }) => {
   const { theme, isDark, toggleTheme } = useTheme();
-  const { setIsUpgradeModalOpen } = useSubscription();
+  const { setIsUpgradeModalOpen, setIsCreditsModalOpen } = useSubscription();
   const [authToken, setAuthToken] = useState(() =>
     localStorage.getItem("token"),
   );
@@ -1488,27 +1489,7 @@ const AppLayout = ({ children }) => {
             )}
           </div>
 
-          {/* Usage & Credits Widget (Desktop only) */}
-          {!isMobile && !isSidebarCollapsed && usage && (
-            <div className="mx-4 mb-4 p-3 rounded-xl bg-surface-secondary border border-border-primary">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[11px] font-semibold text-text-primary uppercase tracking-wider">Credits</span>
-                <span className="text-[12px] font-bold text-blue-500">{usage.user?.credits?.toFixed(1) || 0}</span>
-              </div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] text-text-muted">Messages Today</span>
-                <span className="text-[10px] font-medium text-text-primary">
-                  {usage.today?.messagesUsed || 0} / {usage.user?.isPaidUser ? "∞" : (usage.today?.messagesLimit || 50)}
-                </span>
-              </div>
-              <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="bg-blue-500 h-1.5 rounded-full" 
-                  style={{ width: usage.user?.isPaidUser ? "10%" : `${Math.min(((usage.today?.messagesUsed || 0) / (usage.today?.messagesLimit || 50)) * 100, 100)}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
+
 
           {/* Profile Dropdown at bottom of sidebar (Desktop only) */}
           {!isMobile && (
@@ -1556,6 +1537,16 @@ const AppLayout = ({ children }) => {
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsProfileDropdownOpen(false);
+                      setIsCreditsModalOpen(true);
+                    }}
+                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                  >
+                    <FiCreditCard className="text-sm" /> Credits usage
                   </button>
                   <button
                     onClick={(e) => {
@@ -1645,8 +1636,6 @@ const AppLayout = ({ children }) => {
     <div
       className={`flex flex-col md:flex-row h-screen w-screen overflow-hidden bg-surface-primary text-text-primary`}
     >
-      <SubscriptionModal />
-
       {/* Main Sidebar (Desktop) */}
       <div className="hidden md:flex h-full z-30 relative">
         {renderSecondarySidebar()}
@@ -1668,6 +1657,10 @@ const AppLayout = ({ children }) => {
           {renderMobileBottomNav()}
         </div>
       </div>
+
+      {/* Subscription & Credits Drawers */}
+      <SubscriptionModal />
+      <CreditsModal />
 
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-dotted">
         {children}
