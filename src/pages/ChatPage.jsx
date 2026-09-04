@@ -15,6 +15,18 @@ const ChatPage = () => {
     setCurrentChatId(urlChatId || null);
   }, [urlChatId]);
 
+  useEffect(() => {
+    const handleNewChatAction = () => {
+      setCurrentChatId(null);
+      setSearchParams({}, { replace: true });
+    };
+
+    window.addEventListener("new-chat-action", handleNewChatAction);
+    return () => {
+      window.removeEventListener("new-chat-action", handleNewChatAction);
+    };
+  }, [setSearchParams]);
+
   const triggerSidebarRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -25,15 +37,15 @@ const ChatPage = () => {
     } else {
       setSearchParams({});
     }
+    setCurrentChatId(newId || null);
   };
 
   return (
-    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${
-      "bg-transparent text-text-primary"
-    }`}>
-      {/* Chat Content Area ONLY - Inner sidebar is now unified in AppLayout */}
-      <ChatArea 
-        currentChatId={currentChatId} 
+    <div
+      className={`flex flex-1 h-full w-full overflow-hidden relative bg-transparent text-text-primary`}
+    >
+      <ChatArea
+        currentChatId={currentChatId}
         setCurrentChatId={handleSetCurrentChatId}
         onChatUpdated={triggerSidebarRefresh}
       />

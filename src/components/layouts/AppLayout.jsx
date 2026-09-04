@@ -251,6 +251,19 @@ const AppLayout = ({ children }) => {
     { enabled: !!authToken },
   );
 
+  // Fetch real-time Usage Summary for Credits
+  const { data: usageData } = useTanStackData(
+    ["usage"],
+    async () => {
+      if (!authToken) return null;
+      const res = await backEndCallGet("/usage/summary");
+      return res?.data || res || null;
+    },
+    { enabled: !!authToken }
+  );
+
+  const activeCredits = usageData?.user?.credits ?? user?.credits ?? 0;
+
   // Fetch Chats
   const { data: chats = [] } = useTanStackData(
     ["chats"],
@@ -365,6 +378,21 @@ const AppLayout = ({ children }) => {
     navigate(`/bots/${newBot._id}`);
   };
 
+  const handleNewChat = () => {
+    setIsUpgradeModalOpen(false);
+    setIsCreditsModalOpen(false);
+    setActiveSidebarTab("chat");
+    setIsMobileMenuOpen(false);
+    setIsSearchModalOpen(false);
+    setActivePopover(null);
+    setTempClosed(true);
+
+    navigate("/chat", { replace: true });
+    setTimeout(() => {
+      window.dispatchEvent(new Event("new-chat-action"));
+    }, 10);
+  };
+
   const handleSelectItem = (id, type) => {
     setIsUpgradeModalOpen(false);
     setIsCreditsModalOpen(false);
@@ -372,7 +400,8 @@ const AppLayout = ({ children }) => {
       if (id) {
         navigate(`/chat?chatId=${id}`);
       } else {
-        navigate(`/chat`);
+        handleNewChat();
+        return;
       }
     } else if (type === "bot") {
       navigate(`/bots/${id}`);
@@ -704,6 +733,8 @@ const AppLayout = ({ children }) => {
         <div className="space-y-1">
           <button
             onClick={() => {
+              setIsUpgradeModalOpen(false);
+              setIsCreditsModalOpen(false);
               setIsSearchModalOpen(true);
               setTempClosed(true);
             }}
@@ -717,11 +748,7 @@ const AppLayout = ({ children }) => {
             </span>
           </button>
           <button
-            onClick={() => {
-              setActiveSidebarTab("chat");
-              navigate("/chat");
-              setTempClosed(true);
-            }}
+            onClick={handleNewChat}
             className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "chat" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}
           >
             <div className="w-6 h-6 flex items-center justify-center shrink-0">
@@ -733,6 +760,8 @@ const AppLayout = ({ children }) => {
           </button>
           {/* <button
             onClick={() => {
+              setIsUpgradeModalOpen(false);
+              setIsCreditsModalOpen(false);
               setActiveSidebarTab("agents");
               navigate("/bots");
               setTempClosed(true);
@@ -753,6 +782,8 @@ const AppLayout = ({ children }) => {
         <div className="space-y-1">
           <button
             onClick={() => {
+              setIsUpgradeModalOpen(false);
+              setIsCreditsModalOpen(false);
               setActiveSidebarTab("dashboard");
               navigate("/dashboard");
               setTempClosed(true);
@@ -768,6 +799,8 @@ const AppLayout = ({ children }) => {
           </button>
           <button
             onClick={() => {
+              setIsUpgradeModalOpen(false);
+              setIsCreditsModalOpen(false);
               setActiveSidebarTab("subscription");
               navigate("/subscription");
               setTempClosed(true);
@@ -783,6 +816,8 @@ const AppLayout = ({ children }) => {
           </button>
           <button
             onClick={() => {
+              setIsUpgradeModalOpen(false);
+              setIsCreditsModalOpen(false);
               setActiveSidebarTab("servers");
               navigate("/admin/servers");
               setTempClosed(true);
@@ -820,9 +855,8 @@ const AppLayout = ({ children }) => {
                 )}
                 <div className="flex flex-col">
                   <span className="text-[13px] font-bold truncate tracking-wide">
-                    {user?.name || "Yadagiri Nousu"}
+                    {user?.name || "User Name"}
                   </span>
-                  <span className="text-[11px] text-text-primary/70">Free</span>
                 </div>
               </div>
               <FiChevronRight className="text-text-primary/70 text-sm" />
@@ -830,16 +864,6 @@ const AppLayout = ({ children }) => {
 
             <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
 
-            {/* <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsProfileDropdownOpen(false);
-                setIsUpgradeModalOpen(true);
-              }}
-              className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-            >
-              <FiZap className="text-sm" /> Upgrade plan
-            </button> */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -853,9 +877,6 @@ const AppLayout = ({ children }) => {
                 <FiMoon className="text-sm" />
               )}{" "}
               Appearance
-            </button>
-            <button className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
-              <FiSettings className="text-sm" /> Settings
             </button>
 
             <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
@@ -892,9 +913,11 @@ const AppLayout = ({ children }) => {
 
           <div className="flex-col whitespace-nowrap overflow-hidden ml-3 hidden group-hover:flex transition-opacity duration-300">
             <p className="text-[13px] font-bold truncate tracking-wide text-text-primary">
-              {user?.name || "Yadagiri Nousu"}
+              {user?.name || "User Name"}
             </p>
-            <p className="text-[12px] text-text-primary/70 truncate">Free</p>
+            <p className="text-[12px] text-text-primary/70 truncate">
+              {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
+            </p>
           </div>
 
           <button
@@ -917,16 +940,14 @@ const AppLayout = ({ children }) => {
         {
           id: "chat",
           icon: FiMessageSquare,
-          onClick: () => {
-            setActiveSidebarTab("chat");
-            navigate("/chat");
-            setIsMobileMenuOpen(false);
-          },
+          onClick: handleNewChat,
         },
         /* {
           id: "agents",
           icon: TbRobotFace,
           onClick: () => {
+            setIsUpgradeModalOpen(false);
+            setIsCreditsModalOpen(false);
             setActiveSidebarTab("agents");
             navigate("/bots");
             setIsMobileMenuOpen(false);
@@ -936,6 +957,8 @@ const AppLayout = ({ children }) => {
           id: "dashboard",
           icon: FiGrid,
           onClick: () => {
+            setIsUpgradeModalOpen(false);
+            setIsCreditsModalOpen(false);
             setActiveSidebarTab("dashboard");
             navigate("/dashboard");
             setIsMobileMenuOpen(false);
@@ -945,6 +968,8 @@ const AppLayout = ({ children }) => {
           id: "subscription",
           icon: FiCreditCard,
           onClick: () => {
+            setIsUpgradeModalOpen(false);
+            setIsCreditsModalOpen(false);
             setActiveSidebarTab("subscription");
             navigate("/subscription");
             setIsMobileMenuOpen(false);
@@ -954,6 +979,8 @@ const AppLayout = ({ children }) => {
           id: "servers",
           icon: FiServer,
           onClick: () => {
+            setIsUpgradeModalOpen(false);
+            setIsCreditsModalOpen(false);
             setActiveSidebarTab("servers");
             navigate("/admin/servers");
             setIsMobileMenuOpen(false);
@@ -1042,10 +1069,7 @@ const AppLayout = ({ children }) => {
                       )}
                       <div className="flex flex-col">
                         <span className="text-[13px] font-bold truncate tracking-wide">
-                          {user?.name || "Yadagiri Nousu"}
-                        </span>
-                        <span className="text-[11px] text-text-primary/70">
-                          Free
+                          {user?.name || "User Name"}
                         </span>
                       </div>
                     </div>
@@ -1077,9 +1101,6 @@ const AppLayout = ({ children }) => {
                       <FiMoon className="text-sm" />
                     )}{" "}
                     Appearance
-                  </button>
-                  <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
-                    <FiSettings className="text-sm" /> Settings
                   </button>
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
@@ -1153,14 +1174,8 @@ const AppLayout = ({ children }) => {
             className={`pt-3 pb-3 flex flex-col gap-3 shrink-0 ${isSidebarCollapsed ? "px-1 items-center" : "px-4"}`}
           >
             <button
-              onClick={() => {
-                setIsUpgradeModalOpen(false);
-                setIsCreditsModalOpen(false);
-                setActiveSidebarTab("chat");
-                navigate("/chat");
-                setActivePopover(null);
-              }}
-              className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 shadow-sm ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
+              onClick={handleNewChat}
+              className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-medium shadow-sm ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
             >
               <div className="w-6 h-6 flex items-center justify-center shrink-0">
                 <FiPlus className="text-lg" />
@@ -1530,10 +1545,7 @@ const AppLayout = ({ children }) => {
                       )}
                       <div className="flex flex-col">
                         <span className="text-[13px] font-bold truncate tracking-wide">
-                          {user?.name || "Yadagiri Nousu"}
-                        </span>
-                        <span className="text-[11px] text-text-primary/70">
-                          Free
+                          {user?.name || "Nunna Sudha"}
                         </span>
                       </div>
                     </div>
@@ -1577,9 +1589,6 @@ const AppLayout = ({ children }) => {
                     )}{" "}
                     Appearance
                   </button>
-                  <button className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
-                    <FiSettings className="text-sm" /> Settings
-                  </button>
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
                   <button
@@ -1619,7 +1628,7 @@ const AppLayout = ({ children }) => {
                       {user?.name || "User"}
                     </p>
                     <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
-                      Studio plan
+                      {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
                     </p>
                   </div>
                 )}

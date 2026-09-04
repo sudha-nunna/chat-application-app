@@ -33,9 +33,39 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [streamingReply, setStreamingReply] = useState("");
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(true);
+  const [isCopiedShare, setIsCopiedShare] = useState(false);
   const isVoicePausedRef = useRef(true);
   const isAbortedRef = useRef(false);
   const abortControllerRef = useRef(null);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: chatTitle,
+      text: `Check out this AI chat on Codegene: "${chatTitle}"`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.warn("Native share fallback to clipboard:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopiedShare(true);
+      setTimeout(() => setIsCopiedShare(false), 2500);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   const [clusterNodes, setClusterNodes] = useState([]);
   const [isClusterLoading, setIsClusterLoading] = useState(true);
@@ -44,6 +74,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const messagesContainerRef = useRef(null);
   const currentStreamingTextRef = useRef("");
   const isGeneratingRef = useRef(false);
+  const streamingChatIdRef = useRef(null);
+  const prevChatIdRef = useRef(currentChatId);
 
   // Health check polling removed as requested
 
@@ -51,10 +83,101 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const isPlayingRef = useRef(false);
   const currentSentenceBufferRef = useRef("");
 
+  // --- ChatGPT-style streaming engine ---
+  // Network SSE chunks fill tokenQueueRef at full network speed.
+  // A requestAnimationFrame drain loop pulls words out at a controlled
+  // visual pace (~35 words/sec) so text appears to "type" naturally.
+  const tokenQueueRef = useRef([]);
+  const streamNetworkDoneRef = useRef(false);
+  const rafHandleRef = useRef(null);
+  const streamCompleteCbRef = useRef(null); // called when drain is fully done
+
+  const stopDrainLoop = () => {
+    if (rafHandleRef.current) {
+      cancelAnimationFrame(rafHandleRef.current);
+      rafHandleRef.current = null;
+    }
+  };
+
+  /**
+   * Start the rAF drain loop.
+   * Runs at 60fps. Each frame releases 1-3 words from the queue into
+   * streamingReply so the text "types" smoothly like ChatGPT.
+   * When the queue is empty AND the network stream is finished,
+   * it calls streamCompleteCbRef to commit the final message.
+   */
+  const startDrainLoop = () => {
+    stopDrainLoop();
+    streamNetworkDoneRef.current = false;
+    tokenQueueRef.current = [];
+
+    // Track last flush time so we release tokens at a capped rate
+    let lastFlushTime = 0;
+
+    const tick = (now) => {
+      if (isAbortedRef.current) {
+        stopDrainLoop();
+        return;
+      }
+
+      const elapsed = now - lastFlushTime;
+      // Target: ~35 words/sec → one flush every ~28ms
+      const flushInterval = 28;
+
+      if (elapsed >= flushInterval) {
+        const qLen = tokenQueueRef.current.length;
+        if (qLen > 0) {
+          // Adaptive catch-up: if queue is backed up, drain faster
+          let step = 1;
+          if (qLen > 60) step = Math.min(8, Math.ceil(qLen / 10));
+          else if (qLen > 25) step = 3;
+          else if (qLen > 10) step = 2;
+
+          const words = tokenQueueRef.current.splice(0, step).join("");
+          currentStreamingTextRef.current += words;
+          setStreamingReply(currentStreamingTextRef.current);
+          lastFlushTime = now;
+        } else if (streamNetworkDoneRef.current) {
+          // Queue empty + network done → streaming complete
+          stopDrainLoop();
+          if (typeof streamCompleteCbRef.current === "function") {
+            streamCompleteCbRef.current(currentStreamingTextRef.current);
+            streamCompleteCbRef.current = null;
+          }
+          return;
+        }
+      }
+
+      rafHandleRef.current = requestAnimationFrame(tick);
+    };
+
+    rafHandleRef.current = requestAnimationFrame(tick);
+  };
+
+  /**
+   * Feed raw SSE text into the token queue.
+   * Splits into word-boundary tokens for natural word-by-word appearance.
+   */
+  const pushToQueue = (text) => {
+    if (!text) return;
+    // Split on whitespace boundaries to queue whole words + their trailing spaces
+    const tokens = text.match(/\S+\s*|\s+/g) || [text];
+    tokenQueueRef.current.push(...tokens);
+  };
+
   useEffect(() => {
-    if (isGeneratingRef.current) {
+    // If active stream belongs to current session (even after currentChatId updates from null -> new id), preserve current stream state
+    if (isGeneratingRef.current && (streamingChatIdRef.current === currentChatId || !currentChatId)) {
+      prevChatIdRef.current = currentChatId;
       return;
     }
+
+    // If user navigated to a different chat thread while generating, abort active stream
+    if (isGeneratingRef.current && prevChatIdRef.current !== currentChatId) {
+      handleStopGeneration();
+    }
+
+    prevChatIdRef.current = currentChatId;
 
     if (currentChatId) {
       loadSavedMessages();
@@ -120,6 +243,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    stopDrainLoop();
+    tokenQueueRef.current = [];
+    streamNetworkDoneRef.current = false;
+    streamCompleteCbRef.current = null;
 
     const partialText = currentStreamingTextRef.current;
     if (partialText && partialText.trim()) {
@@ -219,38 +346,40 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
-  const handleSendSubmit = async (textPayload, audioBlob, selectedModelId) => {
-    if (!textPayload.trim()) return;
+  const handleSendSubmit = async (textPayload, audioBlob, selectedModelId, attachments = []) => {
+    if (isGeneratingRef.current) {
+      console.warn("⚠️ Request blocked because generation is already active.");
+      return;
+    }
+    const cleanText = (typeof textPayload === "string" ? textPayload : "").trim();
+    // Prompt text is mandatory (attachments alone cannot be submitted without text prompt)
+    if (!cleanText) {
+      console.warn("⚠️ Request blocked: A text prompt is required to send.");
+      return;
+    }
+
+    isGeneratingRef.current = true;
+    isAbortedRef.current = false;
+    streamingChatIdRef.current = currentChatId;
+    clearAudioPipeline();
 
     const t0 = performance.now();
     let firstTokenTime = null;
 
-    console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${textPayload}" at t=0 ms`);
-
-    isGeneratingRef.current = true;
-    isAbortedRef.current = false;
-    clearAudioPipeline();
+    console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${cleanText || (hasAttachments ? "[Attachment only]" : "")}" with ${attachments.length} attachments at t=0 ms`);
 
     if (window.speechSynthesis && window.speechSynthesis.paused && !isVoicePausedRef.current) {
       window.speechSynthesis.resume();
     }
 
-    setMessages((prev) => [...prev, { role: "user", content: textPayload }]);
+    setMessages((prev) => [...prev, { role: "user", content: cleanText, attachments }]);
     setIsSearching(true);
-    setIsBotTyping(false);
+    setIsBotTyping(true);
     setStreamingReply("");
     currentStreamingTextRef.current = "";
-
-    const typeText = async (text) => {
-      const chunkSize = 3;
-      for (let i = 0; i < text.length; i += chunkSize) {
-        if (isAbortedRef.current) break;
-        const chars = text.slice(i, i + chunkSize);
-        currentStreamingTextRef.current += chars;
-        setStreamingReply(currentStreamingTextRef.current);
-        await new Promise(r => setTimeout(r, 15));
-      }
-    };
+    tokenQueueRef.current = [];
+    streamNetworkDoneRef.current = false;
+    streamCompleteCbRef.current = null;
 
     try {
       const token = localStorage.getItem("token");
@@ -259,8 +388,26 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
       abortControllerRef.current = new AbortController();
 
+      const requestEndpoint = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/message/${targetChatEndpoint}`;
+      const requestPayload = {
+        message: cleanText,
+        mode: conversationMode,
+        model: selectedModelId,
+        modelId: selectedModelId,
+        attachments,
+        stream: true
+      };
+
+      console.log("📤 [AI CHAT REQUEST SENT FROM BROWSER]", {
+        endpoint: requestEndpoint,
+        model: selectedModelId,
+        message: cleanText,
+        attachmentsCount: attachments?.length || 0,
+        payload: requestPayload
+      });
+
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/message/${targetChatEndpoint}`,
+        requestEndpoint,
         {
           method: "POST",
           headers: {
@@ -268,13 +415,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             "Accept": "text/event-stream",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            message: textPayload,
-            mode: conversationMode,
-            model: selectedModelId,
-            modelId: selectedModelId,
-            stream: true
-          }),
+          body: JSON.stringify(requestPayload),
           signal: abortControllerRef.current.signal
         }
       );
@@ -293,15 +434,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       let streamFinished = false;
       let buffer = "";
 
-      setIsSearching(false);
-      setIsBotTyping(true);
+      // Start the visual drain loop BEFORE reading — so the first token
+      // renders as soon as it's pushed into the queue.
+      // The drain promise resolves when queue is empty + network done.
+      const drainPromise = new Promise((resolve) => {
+        streamCompleteCbRef.current = resolve;
+        startDrainLoop();
+      });
 
+      // --- SSE network read loop (runs at full network speed) ---
       while (!streamFinished) {
         if (isAbortedRef.current) break;
         const { value, done } = await reader.read();
         if (done || isAbortedRef.current) break;
-
-        console.log(`[STREAM DEBUG] Received chunk of length ${value.length} at ${performance.now().toFixed(2)}ms`);
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -311,7 +456,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           if (isAbortedRef.current) break;
           const cleanedLine = line.trim();
           if (cleanedLine.startsWith("data: ")) {
-            const dataStr = cleanedLine.replace("data: ", "").trim();
+            const dataStr = cleanedLine.replace(/^data:\s*/, "").trim();
 
             if (dataStr === "[DONE]") {
               streamFinished = true;
@@ -322,19 +467,26 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               const parsed = JSON.parse(dataStr);
               if (parsed.type === "meta") {
                 if (!currentChatId || currentChatId === "new") {
+                  streamingChatIdRef.current = parsed.chatId;
                   setCurrentChatId(parsed.chatId);
                   queryClient.invalidateQueries({ queryKey: ["chats"] });
                 }
               } else if (parsed.type === "chunk") {
                 const textBit = parsed.text || "";
-                if (!firstTokenTime) {
-                  firstTokenTime = performance.now();
-                  const ttftMs = (firstTokenTime - t0).toFixed(2);
-                  console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
+                if (textBit) {
+                  if (!firstTokenTime) {
+                    firstTokenTime = performance.now();
+                    const ttftMs = (firstTokenTime - t0).toFixed(2);
+                    console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
+                    // Transition from "thinking dots" → streaming text
+                    setIsSearching(false);
+                    setIsBotTyping(true);
+                  }
+                  // Push raw text into the queue — the rAF drain loop
+                  // will visually release it at a smooth 35 words/sec pace.
+                  pushToQueue(textBit);
+                  handleIncomingTextChunk(textBit);
                 }
-
-                await typeText(textBit);
-                handleIncomingTextChunk(textBit);
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
                   ...prev,
@@ -348,15 +500,31 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         }
       }
 
-      if (isAbortedRef.current) return;
+      if (isAbortedRef.current) {
+        stopDrainLoop();
+        tokenQueueRef.current = [];
+        streamNetworkDoneRef.current = false;
+        streamCompleteCbRef.current = null;
+        setIsSearching(false);
+        setIsBotTyping(false);
+        isGeneratingRef.current = false;
+        return;
+      }
+
+      // Signal the drain loop that no more tokens are coming.
+      // The drain loop will resolve drainPromise once the queue empties.
+      streamNetworkDoneRef.current = true;
+
+      // Await drain — this takes only as long as needed to visually
+      // display the remaining queued tokens (~1-3s for a typical response).
+      const finalResponseContent = await drainPromise;
 
       if (currentSentenceBufferRef.current.trim()) {
         audioQueueRef.current.push(currentSentenceBufferRef.current.trim());
         processAudioQueue();
       }
 
-      const finalResponseContent = currentStreamingTextRef.current;
-      if (finalResponseContent) {
+      if (finalResponseContent && finalResponseContent.trim()) {
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: finalResponseContent },
@@ -365,6 +533,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
       const totalTime = (performance.now() - t0).toFixed(2);
       const streamDuration = firstTokenTime ? (performance.now() - firstTokenTime).toFixed(2) : "N/A";
+
+      console.log("📥 [AI CHAT RESPONSE RECEIVED IN BROWSER]", {
+        model: selectedModelId,
+        totalTimeMs: totalTime,
+        responseLength: finalResponseContent?.length || 0,
+        responseText: finalResponseContent
+      });
 
       console.log(`
 ⏱️  =================== [FRONTEND UI GENERAL CHAT DIAGNOSTICS] ===================
@@ -377,6 +552,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setStreamingReply("");
       currentStreamingTextRef.current = "";
       setIsBotTyping(false);
+      setIsSearching(false);
+      isGeneratingRef.current = false;
       if (onChatUpdated) onChatUpdated();
     } catch (err) {
       if (err.message && err.message.includes("INSUFFICIENT_CREDITS")) {
@@ -403,10 +580,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       }
       setIsSearching(false);
       setIsBotTyping(false);
+      isGeneratingRef.current = false;
       setStreamingReply("");
       currentStreamingTextRef.current = "";
     } finally {
+      stopDrainLoop();
+      tokenQueueRef.current = [];
+      streamNetworkDoneRef.current = false;
+      streamCompleteCbRef.current = null;
       isGeneratingRef.current = false;
+      setIsSearching(false);
+      setIsBotTyping(false);
+      setStreamingReply("");
+      currentStreamingTextRef.current = "";
     }
   };
 
@@ -552,9 +738,22 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
         <div className="flex items-center gap-2 md:gap-3">
           <div className="hidden md:flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-colors cursor-pointer">
-              <FiShare2 className="text-[14px]" />
-              Share
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-all cursor-pointer active:scale-95"
+              title="Share conversation link"
+            >
+              {isCopiedShare ? (
+                <>
+                  <FiCheck className="text-[14px] text-green-500" />
+                  <span className="text-green-500 font-semibold">Link Copied</span>
+                </>
+              ) : (
+                <>
+                  <FiShare2 className="text-[14px]" />
+                  <span>Share</span>
+                </>
+              )}
             </button>
           </div>
           <button
@@ -690,6 +889,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   key={index}
                   role={m.role}
                   content={m.content}
+                  attachments={m.attachments}
                   onRetry={
                     userMsg
                       ? (newContent) =>
@@ -700,64 +900,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               );
             })}
 
-          {(isSearching || (isBotTyping && !streamingReply)) && (
-            <div className="flex items-start gap-1 mr-auto w-full max-w-full my-2.5 min-w-0">
-              <div
-                className={`w-5 lg:w-7 h-5 lg:h-7 flex items-center justify-center shrink-0 bg-transparent text-text-primary mt-1`}
-              >
-                <svg
-                  className="animate-spin w-5 h-5 text-[#8a8a93]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-              <div className="flex items-center h-8 lg:h-10">
-                <div className="flex items-center">
-                  <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93]">
-                    Processing
-                  </span>
-                  <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93] flex ml-[1px]">
-                    <span
-                      className="animate-typing-dot"
-                      style={{ animationDelay: "0s" }}
-                    >
-                      .
-                    </span>
-                    <span
-                      className="animate-typing-dot"
-                      style={{ animationDelay: "0.2s" }}
-                    >
-                      .
-                    </span>
-                    <span
-                      className="animate-typing-dot"
-                      style={{ animationDelay: "0.4s" }}
-                    >
-                      .
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isBotTyping && streamingReply && (
-            <MessageBubble role="assistant" content={streamingReply} />
+          {(isSearching || isBotTyping) && (
+            <MessageBubble
+              role="assistant"
+              content={streamingReply}
+              isStreaming={true}
+              isThinking={!streamingReply}
+            />
           )}
         </div>
       </div>
