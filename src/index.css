@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&display=swap');
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -55,7 +58,11 @@
   --interactive-selected: #1c1f2e;
   --accent-primary: #7c83f6;
 
-  --chat-bg-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  --chat-bg-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px
+  );
   --chat-bg-size: 24px 24px;
 }
 
@@ -85,7 +92,11 @@
   --interactive-selected: #f3f4f6;
   --accent-primary: #494eaa;
 
-  --chat-bg-image: radial-gradient(circle, rgba(0, 0, 0, 0.11) 1px, transparent 1px);
+  --chat-bg-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.11) 1px,
+    transparent 1px
+  );
   --chat-bg-size: 24px 24px;
 }
 
@@ -102,7 +113,10 @@ body {
   font-family: "Inter", sans-serif;
   background-color: var(--body-bg);
   color: var(--text-primary);
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 22px;
+  letter-spacing: 0.4px;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -177,8 +191,14 @@ a {
 }
 
 @keyframes typingDot {
-  0%, 20% { opacity: 0; }
-  50%, 100% { opacity: 1; }
+  0%,
+  20% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
 }
 .animate-typing-dot {
   animation: typingDot 1.4s infinite;
@@ -186,4 +206,8 @@ a {
 
 [data-theme="light"] .bg-dotted {
   background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+.font-instrument {
+  font-family: "Instrument Serif", serif;
 }

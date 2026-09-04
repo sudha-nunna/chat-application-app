@@ -482,7 +482,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           >
             <FiMenu className="text-lg" />
           </button>
-          <span className="font-semibold text-[13px] tracking-wide text-text-primary dark:text-[#e5e5e5]">
+          <span className="font-normal tracking-wide text-text-primary dark:text-[#e5e5e5]">
             {chatTitle}
           </span>
           {(() => {
@@ -506,8 +506,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     const parsed = new Date(rawDate);
                     if (!isNaN(parsed.getTime())) return parsed;
                   }
-                  if (c._id && typeof c._id === "string" && c._id.length === 24) {
-                    const timestamp = parseInt(c._id.substring(0, 8), 16) * 1000;
+                  if (
+                    c._id &&
+                    typeof c._id === "string" &&
+                    c._id.length === 24
+                  ) {
+                    const timestamp =
+                      parseInt(c._id.substring(0, 8), 16) * 1000;
                     if (!isNaN(timestamp)) return new Date(timestamp);
                   }
                   return new Date();
@@ -518,7 +523,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 const startOfToday = new Date(
                   now.getFullYear(),
                   now.getMonth(),
-                  now.getDate()
+                  now.getDate(),
                 );
                 const startOfYesterday = new Date(startOfToday);
                 startOfYesterday.setDate(startOfYesterday.getDate() - 1);
@@ -594,7 +599,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   </span>
                 </div>
                 <h2
-                  className={`text-[26px] md:text-[38px] font-serif leading-tight tracking-tight mb-4 ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                  className={`text-[26px] font-light! md:text-[48px] font-serif leading-tight tracking-tight mb-4 ${"text-text-primary dark:text-[#F4F4F5]"}`}
                 >
                   What can we{" "}
                   <span className="text-accent-primary italic font-normal">
@@ -603,8 +608,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   today?
                 </h2>
                 <p className="text-xs md:text-sm text-text-muted max-w-md leading-relaxed mb-6">
-                  Codegene helps you reason through hard problems, build useful
-                  things, and move from a blank page to a precise result.
+                  Codegene helps you reason through hard problems, build
+                  <br />
+                  useful things, and move from a blank page to a precise
+                  <br />
+                   result.
                 </p>
 
                 {/* Quick Actions */}
@@ -619,7 +627,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                       <FiCode className="text-[14px]" />
                     </div>
-                    <span className="font-semibold text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                    <span className="text-[14px] font-normal mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                       Build a prototype
                     </span>
                     <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
@@ -636,7 +644,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                       <FiFileText className="text-[14px]" />
                     </div>
-                    <span className="font-semibold text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                    <span className="text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                       Analyze a document
                     </span>
                     <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
@@ -653,7 +661,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                       <FiImage className="text-[14px]" />
                     </div>
-                    <span className="font-semibold text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                    <span className="text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                       Create an image
                     </span>
                     <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
@@ -720,11 +728,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               </div>
               <div className="flex items-center h-8 lg:h-10">
                 <div className="flex items-center">
-                  <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93]">Processing</span>
+                  <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93]">
+                    Processing
+                  </span>
                   <span className="text-[14px] font-medium text-text-muted dark:text-[#8a8a93] flex ml-[1px]">
-                    <span className="animate-typing-dot" style={{ animationDelay: '0s' }}>.</span>
-                    <span className="animate-typing-dot" style={{ animationDelay: '0.2s' }}>.</span>
-                    <span className="animate-typing-dot" style={{ animationDelay: '0.4s' }}>.</span>
+                    <span
+                      className="animate-typing-dot"
+                      style={{ animationDelay: "0s" }}
+                    >
+                      .
+                    </span>
+                    <span
+                      className="animate-typing-dot"
+                      style={{ animationDelay: "0.2s" }}
+                    >
+                      .
+                    </span>
+                    <span
+                      className="animate-typing-dot"
+                      style={{ animationDelay: "0.4s" }}
+                    >
+                      .
+                    </span>
                   </span>
                 </div>
               </div>

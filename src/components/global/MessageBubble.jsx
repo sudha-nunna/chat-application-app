@@ -126,7 +126,7 @@ const MessageBubble = ({ role, content, onRetry }) => {
         <div
           className={`min-w-0 w-full leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
             isUser
-              ? "rounded-2xl px-4 py-2 bg-accent-primary text-white font-medium text-[14px] shadow-sm border-none ml-auto"
+              ? "rounded-2xl px-4 py-2 bg-accent-primary text-white text-[14px] shadow-sm border-none ml-auto"
               : "rounded-lg py-0.5 text-text-primary dark:text-[#e5e5e5] bg-transparent border-transparent flex items-start gap-2.5"
           }`}
         >
@@ -134,240 +134,240 @@ const MessageBubble = ({ role, content, onRetry }) => {
             <img
               src="/codegene-mark.png"
               alt="Codegene"
-              className="w-5 h-5 object-contain rounded-md select-none shrink-0 mt-1"
+              className="w-5 h-5 object-contain rounded-md select-none shrink-0"
             />
           )}
 
           <div className="flex-1 min-w-0">
-          {isEditing && isUser ? (
-            <div className="flex flex-col w-full min-w-[200px] sm:min-w-[300px]">
-              <textarea
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onFocus={(e) => {
-                  const val = e.target.value;
-                  e.target.value = "";
-                  e.target.value = val;
-                }}
-                className="w-full bg-transparent text-text-primary dark:text-white outline-none resize-none custom-scrollbar"
-                rows={Math.max(2, editValue.split("\n").length)}
-                autoFocus
-              />
-              <div className="flex justify-end gap-2 mt-3">
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditValue(content);
+            {isEditing && isUser ? (
+              <div className="flex flex-col w-full min-w-[200px] sm:min-w-[300px]">
+                <textarea
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onFocus={(e) => {
+                    const val = e.target.value;
+                    e.target.value = "";
+                    e.target.value = val;
                   }}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-secondary/50 hover:bg-surface-secondary text-text-primary transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  disabled={
-                    editValue.trim() === content.trim() || !editValue.trim()
-                  }
-                  onClick={() => {
-                    setIsEditing(false);
-                    if (onRetry) onRetry(editValue);
-                  }}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-text-primary text-text-inverse dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 transition"
-                >
-                  Update
-                </button>
-              </div>
-            </div>
-          ) : (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                table: ({ node, ...props }) => (
-                  <div className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm">
-                    <table
-                      className="w-full border-collapse text-left text-[13px] min-w-full table-auto"
-                      {...props}
-                    />
-                  </div>
-                ),
-                thead: ({ node, ...props }) => (
-                  <thead
-                    className="uppercase text-[11px] font-bold tracking-wider border-b border-border-primary dark:border-white/10 bg-surface-secondary dark:bg-[#1c1d27] text-text-muted dark:text-[#a1a1aa]"
-                    {...props}
-                  />
-                ),
-                th: ({ node, ...props }) => (
-                  <th
-                    className="px-4 py-3 font-semibold select-none whitespace-nowrap align-middle"
-                    {...props}
-                  />
-                ),
-                td: ({ node, ...props }) => (
-                  <td
-                    className="px-4 py-3 border-b align-middle whitespace-nowrap text-text-primary dark:text-[#d1d1d6] border-border-primary/50 dark:border-white/5"
-                    {...props}
-                  />
-                ),
-                tr: ({ node, ...props }) => (
-                  <tr
-                    className="transition-colors last:border-none hover:bg-black/5 dark:hover:bg-white/5 even:bg-black/[0.02] dark:even:bg-white/[0.02]"
-                    {...props}
-                  />
-                ),
-                h1: ({ node, ...props }) => (
-                  <h1
-                    className={`text-[19px] font-serif font-medium mt-4 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
-                    {...props}
-                  />
-                ),
-                h2: ({ node, ...props }) => (
-                  <h2
-                    className={`text-[17px] font-serif font-medium mt-3 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
-                    {...props}
-                  />
-                ),
-                h3: ({ node, ...props }) => (
-                  <h3
-                    className={`text-[15px] font-serif font-medium mt-2.5 mb-1.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
-                    {...props}
-                  />
-                ),
-                img: ({ node, ...props }) => (
-                  <div
-                    className={`my-3 rounded-xl overflow-hidden border p-1 max-w-full ${"border-border-primary bg-interactive-base dark:bg-interactive-active"}`}
+                  className="w-full bg-transparent text-text-primary dark:text-white outline-none resize-none custom-scrollbar"
+                  rows={Math.max(2, editValue.split("\n").length)}
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditValue(content);
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-secondary/50 hover:bg-surface-secondary text-text-primary transition"
                   >
-                    <img
-                      className="max-w-full h-auto object-contain mx-auto rounded-lg"
-                      loading="lazy"
-                      {...props}
-                      alt={props.alt || "Diagram"}
-                    />
-                  </div>
-                ),
-                code: (props) => (
-                  <CodeBlock {...props} isUser={isUser} isDark={isDark} />
-                ),
-                p: ({ node, ...props }) => (
-                  <p
-                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
-                    {...props}
-                  />
-                ),
-                strong: ({ node, ...props }) => (
-                  <strong
-                    className={`font-semibold ${isUser ? "text-white font-bold" : "text-text-primary dark:text-[#F4F4F5]"}`}
-                    {...props}
-                  />
-                ),
-                a: ({ node, ...props }) => (
-                  <a
-                    className={`${isUser ? "text-white underline font-semibold" : "text-[#7c83f6] hover:underline font-medium"} break-all`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    {...props}
-                  />
-                ),
-                ul: ({ node, ...props }) => (
-                  <ul
-                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
-                    {...props}
-                  />
-                ),
-                ol: ({ node, ...props }) => (
-                  <ol
-                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
-                    {...props}
-                  />
-                ),
-                li: ({ node, ...props }) => (
-                  <li
-                    className={`break-words pl-1 ${isUser ? "text-white" : isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
-                    {...props}
-                  />
-                ),
-                hr: ({ node, ...props }) => (
-                  <hr
-                    className={`my-5 border-t ${isDark ? "border-white/5" : "border-black/10"}`}
-                    {...props}
-                  />
-                ),
-                blockquote: ({ node, ...props }) => (
-                  <blockquote
-                    className={`my-3 px-3.5 py-2 rounded-xl border text-[13px] font-mono flex items-center gap-3 shadow-sm ${isDark ? "bg-[#16171d] border-white/5 text-[#a1a1aa]" : "bg-gray-50 border-gray-200 text-gray-600"}`}
-                    {...props}
-                  />
-                ),
-              }}
-            >
-              {displayContent}
-            </ReactMarkdown>
-          )}
-
-          {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
-          {hasPauseNotice && (
-            <div
-              className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${"bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/30 dark:text-amber-600"}`}
-            >
-              <div className="flex items-center gap-2 text-xs font-medium">
-                <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
-                <span>Stream paused due to higher-priority request.</span>
+                    Cancel
+                  </button>
+                  <button
+                    disabled={
+                      editValue.trim() === content.trim() || !editValue.trim()
+                    }
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (onRetry) onRetry(editValue);
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-text-primary text-text-inverse dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 transition"
+                  >
+                    Update
+                  </button>
+                </div>
               </div>
-              {onRetry && (
-                <button
-                  onClick={onRetry}
-                  className="px-3 py-1.5 bg-amber-900 hover:bg-amber-600 text-text-primary font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
-                >
-                  <FiRotateCw className="w-3.5 h-3.5" />
-                  Retry
-                </button>
-              )}
-            </div>
-          )}
-          {/* Action Buttons for AI Message */}
-          {!isUser && !hasPauseNotice && (
-            <div className="flex items-center gap-1.5 mt-2 opacity-100 transition-opacity text-text-muted">
-              <button
-                onClick={() => handleCopy(rawDisplayContent)}
-                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition flex items-center gap-1.5"
-                title="Copy"
+            ) : (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  table: ({ node, ...props }) => (
+                    <div className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm">
+                      <table
+                        className="w-full border-collapse text-left text-[13px] min-w-full table-auto"
+                        {...props}
+                      />
+                    </div>
+                  ),
+                  thead: ({ node, ...props }) => (
+                    <thead
+                      className="uppercase text-[11px] font-bold tracking-wider border-b border-border-primary dark:border-white/10 bg-surface-secondary dark:bg-[#1c1d27] text-text-muted dark:text-[#a1a1aa]"
+                      {...props}
+                    />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th
+                      className="px-4 py-3 font-semibold select-none whitespace-nowrap align-middle"
+                      {...props}
+                    />
+                  ),
+                  td: ({ node, ...props }) => (
+                    <td
+                      className="px-4 py-3 border-b align-middle whitespace-nowrap text-text-primary dark:text-[#d1d1d6] border-border-primary/50 dark:border-white/5"
+                      {...props}
+                    />
+                  ),
+                  tr: ({ node, ...props }) => (
+                    <tr
+                      className="transition-colors last:border-none hover:bg-black/5 dark:hover:bg-white/5 even:bg-black/[0.02] dark:even:bg-white/[0.02]"
+                      {...props}
+                    />
+                  ),
+                  h1: ({ node, ...props }) => (
+                    <h1
+                      className={`text-[19px] font-serif font-medium mt-4 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                      {...props}
+                    />
+                  ),
+                  h2: ({ node, ...props }) => (
+                    <h2
+                      className={`text-[17px] font-serif font-medium mt-3 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                      {...props}
+                    />
+                  ),
+                  h3: ({ node, ...props }) => (
+                    <h3
+                      className={`text-[15px] font-serif font-medium mt-2.5 mb-1.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                      {...props}
+                    />
+                  ),
+                  img: ({ node, ...props }) => (
+                    <div
+                      className={`my-3 rounded-xl overflow-hidden border p-1 max-w-full ${"border-border-primary bg-interactive-base dark:bg-interactive-active"}`}
+                    >
+                      <img
+                        className="max-w-full h-auto object-contain mx-auto rounded-lg"
+                        loading="lazy"
+                        {...props}
+                        alt={props.alt || "Diagram"}
+                      />
+                    </div>
+                  ),
+                  code: (props) => (
+                    <CodeBlock {...props} isUser={isUser} isDark={isDark} />
+                  ),
+                  p: ({ node, ...props }) => (
+                    <p
+                      className={`mb-3.5 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
+                      {...props}
+                    />
+                  ),
+                  strong: ({ node, ...props }) => (
+                    <strong
+                      className={`font-medium ${isUser ? "text-white font-bold" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                      {...props}
+                    />
+                  ),
+                  a: ({ node, ...props }) => (
+                    <a
+                      className={`${isUser ? "text-white underline font-semibold" : "text-[#7c83f6] hover:underline font-medium"} break-all`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      {...props}
+                    />
+                  ),
+                  ul: ({ node, ...props }) => (
+                    <ul
+                      className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
+                      {...props}
+                    />
+                  ),
+                  ol: ({ node, ...props }) => (
+                    <ol
+                      className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
+                      {...props}
+                    />
+                  ),
+                  li: ({ node, ...props }) => (
+                    <li
+                      className={`break-words pl-1 ${isUser ? "text-white" : isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                      {...props}
+                    />
+                  ),
+                  hr: ({ node, ...props }) => (
+                    <hr
+                      className={`my-5 border-t ${isDark ? "border-white/5" : "border-black/10"}`}
+                      {...props}
+                    />
+                  ),
+                  blockquote: ({ node, ...props }) => (
+                    <blockquote
+                      className={`my-3 px-3.5 py-2 rounded-xl border text-[13px] font-mono flex items-center gap-3 shadow-sm ${isDark ? "bg-[#16171d] border-white/5 text-[#a1a1aa]" : "bg-gray-50 border-gray-200 text-gray-600"}`}
+                      {...props}
+                    />
+                  ),
+                }}
               >
-                {isCopied ? (
-                  <>
-                    <FiCheck className="w-4 h-4 text-green-500" />
-                    <span className="text-[11px] font-medium text-green-500">
-                      Copied
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <FiCopy className="w-4 h-4" />
-                    <span className="text-[11px] font-medium">Copy</span>
-                  </>
+                {displayContent}
+              </ReactMarkdown>
+            )}
+
+            {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
+            {hasPauseNotice && (
+              <div
+                className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${"bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/30 dark:text-amber-600"}`}
+              >
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <FiAlertTriangle className="text-amber-500 text-sm shrink-0" />
+                  <span>Stream paused due to higher-priority request.</span>
+                </div>
+                {onRetry && (
+                  <button
+                    onClick={onRetry}
+                    className="px-3 py-1.5 bg-amber-900 hover:bg-amber-600 text-text-primary font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                  >
+                    <FiRotateCw className="w-3.5 h-3.5" />
+                    Retry
+                  </button>
                 )}
-              </button>
-              <button
-                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
-                title="Good response"
-              >
-                <FiThumbsUp className="w-4 h-4" />
-              </button>
-              <button
-                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
-                title="Bad response"
-              >
-                <FiThumbsDown className="w-4 h-4" />
-              </button>
-              {onRetry && (
+              </div>
+            )}
+            {/* Action Buttons for AI Message */}
+            {!isUser && !hasPauseNotice && (
+              <div className="flex items-center gap-1.5 mt-2 opacity-100 transition-opacity text-text-muted">
                 <button
-                  onClick={() => onRetry()}
-                  className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
-                  title="Regenerate"
+                  onClick={() => handleCopy(rawDisplayContent)}
+                  className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition flex items-center gap-1.5"
+                  title="Copy"
                 >
-                  <FiRotateCw className="w-4 h-4" />
+                  {isCopied ? (
+                    <>
+                      <FiCheck className="w-4 h-4 text-green-500" />
+                      <span className="text-[11px] font-medium text-green-500">
+                        Copied
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <FiCopy className="w-4 h-4" />
+                      <span className="text-[11px] font-medium">Copy</span>
+                    </>
+                  )}
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+                <button
+                  className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
+                  title="Good response"
+                >
+                  <FiThumbsUp className="w-4 h-4" />
+                </button>
+                <button
+                  className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
+                  title="Bad response"
+                >
+                  <FiThumbsDown className="w-4 h-4" />
+                </button>
+                {onRetry && (
+                  <button
+                    onClick={() => onRetry()}
+                    className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
+                    title="Regenerate"
+                  >
+                    <FiRotateCw className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Action Buttons for User Message */}

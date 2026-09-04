@@ -476,10 +476,10 @@ const AppLayout = ({ children }) => {
           key={item._id}
           onClick={() => !isEditing && handleSelectItem(item._id, type)}
           title={title}
-          className={`group relative flex items-center justify-between py-1.5 rounded-lg cursor-pointer text-[13px] transition select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-2.5"} ${
+          className={`group relative flex items-center justify-between py-1.5 rounded-lg cursor-pointer text-[13px]  font-normal transition select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-2.5"} ${
             isActive
-              ? "bg-black/5 dark:bg-interactive-active text-text-primary font-medium"
-              : "hover:bg-surface-secondary dark:hover:bg-interactive-active/30 text-text-primary dark:text-text-muted dark:hover:text-text-primary"
+              ? "bg-black/5 dark:bg-interactive-active text-text-primary"
+              : "hover:bg-surface-secondary dark:hover:bg-interactive-active/30 text-text-primary dark:text-text-muted dark:hover:text-text-primary opacity-70 dark:opacity-90"
           }`}
         >
           <div
@@ -836,7 +836,7 @@ const AppLayout = ({ children }) => {
                 setIsProfileDropdownOpen(false);
                 setIsUpgradeModalOpen(true);
               }}
-              className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+              className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
             >
               <FiZap className="text-sm" /> Upgrade plan
             </button> */}
@@ -845,7 +845,7 @@ const AppLayout = ({ children }) => {
                 e.stopPropagation();
                 toggleTheme();
               }}
-              className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+              className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
             >
               {isDark ? (
                 <FiSun className="text-sm" />
@@ -854,7 +854,7 @@ const AppLayout = ({ children }) => {
               )}{" "}
               Appearance
             </button>
-            <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+            <button className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
               <FiSettings className="text-sm" /> Settings
             </button>
 
@@ -865,7 +865,7 @@ const AppLayout = ({ children }) => {
                 setIsProfileDropdownOpen(false);
                 handleLogout();
               }}
-              className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+              className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
             >
               <FiLogOut className="text-sm" /> Log out
             </button>
@@ -1160,18 +1160,18 @@ const AppLayout = ({ children }) => {
                 navigate("/chat");
                 setActivePopover(null);
               }}
-              className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-medium shadow-sm ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
+              className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 shadow-sm ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
             >
               <div className="w-6 h-6 flex items-center justify-center shrink-0">
                 <FiPlus className="text-lg" />
               </div>
               {!isSidebarCollapsed && (
-                <span className="text-sm font-medium opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                <span className="opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
                   New chat
                 </span>
               )}
               {isSidebarCollapsed && !isMobile && (
-                <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
+                <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
                   New chat
                 </div>
               )}
@@ -1181,7 +1181,7 @@ const AppLayout = ({ children }) => {
                 setIsSearchModalOpen(true);
                 setActivePopover(null);
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all cursor-pointer text-text-muted bg-surface-tertiary border border-border-primary/30 hover:border-border-primary shadow-sm ${isSidebarCollapsed ? "justify-center px-0!" : ""} group relative`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all cursor-pointer text-text-muted bg-white dark:bg-[#171923] border border-border-primary/50 hover:border-border-primary ${isSidebarCollapsed ? "justify-center px-0!" : ""} group relative`}
             >
               <FiSearch
                 className={`shrink-0 ${isSidebarCollapsed ? "text-lg" : "text-sm"}`}
@@ -1405,11 +1405,18 @@ const AppLayout = ({ children }) => {
                             </div>
                           ) : (
                             groupedRecentChats.map((group, idx) => (
-                              <div key={group.key} className="flex flex-col gap-0.5">
-                                <h4 className={`text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 ${idx > 0 ? "mt-2" : ""}`}>
+                              <div
+                                key={group.key}
+                                className="flex flex-col gap-0.5"
+                              >
+                                <h4
+                                  className={`text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 ${idx > 0 ? "mt-2" : ""}`}
+                                >
                                   {group.label}
                                 </h4>
-                                {group.items.map((c) => renderSidebarItem(c, "chat"))}
+                                {group.items.map((c) =>
+                                  renderSidebarItem(c, "chat"),
+                                )}
                               </div>
                             ))
                           )}
@@ -1498,8 +1505,6 @@ const AppLayout = ({ children }) => {
             )}
           </div>
 
-
-
           {/* Profile Dropdown at bottom of sidebar (Desktop only) */}
           {!isMobile && (
             <div className="mt-auto px-2 py-4 border-t border-border-primary/40 relative">
@@ -1543,7 +1548,7 @@ const AppLayout = ({ children }) => {
                       setIsProfileDropdownOpen(false);
                       setIsUpgradeModalOpen(true);
                     }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
                   </button>
@@ -1553,7 +1558,7 @@ const AppLayout = ({ children }) => {
                       setIsProfileDropdownOpen(false);
                       setIsCreditsModalOpen(true);
                     }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiCreditCard className="text-sm" /> Credits usage
                   </button>
@@ -1563,7 +1568,7 @@ const AppLayout = ({ children }) => {
                       toggleTheme();
                       setIsProfileDropdownOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     {isDark ? (
                       <FiSun className="text-sm" />
@@ -1572,7 +1577,7 @@ const AppLayout = ({ children }) => {
                     )}{" "}
                     Appearance
                   </button>
-                  <button className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                  <button className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
                     <FiSettings className="text-sm" /> Settings
                   </button>
 
@@ -1583,7 +1588,7 @@ const AppLayout = ({ children }) => {
                       setIsProfileDropdownOpen(false);
                       handleLogout();
                     }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiLogOut className="text-sm" /> Log out
                   </button>
@@ -1610,8 +1615,8 @@ const AppLayout = ({ children }) => {
 
                 {!isSidebarCollapsed && (
                   <div className="flex-col whitespace-nowrap overflow-hidden ml-3 flex transition-opacity duration-300 items-start">
-                    <p className="text-[13px] font-bold truncate tracking-tight  leading-tight">
-                      {user?.name || "Ari Vance"}
+                    <p className="text-[13px] font-normal truncate">
+                      {user?.name || "User"}
                     </p>
                     <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
                       Studio plan
