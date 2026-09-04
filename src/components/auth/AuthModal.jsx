@@ -46,7 +46,7 @@ const AuthModal = ({ onAuthSuccess }) => {
           </div>
 
           <Link to="/" className="hidden md:flex relative z-10 items-center gap-1">
-            <img src="/mini-logo2.png" alt="Nexora Logo" className={`w-12 h-12 object-contain shrink-0`}/>
+            <img src="/mini-logo2.png" alt="Codegene Logo" className={`w-12 h-12 object-contain shrink-0`}/>
             <span className="text-white font-medium text-sm tracking-wide flex items-start gap-0.5">
               CODEGENE
               <sup className="text-[9px] mt-1 font-sans text-white/50 font-semibold tracking-wider">
@@ -71,7 +71,7 @@ const AuthModal = ({ onAuthSuccess }) => {
             
             {/* Mobile Logo */}
             <div className="md:hidden flex flex-col items-center justify-center gap-2 mb-3">
-              <img src="/mini-logo2.png" alt="Nexora Logo" className="w-12 h-12 object-contain invert" />
+              <img src="/codegene-mark.png" alt="Codegene Logo" className="w-12 h-12 object-contain" />
             </div>
 
             <h1 className="text-2xl md:text-3xl font-display font-medium text-white mb-2 tracking-tight text-center md:text-left">
