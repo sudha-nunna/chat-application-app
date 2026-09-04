@@ -64,7 +64,12 @@ import {
 
 const AppLayout = ({ children }) => {
   const { theme, isDark, toggleTheme } = useTheme();
-  const { setIsUpgradeModalOpen, setIsCreditsModalOpen } = useSubscription();
+  const {
+    isUpgradeModalOpen,
+    setIsUpgradeModalOpen,
+    isCreditsModalOpen,
+    setIsCreditsModalOpen,
+  } = useSubscription();
   const [authToken, setAuthToken] = useState(() =>
     localStorage.getItem("token"),
   );
@@ -361,6 +366,8 @@ const AppLayout = ({ children }) => {
   };
 
   const handleSelectItem = (id, type) => {
+    setIsUpgradeModalOpen(false);
+    setIsCreditsModalOpen(false);
     if (type === "chat") {
       if (id) {
         navigate(`/chat?chatId=${id}`);
@@ -1147,6 +1154,8 @@ const AppLayout = ({ children }) => {
           >
             <button
               onClick={() => {
+                setIsUpgradeModalOpen(false);
+                setIsCreditsModalOpen(false);
                 setActiveSidebarTab("chat");
                 navigate("/chat");
                 setActivePopover(null);
@@ -1658,12 +1667,14 @@ const AppLayout = ({ children }) => {
         </div>
       </div>
 
-      {/* Subscription & Credits Drawers */}
-      <SubscriptionModal />
-      <CreditsModal />
-
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-dotted">
-        {children}
+        {isUpgradeModalOpen ? (
+          <SubscriptionModal />
+        ) : isCreditsModalOpen ? (
+          <CreditsModal />
+        ) : (
+          children
+        )}
       </main>
 
       {/* <FloatingExternalBotWidget /> */}

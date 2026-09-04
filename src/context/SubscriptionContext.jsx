@@ -93,6 +93,18 @@ export const SubscriptionProvider = ({ children }) => {
   const billingCycle = subscription?.billingCycle || "none";
   const priorityScore = subscription?.priorityScore || 10;
 
+  const handleSetIsUpgradeModalOpen = (val) => {
+    const isOpen = typeof val === "function" ? val(isUpgradeModalOpen) : val;
+    if (isOpen) setIsCreditsModalOpen(false);
+    setIsUpgradeModalOpen(isOpen);
+  };
+
+  const handleSetIsCreditsModalOpen = (val) => {
+    const isOpen = typeof val === "function" ? val(isCreditsModalOpen) : val;
+    if (isOpen) setIsUpgradeModalOpen(false);
+    setIsCreditsModalOpen(isOpen);
+  };
+
   return (
     <SubscriptionContext.Provider
       value={{
@@ -103,9 +115,9 @@ export const SubscriptionProvider = ({ children }) => {
         priorityScore,
         loading,
         isUpgradeModalOpen,
-        setIsUpgradeModalOpen,
+        setIsUpgradeModalOpen: handleSetIsUpgradeModalOpen,
         isCreditsModalOpen,
-        setIsCreditsModalOpen,
+        setIsCreditsModalOpen: handleSetIsCreditsModalOpen,
         refreshSubscription: fetchSubscription,
         upgradePlan,
         downgradePlan,

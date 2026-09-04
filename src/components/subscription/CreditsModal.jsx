@@ -96,61 +96,53 @@ const CreditsModal = () => {
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 transition-opacity duration-300"
-        onClick={() => setIsCreditsModalOpen(false)}
-      />
+    <div
+      className="w-full h-full flex flex-col bg-surface-primary dark:bg-[#13141f] text-text-primary dark:text-white overflow-hidden"
+    >
+      {/* Header Bar */}
+      <div className="relative py-3.5 px-5 md:px-6 border-b shrink-0 bg-gradient-to-r from-accent-primary/10 via-surface-secondary/90 to-indigo-500/10 dark:from-[#1e2034] dark:via-[#161725] dark:to-[#1a1b2d] border-border-primary dark:border-white/10 overflow-hidden">
+        <div className="absolute -top-12 -left-12 w-32 h-32 bg-accent-primary/20 rounded-full blur-2xl pointer-events-none" />
 
-      {/* Right Side Telemetry Drawer Overlay - Half Screen (50vw) */}
-      <div
-        className={`fixed right-0 top-0 h-full w-full md:w-[50vw] max-w-[95vw] shadow-2xl flex flex-col z-50 border-l transition-all duration-300 bg-surface-primary dark:bg-[#13141f] border-border-primary dark:border-white/10 text-text-primary dark:text-white`}
-      >
-        {/* Header Bar */}
-        <div className="relative py-3.5 px-5 md:px-6 border-b shrink-0 bg-gradient-to-r from-accent-primary/10 via-surface-secondary/90 to-indigo-500/10 dark:from-[#1e2034] dark:via-[#161725] dark:to-[#1a1b2d] border-border-primary dark:border-white/10 overflow-hidden">
-          <div className="absolute -top-12 -left-12 w-32 h-32 bg-accent-primary/20 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0 font-bold">
-                <FiActivity />
-              </div>
-              <div>
-                <h2 className="text-sm md:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-text-primary via-text-primary to-accent-primary dark:from-white dark:via-white dark:to-[#a4a9ff]">
-                  Usage & Telemetry
-                </h2>
-                <p className="text-[11px] text-text-muted">
-                  Live credit metrics, quotas, and token consumption.
-                </p>
-              </div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0 font-bold">
+              <FiActivity />
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchUsageData}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-secondary hover:bg-surface-tertiary dark:bg-[#1a1c2b] dark:hover:bg-[#23263a] text-text-primary dark:text-white border border-border-primary/60 dark:border-white/10 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
-                title="Refresh Telemetry"
-              >
-                <FiRefreshCw
-                  className={`text-xs ${loading ? "animate-spin text-accent-primary" : ""}`}
-                />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-
-              <button
-                onClick={() => setIsCreditsModalOpen(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-border-primary/50 dark:border-white/5"
-                title="Close Panel"
-              >
-                <FiX className="text-base" />
-              </button>
+            <div>
+              <h2 className="text-sm md:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-text-primary via-text-primary to-accent-primary dark:from-white dark:via-white dark:to-[#a4a9ff]">
+                Usage & Telemetry
+              </h2>
+              <p className="text-[11px] text-text-muted">
+                Live credit metrics, quotas, and token consumption.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Body Container */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchUsageData}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-secondary hover:bg-surface-tertiary dark:bg-[#1a1c2b] dark:hover:bg-[#23263a] text-text-primary dark:text-white border border-border-primary/60 dark:border-white/10 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Refresh Telemetry"
+            >
+              <FiRefreshCw
+                className={`text-xs ${loading ? "animate-spin text-accent-primary" : ""}`}
+              />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            <button
+              onClick={() => setIsCreditsModalOpen(false)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-border-primary/50 dark:border-white/5"
+              title="Close Panel"
+            >
+              <FiX className="text-base" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Body Container */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar max-w-6xl mx-auto w-full">
           {error && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
               {error}
@@ -379,8 +371,7 @@ const CreditsModal = () => {
             </button>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 };
 
