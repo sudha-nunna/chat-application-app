@@ -627,7 +627,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                       <FiCode className="text-[14px]" />
                     </div>
-                    <span className="text-[14px] font-normal mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                    <span className="text-[13px] font-normal mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                       Build a prototype
                     </span>
                     <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
@@ -644,7 +644,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                       <FiFileText className="text-[14px]" />
                     </div>
-                    <span className="text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                    <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                       Analyze a document
                     </span>
                     <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
@@ -661,7 +661,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                       <FiImage className="text-[14px]" />
                     </div>
-                    <span className="text-[14px] mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                    <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                       Create an image
                     </span>
                     <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">

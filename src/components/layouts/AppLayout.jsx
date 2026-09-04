@@ -1614,7 +1614,7 @@ const AppLayout = ({ children }) => {
                 </div>
 
                 {!isSidebarCollapsed && (
-                  <div className="flex-col whitespace-nowrap overflow-hidden ml-3 flex transition-opacity duration-300 items-start">
+                  <div className="flex-col whitespace-nowrap overflow-hidden ml-3 flex transition-opacity duration-300 items-start leading-none">
                     <p className="text-[13px] font-normal truncate">
                       {user?.name || "User"}
                     </p>
@@ -1640,7 +1640,7 @@ const AppLayout = ({ children }) => {
 
   if (!isAuthenticated && !isGoogleCallbackRoute) {
     return (
-      <div className="flex flex-col h-screen w-screen overflow-hidden bg-surface-primary text-text-primary">
+      <div className="flex flex-col h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary">
         <AuthModal onAuthSuccess={() => setIsAuthenticated(true)} />
       </div>
     );
@@ -1648,7 +1648,7 @@ const AppLayout = ({ children }) => {
 
   return (
     <div
-      className={`flex flex-col md:flex-row h-screen w-screen overflow-hidden bg-surface-primary text-text-primary`}
+      className={`flex flex-col md:flex-row h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary`}
     >
       {/* Main Sidebar (Desktop) */}
       <div className="hidden md:flex h-full z-30 relative">

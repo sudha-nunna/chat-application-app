@@ -257,16 +257,18 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
             <div className="relative" ref={modelMenuRef}>
               <button
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
               >
-                {selectedModel.displayName}
+                <span className="truncate max-w-[90px] sm:max-w-[150px] md:max-w-[200px] text-left">
+                  {selectedModel.displayName}
+                </span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={2}
                   stroke="currentColor"
-                  className={`w-3 h-3 ml-0.5 transition-transform duration-200 ${isModelMenuOpen ? "rotate-180" : ""}`}
+                  className={`w-3 h-3 ml-0.5 shrink-0 transition-transform duration-200 ${isModelMenuOpen ? "rotate-180" : ""}`}
                 >
                   <path
                     strokeLinecap="round"
