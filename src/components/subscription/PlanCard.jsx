@@ -171,7 +171,7 @@ const PlanCard = ({
           </button>
         ) : isCurrent ? (
           <button
-            onClick={() => onSelect(planKey)}
+            onClick={() => onSelect(planKey, plan)}
             disabled={loading}
             className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 group/btn cursor-pointer ${
               isRecommended
@@ -185,7 +185,7 @@ const PlanCard = ({
           </button>
         ) : (
           <button
-            onClick={() => onSelect(planKey)}
+            onClick={() => onSelect(planKey, plan)}
             disabled={loading}
             className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 group/btn cursor-pointer ${
               isRecommended

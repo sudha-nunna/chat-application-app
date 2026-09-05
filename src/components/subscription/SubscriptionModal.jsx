@@ -4,6 +4,7 @@ import { usePlans } from "../../hooks/usePlans";
 import { FiX, FiZap, FiShield, FiRefreshCw } from "react-icons/fi";
 import PlanCard from "./PlanCard";
 import { useTheme } from "../../context/ThemeContext";
+import { redirectToStripe } from "../../utils/stripeService";
 
 const SubscriptionModal = () => {
   const {
@@ -22,27 +23,39 @@ const SubscriptionModal = () => {
 
   if (!isUpgradeModalOpen) return null;
 
-  const handlePlanSelect = async (targetPlan) => {
-    setActionLoading(true);
-    setFeedback(null);
-
-    let res;
+  const handlePlanSelect = async (targetPlan, planObj) => {
     if (targetPlan === "free") {
-      res = await downgradePlan("free");
-    } else {
-      res = await upgradePlan(targetPlan, "one-time");
+      setActionLoading(true);
+      setFeedback(null);
+      const res = await downgradePlan("free");
+      setActionLoading(false);
+      if (res.success) {
+        setFeedback({ type: "success", message: res.data?.message || "Switched to free tier" });
+        window.dispatchEvent(new Event("auth-change"));
+        setTimeout(() => {
+          setIsUpgradeModalOpen(false);
+          setFeedback(null);
+        }, 1500);
+      } else {
+        setFeedback({ type: "error", message: res.message || "Failed to process plan" });
+      }
+      return;
     }
 
-    setActionLoading(false);
-    if (res.success) {
-      setFeedback({ type: "success", message: res.data?.message || "Credits topped up successfully!" });
-      window.dispatchEvent(new Event("auth-change"));
+    setActionLoading(true);
+    setFeedback({ type: "info", message: "Opening Stripe checkout in a new tab..." });
+    try {
+      redirectToStripe(targetPlan, planObj, "_blank");
+      setActionLoading(false);
+      setFeedback({ type: "info", message: "Opened Stripe checkout in a new tab!" });
       setTimeout(() => {
         setIsUpgradeModalOpen(false);
         setFeedback(null);
-      }, 1500);
-    } else {
-      setFeedback({ type: "error", message: res.message || "Failed to process credit pack" });
+      }, 2000);
+    } catch (err) {
+      console.error("Stripe redirect error:", err);
+      setActionLoading(false);
+      setFeedback({ type: "error", message: "Failed to open Stripe checkout" });
     }
   };
 
@@ -122,7 +135,7 @@ const SubscriptionModal = () => {
                 key={p.key}
                 plan={p}
                 currentPlan={currentPlan}
-                onSelect={handlePlanSelect}
+                onSelect={(planKey) => handlePlanSelect(planKey, p)}
                 loading={actionLoading}
               />
             ))}

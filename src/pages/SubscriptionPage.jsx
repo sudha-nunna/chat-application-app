@@ -6,6 +6,7 @@ import { useTanStackData, useTanStackQueryClient } from "../hooks/useTanStackDat
 import PlanCard from "../components/subscription/PlanCard";
 import { useTheme } from "../context/ThemeContext";
 import { Link } from "react-router-dom";
+import { redirectToStripe } from "../utils/stripeService";
 import {
   FiZap,
   FiRefreshCw,
@@ -54,50 +55,70 @@ const SubscriptionPage = () => {
     }
   };
 
-  const handlePlanSelect = async (targetPlan) => {
-    setActionLoading(true);
-    setFeedback(null);
-    let res;
+  const handlePlanSelect = async (targetPlan, planObj) => {
     if (targetPlan === "free") {
-      res = await downgradePlan("free");
-    } else {
-      res = await upgradePlan(targetPlan, "one-time");
-    }
-    setActionLoading(false);
-    if (res.success) {
-      setFeedback({
-        type: "success",
-        message: res.data?.message || "Credits topped up successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["usage"] });
-      window.dispatchEvent(new Event("auth-change"));
-    } else {
-      setFeedback({ type: "error", message: res.message || "Operation failed" });
-    }
-  };
-
-  const handlePurchaseCredits = async (packId) => {
-    setActionLoading(true);
-    setFeedback(null);
-    try {
-      const res = await NobackEndCallObj("/credits/purchase", { packId }, "post");
-      if (res?.success) {
+      setActionLoading(true);
+      setFeedback(null);
+      const res = await downgradePlan("free");
+      setActionLoading(false);
+      if (res.success) {
         setFeedback({
           type: "success",
-          message: `Successfully purchased credit pack: ${packId}`,
+          message: res.data?.message || "Switched to free plan successfully!",
         });
         queryClient.invalidateQueries({ queryKey: ["usage"] });
         window.dispatchEvent(new Event("auth-change"));
       } else {
-        setFeedback({
-          type: "error",
-          message: res?.message || "Failed to purchase credits.",
-        });
+        setFeedback({ type: "error", message: res.message || "Operation failed" });
       }
-    } catch (err) {
-      setFeedback({ type: "error", message: "Error purchasing credits." });
+      return;
     }
-    setActionLoading(false);
+
+    // Redirect to Stripe Checkout for credit package purchase
+    setActionLoading(true);
+    setFeedback({
+      type: "info",
+      message: "Redirecting to Stripe secure checkout...",
+    });
+
+    try {
+      redirectToStripe(targetPlan, planObj, "_blank");
+      setActionLoading(false);
+      setFeedback({
+        type: "info",
+        message: "Opened Stripe Checkout in a new tab. Complete your payment there!",
+      });
+    } catch (err) {
+      console.error("Failed to redirect to Stripe:", err);
+      setActionLoading(false);
+      setFeedback({
+        type: "error",
+        message: "Failed to open Stripe checkout. Please try again.",
+      });
+    }
+  };
+
+  const handlePurchaseCredits = async (packId, packObj) => {
+    setActionLoading(true);
+    setFeedback({
+      type: "info",
+      message: "Opening Stripe secure checkout...",
+    });
+    try {
+      redirectToStripe(packId, packObj, "_blank");
+      setActionLoading(false);
+      setFeedback({
+        type: "info",
+        message: "Opened Stripe Checkout in a new tab. Complete your payment there!",
+      });
+    } catch (err) {
+      console.error("Failed to redirect to Stripe:", err);
+      setActionLoading(false);
+      setFeedback({
+        type: "error",
+        message: "Failed to open Stripe checkout. Please try again.",
+      });
+    }
   };
 
   // Filter out the 'free' tier so only top-up packages are displayed
@@ -136,12 +157,16 @@ const SubscriptionPage = () => {
           className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between border animate-in fade-in duration-200 ${
             feedback.type === "success"
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+              : feedback.type === "info"
+              ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
               : "bg-rose-500/10 text-rose-400 border-rose-500/20"
           }`}
         >
           <div className="flex items-center gap-2.5">
             {feedback.type === "success" ? (
               <FiCheckCircle className="text-base shrink-0 text-emerald-400" />
+            ) : feedback.type === "info" ? (
+              <FiRefreshCw className="text-base shrink-0 text-indigo-400 animate-spin" />
             ) : (
               <FiAlertTriangle className="text-base shrink-0 text-rose-400" />
             )}
@@ -194,7 +219,7 @@ const SubscriptionPage = () => {
                 key={p.key}
                 plan={p}
                 currentPlan={currentPlan}
-                onSelect={handlePlanSelect}
+                onSelect={(planKey) => handlePlanSelect(planKey, p)}
                 loading={actionLoading}
               />
             ))}
@@ -241,11 +266,11 @@ const SubscriptionPage = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => handlePurchaseCredits(pack.packId)}
+                    onClick={() => handlePurchaseCredits(pack.packId, pack)}
                     disabled={actionLoading}
                     className="w-full py-2 rounded-xl text-xs font-bold bg-accent-primary hover:bg-indigo-600 text-white transition cursor-pointer shadow-sm"
                   >
-                    {actionLoading ? "Processing..." : "Purchase Pack"}
+                    {actionLoading ? "Redirecting..." : "Purchase Pack"}
                   </button>
                 </div>
               ))}

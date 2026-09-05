@@ -384,6 +384,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       if (force) {
         isAutoScrollEnabledRef.current = true;
         setShowScrollBottom(false);
+        setShowScrollToUser(false);
       }
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
@@ -392,6 +393,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const scrollToLatestUserMessage = () => {
     if (latestUserMsgRef.current) {
       isAutoScrollEnabledRef.current = false;
+      setShowScrollToUser(false);
       latestUserMsgRef.current.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -402,6 +404,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   useEffect(() => {
     if (isAutoScrollEnabledRef.current && messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      setShowScrollBottom(false);
+      setShowScrollToUser(false);
     }
   }, [messages, streamingReply, isSearching, isBotTyping]);
 
@@ -412,8 +416,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     setShowScrollBottom(distanceFromBottom > 100);
 
-    // Check if the latest user message is scrolled above the visible view
-    if (latestUserMsgRef.current && messagesContainerRef.current) {
+    // Only show scroll to latest user message when scrolled away from bottom AND user message is above viewport
+    if (!isAtBottom && distanceFromBottom > 100 && latestUserMsgRef.current && messagesContainerRef.current) {
       const containerRect = messagesContainerRef.current.getBoundingClientRect();
       const userMsgRect = latestUserMsgRef.current.getBoundingClientRect();
       setShowScrollToUser(userMsgRect.bottom < containerRect.top + 30);
