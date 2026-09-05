@@ -305,7 +305,7 @@ const AppLayout = ({ children }) => {
     onSuccess: (_, chatId) => {
       setPinnedItemIds((prev) => prev.filter((id) => id !== chatId));
       queryClient.invalidateQueries({ queryKey: ["chats"] });
-      if (activeChatId === chatId) navigate("/chat");
+      if (activeChatId === chatId) handleNewChat();
     },
   });
 
@@ -314,8 +314,20 @@ const AppLayout = ({ children }) => {
     mutationFn: async ({ chatId, title }) => {
       return await NobackEndCallObj(`/chats/${chatId}`, { title }, "put");
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["chats"], (oldChats) => {
+        if (!Array.isArray(oldChats)) return oldChats;
+        return oldChats.map((c) =>
+          c._id === variables.chatId
+            ? { ...c, title: variables.title, updatedAt: new Date().toISOString() }
+            : c
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["chats"] });
+      setEditingItemId(null);
+    },
+    onError: (err) => {
+      console.error("Failed to rename chat:", err);
       setEditingItemId(null);
     },
   });
@@ -325,8 +337,18 @@ const AppLayout = ({ children }) => {
     mutationFn: async ({ botId, name }) => {
       return await NobackEndCallObj(`/bots/${botId}`, { name }, "put");
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["bots"], (oldBots) => {
+        if (!Array.isArray(oldBots)) return oldBots;
+        return oldBots.map((b) =>
+          b._id === variables.botId ? { ...b, name: variables.name } : b
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["bots"] });
+      setEditingItemId(null);
+    },
+    onError: (err) => {
+      console.error("Failed to rename bot:", err);
       setEditingItemId(null);
     },
   });
@@ -387,10 +409,17 @@ const AppLayout = ({ children }) => {
     setActivePopover(null);
     setTempClosed(true);
 
-    navigate("/chat", { replace: true });
+    navigate("/chat", {
+      replace: true,
+      state: { newChat: true, resetChat: true, timestamp: Date.now() },
+    });
+    window.dispatchEvent(new CustomEvent("new-chat-action"));
     setTimeout(() => {
-      window.dispatchEvent(new Event("new-chat-action"));
+      window.dispatchEvent(new CustomEvent("new-chat-action"));
     }, 10);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("new-chat-action"));
+    }, 80);
   };
 
   const handleSelectItem = (id, type) => {
@@ -545,6 +574,12 @@ const AppLayout = ({ children }) => {
                   type="text"
                   value={editTitleValue}
                   onChange={(e) => setEditTitleValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.stopPropagation();
+                      setEditingItemId(null);
+                    }
+                  }}
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
                   className={`w-full bg-transparent outline-none border-b border-text-muted/30 text-sm`}

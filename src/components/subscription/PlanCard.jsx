@@ -3,7 +3,6 @@ import { useTheme } from "../../context/ThemeContext";
 
 const PlanCard = ({
   plan,
-  isAnnual,
   currentPlan,
   onSelect,
   loading = false,
@@ -11,8 +10,9 @@ const PlanCard = ({
   const {
     key: planKey,
     name: title,
-    monthlyPrice,
-    annualPrice,
+    monthlyPrice = 0,
+    creditsGranted,
+    credits,
     description,
     features = [],
     priorityScore = 10,
@@ -22,8 +22,11 @@ const PlanCard = ({
 
   const { isDark } = useTheme();
 
-  const isCurrent = currentPlan.toLowerCase() === planKey.toLowerCase();
-  const priceDisplay = isAnnual ? `$${annualPrice}` : `$${monthlyPrice}`;
+  const isCurrent = currentPlan?.toLowerCase() === planKey?.toLowerCase();
+  const effectiveCredits =
+    creditsGranted ||
+    credits ||
+    (monthlyPrice === 5 ? 500 : monthlyPrice === 20 ? 2500 : monthlyPrice === 70 ? 10000 : monthlyPrice > 0 ? monthlyPrice * 100 : 0);
 
   const getPriorityBadge = () => {
     switch (planKey.toLowerCase()) {
@@ -37,7 +40,7 @@ const PlanCard = ({
       case "pro":
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent-primary/15 text-accent-primary dark:text-[#a0a5fa] border border-accent-primary/20">
-            <FiZap className="w-3 h-3 animate-pulse" /> High Priority ({priorityScore})
+            <FiZap className="w-3 h-3 animate-pulse text-amber-400" /> High Priority ({priorityScore})
           </span>
         );
       case "free":
@@ -51,8 +54,8 @@ const PlanCard = ({
   };
 
   const formatLimit = (val) => {
-    if (val === -1) return "Unlimited";
-    return `${val} / Day`;
+    if (monthlyPrice > 0 || val === -1) return "Unlimited (Token-based)";
+    return `${val || 50} / Day`;
   };
 
   return (
@@ -81,9 +84,9 @@ const PlanCard = ({
           </p>
         </div>
 
-        {/* Pricing */}
+        {/* Pricing & Credits (One-Time Credit Pack Display) */}
         <div className="mb-3 pb-3 border-b border-border-primary/50 dark:border-white/10">
-          <div className="flex items-baseline gap-1 mb-0.5">
+          <div className="flex items-baseline gap-1.5 mb-1">
             <span
               className={`text-3xl font-extrabold tracking-tight ${
                 isRecommended
@@ -91,25 +94,31 @@ const PlanCard = ({
                   : "text-text-primary dark:text-white"
               }`}
             >
-              {monthlyPrice === 0 ? "$0" : priceDisplay}
+              {monthlyPrice === 0 ? "$0" : `$${monthlyPrice}`}
             </span>
-            <span className="text-text-muted text-xs font-medium">/mo</span>
+            <span className="text-text-muted text-xs font-medium">
+              {monthlyPrice === 0 ? "forever free" : "one-time"}
+            </span>
           </div>
+
           {monthlyPrice > 0 ? (
-            <div className="text-[10.5px] text-text-muted font-medium flex justify-between items-center mt-1">
-              <span>{isAnnual ? "Billed annually" : "Billed monthly"}</span>
-              {isAnnual && (
-                <span className="text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-1.5 py-0.2 rounded font-semibold text-[9.5px]">
-                  Save 20%
-                </span>
-              )}
+            <div className="text-[11px] text-text-muted font-medium flex justify-between items-center mt-1">
+              <span className="flex items-center gap-1 text-amber-500 dark:text-amber-400 font-semibold">
+                <FiZap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                {effectiveCredits.toLocaleString()} AI Credits
+              </span>
+              <span className="text-[10px] text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-1.5 py-0.5 rounded font-semibold">
+                Recharge anytime
+              </span>
             </div>
           ) : (
-            <div className="text-[10.5px] text-text-muted font-medium mt-1">Forever free</div>
+            <div className="text-[10.5px] text-text-muted font-medium mt-1">
+              Default free starter tier
+            </div>
           )}
         </div>
 
-        {/* Clean Spec Rows (No Nested Inner Boxes) */}
+        {/* Clean Spec Rows */}
         <div className="space-y-2 mb-3 py-2.5 border-b border-border-primary/50 dark:border-white/10">
           <div className="flex items-center justify-between text-[11px]">
             <div className="flex items-center gap-1.5 text-text-muted">
@@ -134,7 +143,7 @@ const PlanCard = ({
           </div>
         </div>
 
-        {/* Clean Feature List (Borderless Checkmarks) */}
+        {/* Clean Feature List */}
         <div className="space-y-2 mb-4 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">
             Included Features
@@ -150,15 +159,29 @@ const PlanCard = ({
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* Action Button: Allows buying again when credits get consumed */}
       <div className="relative z-10 mt-auto pt-2">
-        {isCurrent ? (
+        {isCurrent && (planKey === "free" || monthlyPrice === 0) ? (
           <button
             disabled
             className="w-full py-2.5 px-3 rounded-xl text-xs font-bold border border-border-primary/40 dark:border-white/10 bg-surface-secondary dark:bg-[#1a1c29] text-text-muted cursor-default flex items-center justify-center gap-1.5"
           >
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Current Active Plan
+            Current Free Tier
+          </button>
+        ) : isCurrent ? (
+          <button
+            onClick={() => onSelect(planKey)}
+            disabled={loading}
+            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 group/btn cursor-pointer ${
+              isRecommended
+                ? "bg-accent-primary hover:bg-indigo-600 text-white shadow-md shadow-accent-primary/25"
+                : "bg-surface-secondary dark:bg-[#1c1e2d] hover:bg-surface-tertiary dark:hover:bg-[#232639] text-text-primary dark:text-white border border-border-primary dark:border-white/10"
+            }`}
+          >
+            <FiZap className="text-amber-400 text-xs shrink-0" />
+            <span>Top Up {title} (${monthlyPrice})</span>
+            <FiArrowRight className="group-hover/btn:translate-x-1 transition-transform" />
           </button>
         ) : (
           <button
@@ -170,7 +193,7 @@ const PlanCard = ({
                 : "bg-surface-secondary dark:bg-[#1c1e2d] hover:bg-surface-tertiary dark:hover:bg-[#232639] text-text-primary dark:text-white border border-border-primary dark:border-white/10"
             }`}
           >
-            <span>{planKey === "free" ? "Downgrade to Free" : `Upgrade to ${title}`}</span>
+            <span>{planKey === "free" ? "Downgrade to Free" : `Buy ${title} ($${monthlyPrice})`}</span>
             <FiArrowRight className="group-hover/btn:translate-x-1 transition-transform" />
           </button>
         )}

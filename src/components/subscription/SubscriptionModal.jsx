@@ -17,7 +17,6 @@ const SubscriptionModal = () => {
   const { plans, loading: plansLoading, error: plansError } = usePlans();
   const { isDark } = useTheme();
 
-  const [isAnnual, setIsAnnual] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
@@ -27,23 +26,23 @@ const SubscriptionModal = () => {
     setActionLoading(true);
     setFeedback(null);
 
-    const billingCycle = isAnnual ? "annual" : "monthly";
     let res;
     if (targetPlan === "free") {
       res = await downgradePlan("free");
     } else {
-      res = await upgradePlan(targetPlan, billingCycle);
+      res = await upgradePlan(targetPlan, "one-time");
     }
 
     setActionLoading(false);
     if (res.success) {
-      setFeedback({ type: "success", message: res.data?.message || "Plan updated successfully!" });
+      setFeedback({ type: "success", message: res.data?.message || "Credits topped up successfully!" });
+      window.dispatchEvent(new Event("auth-change"));
       setTimeout(() => {
         setIsUpgradeModalOpen(false);
         setFeedback(null);
       }, 1500);
     } else {
-      setFeedback({ type: "error", message: res.message || "Failed to update plan" });
+      setFeedback({ type: "error", message: res.message || "Failed to process credit pack" });
     }
   };
 
@@ -60,51 +59,24 @@ const SubscriptionModal = () => {
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Left side: Icon + Title & Subtitle */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0">
-              <FiZap className="animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0 font-bold">
+              <FiZap className="animate-pulse text-amber-300" />
             </div>
             <div>
               <h2 className="text-sm md:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-text-primary via-text-primary to-accent-primary dark:from-white dark:via-white dark:to-[#a4a9ff]">
                 Upgrade Your Workspace
               </h2>
               <p className="text-[11px] text-text-muted">
-                High-speed AI cluster routing, unlimited prompts & priority models
+                Recharge AI credits, unlock unlimited daily prompts & high-priority cluster models
               </p>
             </div>
           </div>
 
-          {/* Right side: Segmented Pill Toggle + Close Button */}
+          {/* Right side: Badge + Close Button */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="inline-flex items-center p-0.5 rounded-xl bg-surface-secondary/80 dark:bg-[#12131d] border border-border-primary/60 dark:border-white/10 shadow-inner">
-              <button
-                onClick={() => setIsAnnual(false)}
-                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  !isAnnual
-                    ? "bg-accent-primary text-white shadow-sm"
-                    : "text-text-muted hover:text-text-primary dark:hover:text-white"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setIsAnnual(true)}
-                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isAnnual
-                    ? "bg-accent-primary text-white shadow-sm"
-                    : "text-text-muted hover:text-text-primary dark:hover:text-white"
-                }`}
-              >
-                <span>Annual</span>
-                <span
-                  className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-full transition-colors ${
-                    isAnnual
-                      ? "bg-white/20 text-white"
-                      : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  }`}
-                >
-                  -20%
-                </span>
-              </button>
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-secondary/80 dark:bg-[#12131d] border border-border-primary/60 dark:border-white/10 shadow-inner text-[11px] font-semibold text-text-muted">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Credit Top-Up • Pay As You Go</span>
             </div>
 
             <button
@@ -137,7 +109,7 @@ const SubscriptionModal = () => {
         {plansLoading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
             <FiRefreshCw className="text-xl text-accent-primary animate-spin" />
-            <p className="text-xs text-text-muted font-medium">Loading subscription plans...</p>
+            <p className="text-xs text-text-muted font-medium">Loading credit packages...</p>
           </div>
         ) : plansError ? (
           <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center font-medium">
@@ -149,7 +121,6 @@ const SubscriptionModal = () => {
               <PlanCard
                 key={p.key}
                 plan={p}
-                isAnnual={isAnnual}
                 currentPlan={currentPlan}
                 onSelect={handlePlanSelect}
                 loading={actionLoading}
@@ -162,12 +133,12 @@ const SubscriptionModal = () => {
       {/* Footer */}
       <div className="p-4 border-t shrink-0 flex items-center justify-between text-xs text-text-muted bg-surface-secondary/40 dark:bg-[#181926]/70 border-border-primary dark:border-white/10">
         <div className="flex items-center gap-1.5">
-          <FiShield className="text-accent-primary text-xs" />
-          <span>Cancel anytime</span>
+          <FiShield className="text-emerald-400 text-xs" />
+          <span>Recharge anytime • Credits never expire</span>
         </div>
         <div className="flex items-center gap-4 font-semibold text-text-primary dark:text-zinc-300">
           <span>🔒 SSL Encrypted</span>
-          <span>⚡ Instant Activation</span>
+          <span>⚡ Instant Wallet Credit</span>
         </div>
       </div>
     </div>

@@ -81,12 +81,13 @@ const SubscriptionPage = () => {
     if (targetPlan === "free") {
       res = await downgradePlan("free");
     } else {
-      res = await upgradePlan(targetPlan, isAnnual ? "annual" : "monthly");
+      res = await upgradePlan(targetPlan, "one-time");
     }
     setActionLoading(false);
     if (res.success) {
-      setFeedback({ type: "success", message: res.data?.message || "Subscription updated successfully!" });
+      setFeedback({ type: "success", message: res.data?.message || "Credits topped up successfully!" });
       fetchUsage();
+      window.dispatchEvent(new Event("auth-change"));
     } else {
       setFeedback({ type: "error", message: res.message || "Operation failed" });
     }
@@ -355,34 +356,13 @@ const SubscriptionPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Available Subscription Plans</h2>
-            <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Upgrade or downgrade your plan anytime.</p>
+            <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Available Credit Top-Up Packages</h2>
+            <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Purchase AI credits to recharge your wallet. Pay once, use until consumed, top up anytime.</p>
           </div>
 
-          {/* Toggle */}
-          <div className="flex items-center gap-3 self-start sm:self-auto">
-            <span className={`text-xs font-semibold ${!isAnnual ? (isDark ? "text-white" : "text-text-primary") : "text-text-primary"}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative w-12 h-6 rounded-full p-1 transition-colors focus:outline-none ring-1 ring-inset ring-border-primary/50 ${
-                isAnnual
-                  ? "bg-text-primary dark:bg-white ring-text-primary dark:ring-white"
-                  : "bg-black/10 dark:bg-black/40"
-              }`}
-            >
-              <div
-                className={`w-4 h-4 rounded-full shadow-md transition-transform ${
-                  isAnnual
-                    ? "translate-x-6 bg-white dark:bg-black"
-                    : "translate-x-0 bg-white"
-                }`}
-              />
-            </button>
-            <span className={`text-xs font-semibold ${isAnnual ? (isDark ? "text-white" : "text-text-primary") : "text-text-primary"}`}>
-              Annual (20% OFF)
-            </span>
+          <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary dark:text-[#a4a9ff] text-xs font-semibold">
+            <FiZap className="text-xs text-amber-400 animate-pulse" />
+            <span>Pay As You Go • Non-Expiring Credits</span>
           </div>
         </div>
 
@@ -390,7 +370,7 @@ const SubscriptionPage = () => {
         {plansLoading ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-3">
             <FiRefreshCw className="text-3xl text-text-primary animate-spin" />
-            <p className={`text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>Fetching subscription plans from database...</p>
+            <p className={`text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>Fetching credit packages from database...</p>
           </div>
         ) : plansError ? (
           <div className="p-4 rounded-2xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs text-center">
@@ -402,7 +382,6 @@ const SubscriptionPage = () => {
               <PlanCard
                 key={p.key}
                 plan={p}
-                isAnnual={isAnnual}
                 currentPlan={currentPlan}
                 onSelect={handlePlanSelect}
                 loading={actionLoading}

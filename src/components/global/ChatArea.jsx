@@ -82,6 +82,32 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const audioQueueRef = useRef([]);
   const isPlayingRef = useRef(false);
   const currentSentenceBufferRef = useRef("");
+  const activeChatIdRef = useRef(currentChatId);
+
+  useEffect(() => {
+    activeChatIdRef.current = currentChatId;
+  }, [currentChatId]);
+
+  useEffect(() => {
+    const handleNewChatReset = () => {
+      activeChatIdRef.current = null;
+      if (isGeneratingRef.current) {
+        handleStopGeneration();
+      }
+      setMessages([]);
+      setStreamingReply("");
+      currentStreamingTextRef.current = "";
+      setIsSearching(false);
+      setIsBotTyping(false);
+      setIsFetchingMessages(false);
+      clearAudioPipeline();
+    };
+
+    window.addEventListener("new-chat-action", handleNewChatReset);
+    return () => {
+      window.removeEventListener("new-chat-action", handleNewChatReset);
+    };
+  }, []);
 
   // --- ChatGPT-style streaming engine ---
   // Network SSE chunks fill tokenQueueRef at full network speed.
@@ -324,13 +350,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   const loadSavedMessages = async () => {
-    if (isGeneratingRef.current) return;
+    if (isGeneratingRef.current || !currentChatId) return;
+    const targetChatId = currentChatId;
     try {
       setIsFetchingMessages(true);
       setMessages([]);
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${currentChatId}/messages`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChatId}/messages`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -338,11 +365,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         }
       );
       const data = await res.json();
-      setMessages(Array.isArray(data) ? data : []);
+      if (activeChatIdRef.current === targetChatId) {
+        setMessages(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
       console.error("Error reading history collections:", err);
     } finally {
-      setIsFetchingMessages(false);
+      if (activeChatIdRef.current === targetChatId) {
+        setIsFetchingMessages(false);
+      }
     }
   };
 

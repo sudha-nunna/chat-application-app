@@ -13,9 +13,9 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
 
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState({
-    displayName: "Auto Cluster",
-    modelId: "auto",
-    provider: "system",
+    displayName: "Glm 5.3 Flash Cloud",
+    modelId: "glm-5.3-flash:cloud",
+    provider: "glm",
   });
   const [modelsList, setModelsList] = useState([]);
   const [activeTab, setActiveTab] = useState("All Servers");
@@ -243,10 +243,18 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           console.log("✨ Unique Providers:", uniqueProviders);
 
           setModelsList(data.models);
-          const recommended =
+          const defaultGlm =
+            data.models.find(
+              (m) =>
+                m.enabled &&
+                (m.modelId === "glm-5.3-flash:cloud" ||
+                  m.displayName === "Glm 5.3 Flash Cloud" ||
+                  (m.modelId && m.modelId.toLowerCase().includes("glm-5.3-flash")) ||
+                  (m.displayName && m.displayName.toLowerCase().includes("glm 5.3 flash")))
+            ) ||
             data.models.find((m) => m.recommended && m.enabled) ||
             data.models.find((m) => m.enabled);
-          if (recommended) setSelectedModel(recommended);
+          if (defaultGlm) setSelectedModel(defaultGlm);
         }
       } catch (err) {
         console.error("Failed to fetch models:", err);
