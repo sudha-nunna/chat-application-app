@@ -1247,7 +1247,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 <div
                   key={index}
                   ref={isLatestUserMsg ? latestUserMsgRef : undefined}
-                  className="w-full"
+                  className="w-full flex flex-col"
                 >
                   <MessageBubble
                     role={m.role}

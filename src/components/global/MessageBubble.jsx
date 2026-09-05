@@ -192,15 +192,15 @@ const MessageBubble = ({
         isUser
           ? isEditing
             ? "w-full max-w-full"
-            : "flex-row-reverse ml-auto max-w-[85%] md:max-w-[72%] gap-2"
+            : "self-end ml-auto w-fit max-w-[85%] md:max-w-[70%]"
           : "mr-auto w-full max-w-full"
       } my-2.5 min-w-0`}
     >
       {/* Bubble Container & Actions */}
       <div
         className={`flex flex-col group ${
-          isUser && !isEditing ? "items-end" : "items-start"
-        } w-full min-w-0`}
+          isUser && !isEditing ? "items-end w-fit max-w-full" : "items-start w-full"
+        } min-w-0`}
       >
         {/* Attachments Section */}
         {attachments && attachments.length > 0 && (
@@ -276,15 +276,15 @@ const MessageBubble = ({
 
         {/* Message Content Container */}
         <div
-          className={`min-w-0 w-full leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
+          className={`min-w-0 leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
             isUser
               ? isEditing
                 ? "w-full rounded-[20px] p-4 md:p-5 bg-surface-secondary dark:bg-[#1e1f2b] border border-border-primary/60 dark:border-white/10 shadow-sm text-text-primary"
-                : "rounded-xl px-4 py-2.5 bg-accent-primary text-white text-[15px] shadow-sm border-none ml-auto"
-              : "rounded-lg py-0.5 text-text-primary dark:text-[#e5e5e5] bg-transparent border-transparent"
+                : "w-fit max-w-full rounded-2xl px-4 py-2.5 bg-accent-primary text-white text-[15px] shadow-sm border-none ml-auto"
+              : "w-full rounded-lg py-0.5 text-text-primary dark:text-[#e5e5e5] bg-transparent border-transparent"
           }`}
         >
-          <div className="w-full min-w-0">
+          <div className={`${isUser && !isEditing ? "w-fit max-w-full" : "w-full"} min-w-0`}>
           {/* Thinking / Bubbling Animation — shown while waiting for first token */}
           {isThinking && !content ? (
             <div className="flex items-center gap-1.5 h-7 select-none py-1">
