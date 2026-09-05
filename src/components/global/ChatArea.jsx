@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle,FiImage, FiArrowDown, FiFileText, FiShare2, FiUpload, FiSun, FiMoon } from "react-icons/fi";
+import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
@@ -28,6 +28,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [messages, setMessages] = useState([]);
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [showScrollToUser, setShowScrollToUser] = useState(false);
+  const latestUserMsgRef = useRef(null);
 
   const [isSearching, setIsSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -367,6 +369,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       loadSavedMessages();
     } else {
       setMessages([]);
+      setShowScrollBottom(false);
+      setShowScrollToUser(false);
       setStreamingReply("");
       currentStreamingTextRef.current = "";
       setIsSearching(false);
@@ -385,6 +389,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
+  const scrollToLatestUserMessage = () => {
+    if (latestUserMsgRef.current) {
+      isAutoScrollEnabledRef.current = false;
+      latestUserMsgRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
   useEffect(() => {
     if (isAutoScrollEnabledRef.current && messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -397,6 +411,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     const isAtBottom = distanceFromBottom <= 80;
 
     setShowScrollBottom(distanceFromBottom > 100);
+
+    // Check if the latest user message is scrolled above the visible view
+    if (latestUserMsgRef.current && messagesContainerRef.current) {
+      const containerRect = messagesContainerRef.current.getBoundingClientRect();
+      const userMsgRect = latestUserMsgRef.current.getBoundingClientRect();
+      setShowScrollToUser(userMsgRect.bottom < containerRect.top + 30);
+    } else {
+      setShowScrollToUser(false);
+    }
 
     // If user scrolled up beyond threshold, pause auto-scroll
     // If user scrolled back down to bottom, re-engage auto-scroll
@@ -615,6 +638,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     streamCompleteCbRef.current = null;
     isAutoScrollEnabledRef.current = true;
     setShowScrollBottom(false);
+    setShowScrollToUser(false);
     scrollToBottom(true);
 
     try {
@@ -939,6 +963,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
+  const lastUserMsgIdx = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") return i;
+    }
+    return -1;
+  })();
+
   return (
     <div
       className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden relative bg-[#F5F6FB] dark:bg-interactive-active/40 text-text-primary dark:text-text-muted`}
@@ -1097,7 +1128,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
       >
         <div
-          className={`w-full flex-1 max-w-[820px] mx-auto px-4 sm:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
+          className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
         >
           {!isSearching && !isBotTyping && isFetchingMessages && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
@@ -1202,33 +1233,39 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           {!isFetchingMessages &&
             messages.map((m, index) => {
               const isUserMsg = m.role === "user";
+              const isLatestUserMsg = index === lastUserMsgIdx;
               const prevUserMsg = !isUserMsg
                 ? [...messages.slice(0, index)]
                     .reverse()
                     .find((msg) => msg.role === "user")
                 : null;
               return (
-                <MessageBubble
+                <div
                   key={index}
-                  role={m.role}
-                  content={m.content}
-                  attachments={m.attachments}
-                  isSpeaking={activeSpeakingIndex === index}
-                  onToggleSpeak={
-                    !isUserMsg
-                      ? (rawContent) => handleToggleSpeak(index, rawContent)
-                      : undefined
-                  }
-                  onRetry={
-                    isUserMsg
-                      ? (newContent) =>
-                          handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index)
-                      : prevUserMsg
-                      ? (newContent) =>
-                          handleSendSubmit(newContent || prevUserMsg.content)
-                      : undefined
-                  }
-                />
+                  ref={isLatestUserMsg ? latestUserMsgRef : undefined}
+                  className="w-full"
+                >
+                  <MessageBubble
+                    role={m.role}
+                    content={m.content}
+                    attachments={m.attachments}
+                    isSpeaking={activeSpeakingIndex === index}
+                    onToggleSpeak={
+                      !isUserMsg
+                        ? (rawContent) => handleToggleSpeak(index, rawContent)
+                        : undefined
+                    }
+                    onRetry={
+                      isUserMsg
+                        ? (newContent) =>
+                            handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index)
+                        : prevUserMsg
+                        ? (newContent) =>
+                            handleSendSubmit(newContent || prevUserMsg.content)
+                        : undefined
+                    }
+                  />
+                </div>
               );
             })}
 
@@ -1244,18 +1281,32 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       </div>
 
       {/* Fixed Input Area - Text stops above this line; background pattern shows through */}
-      <div className="shrink-0 z-10 relative pb-2 md:pb-4 bg-transparent pr-[6px]">
-        {showScrollBottom && (
-          <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50">
-            <button
-              onClick={() => scrollToBottom(true)}
-              className="p-2.5 rounded-full bg-surface-primary border border-border-primary text-text-primary shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:bg-surface-secondary transition-all"
-            >
-              <FiArrowDown className="w-4 h-4" />
-            </button>
+      <div className="shrink-0 z-10 relative pb-2 sm:pb-3 md:pb-4 bg-transparent pr-0 md:pr-[6px]">
+        {(showScrollBottom || showScrollToUser) && (
+          <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-1.5 p-1 rounded-full bg-surface-primary/95 dark:bg-[#191A24]/95 backdrop-blur-md border border-border-primary dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-200">
+            {showScrollToUser && (
+              <button
+                onClick={scrollToLatestUserMessage}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary text-xs font-medium transition-all active:scale-95 cursor-pointer shadow-xs group"
+                title="Scroll to your latest message"
+              >
+                <FiArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-y-0.5 transition-transform" />
+                <span className="text-[11px] font-semibold hidden xs:inline">Latest sent</span>
+              </button>
+            )}
+            {showScrollBottom && (
+              <button
+                onClick={() => scrollToBottom(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-text-primary dark:text-white text-xs font-medium transition-all active:scale-95 cursor-pointer shadow-xs group"
+                title="Scroll to bottom"
+              >
+                <FiArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-y-0.5 transition-transform" />
+                <span className="text-[11px] font-semibold hidden xs:inline">Bottom</span>
+              </button>
+            )}
           </div>
         )}
-        <div className="w-full max-w-[820px] mx-auto px-4 sm:px-6">
+        <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6">
           <ChatInput
             onSend={handleSendSubmit}
             isGenerating={isSearching || isBotTyping}
