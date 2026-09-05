@@ -6,6 +6,7 @@ import ClusterStatusWidget from "./ClusterStatusWidget";
 import { useTheme } from "../../context/ThemeContext";
 import { useTanStackQueryClient, useTanStackData } from "../../hooks/useTanStackData";
 import { NobackEndCall } from "../../services/authService";
+import { speakText, stopSpeech, cleanMarkdownForSpeech } from "../../utils/speechUtils";
 
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
   const { isDark, toggleTheme } = useTheme();
@@ -37,6 +38,161 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const isVoicePausedRef = useRef(true);
   const isAbortedRef = useRef(false);
   const abortControllerRef = useRef(null);
+  const [activeSpeakingIndex, setActiveSpeakingIndex] = useState(null);
+  const [currentSubtitle, setCurrentSubtitle] = useState("");
+  const [autoListenTrigger, setAutoListenTrigger] = useState(0);
+  const pendingVoiceAutoSpeakRef = useRef(false);
+  const isVoiceConversationModeRef = useRef(false);
+
+  // Streaming speech queue & buffer refs for sentence-by-sentence TTS
+  const streamingSpeechQueueRef = useRef([]);
+  const streamingSentenceBufferRef = useRef("");
+  const isSpeakingStreamingChunkRef = useRef(false);
+  const inCodeBlockRef = useRef(false);
+  const isStreamingSpeechActiveRef = useRef(false);
+
+  const triggerMicAutoListen = () => {
+    // Small buffer delay so the user speaker finishes any audio output before mic opens
+    setTimeout(() => {
+      setAutoListenTrigger((prev) => prev + 1);
+    }, 450);
+  };
+
+  const processStreamingSpeechQueue = () => {
+    if (!isStreamingSpeechActiveRef.current) return;
+    if (isSpeakingStreamingChunkRef.current) return;
+
+    if (streamingSpeechQueueRef.current.length === 0) {
+      if (!isGeneratingRef.current) {
+        isStreamingSpeechActiveRef.current = false;
+        setActiveSpeakingIndex(null);
+        setCurrentSubtitle("");
+        if (isVoiceConversationModeRef.current) {
+          isVoiceConversationModeRef.current = false;
+          triggerMicAutoListen();
+        }
+      }
+      return;
+    }
+
+    const nextSentence = streamingSpeechQueueRef.current.shift();
+    if (!nextSentence || !nextSentence.trim()) {
+      processStreamingSpeechQueue();
+      return;
+    }
+
+    isSpeakingStreamingChunkRef.current = true;
+    speakText(nextSentence, {
+      onWordBoundary: (chunk) => {
+        if (isStreamingSpeechActiveRef.current) {
+          setCurrentSubtitle(chunk);
+        }
+      },
+      onEnd: () => {
+        isSpeakingStreamingChunkRef.current = false;
+        processStreamingSpeechQueue();
+      },
+      onError: () => {
+        isSpeakingStreamingChunkRef.current = false;
+        processStreamingSpeechQueue();
+      },
+    });
+  };
+
+  const handleIncomingStreamSpeech = (chunk) => {
+    if (!pendingVoiceAutoSpeakRef.current && !isStreamingSpeechActiveRef.current) return;
+
+    // Track code blocks ``` to avoid reading code aloud
+    if (chunk.includes("```") || chunk.includes("~~~")) {
+      const fences = (chunk.match(/```|~~~/g) || []).length;
+      if (fences % 2 === 1) {
+        inCodeBlockRef.current = !inCodeBlockRef.current;
+      }
+    }
+
+    if (inCodeBlockRef.current) return;
+
+    streamingSentenceBufferRef.current += chunk;
+
+    // Split at sentence boundaries: . ! ? followed by space or newline, or newlines
+    const sentenceEndRegex = /([.!?](\s+|$)|[\r\n]+)/;
+    let match = sentenceEndRegex.exec(streamingSentenceBufferRef.current);
+
+    while (match) {
+      const splitIndex = match.index + match[0].length;
+      const completedSentence = streamingSentenceBufferRef.current.slice(0, splitIndex).trim();
+      streamingSentenceBufferRef.current = streamingSentenceBufferRef.current.slice(splitIndex);
+
+      if (completedSentence) {
+        const cleaned = cleanMarkdownForSpeech(completedSentence);
+        if (cleaned) {
+          isStreamingSpeechActiveRef.current = true;
+          setActiveSpeakingIndex(-1);
+          streamingSpeechQueueRef.current.push(cleaned);
+          if (!isSpeakingStreamingChunkRef.current) {
+            processStreamingSpeechQueue();
+          }
+        }
+      }
+
+      match = sentenceEndRegex.exec(streamingSentenceBufferRef.current);
+    }
+
+    // Fast-start fallback: if buffer has accumulated >= 12 words without punctuation, flush early
+    const words = streamingSentenceBufferRef.current.trim().split(/\s+/);
+    if (words.length >= 12) {
+      const chunkText = words.join(" ");
+      streamingSentenceBufferRef.current = "";
+      const cleaned = cleanMarkdownForSpeech(chunkText);
+      if (cleaned) {
+        isStreamingSpeechActiveRef.current = true;
+        setActiveSpeakingIndex(-1);
+        streamingSpeechQueueRef.current.push(cleaned);
+        if (!isSpeakingStreamingChunkRef.current) {
+          processStreamingSpeechQueue();
+        }
+      }
+    }
+  };
+
+  const handleStopSpeaking = () => {
+    isVoiceConversationModeRef.current = false;
+    isStreamingSpeechActiveRef.current = false;
+    pendingVoiceAutoSpeakRef.current = false;
+    streamingSpeechQueueRef.current = [];
+    streamingSentenceBufferRef.current = "";
+    isSpeakingStreamingChunkRef.current = false;
+    inCodeBlockRef.current = false;
+    stopSpeech();
+    setActiveSpeakingIndex(null);
+    setCurrentSubtitle("");
+  };
+
+  const handleToggleSpeak = (index, rawContent) => {
+    if (activeSpeakingIndex === index) {
+      handleStopSpeaking();
+    } else {
+      stopSpeech();
+      setActiveSpeakingIndex(index);
+      speakText(rawContent, {
+        onWordBoundary: (chunk) => setCurrentSubtitle(chunk),
+        onEnd: () => {
+          setActiveSpeakingIndex(null);
+          setCurrentSubtitle("");
+        },
+        onError: () => {
+          setActiveSpeakingIndex(null);
+          setCurrentSubtitle("");
+        },
+      });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      handleStopSpeaking();
+    };
+  }, []);
 
   const handleShare = async () => {
     const shareData = {
@@ -260,9 +416,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     isPlayingRef.current = false;
     currentSentenceBufferRef.current = "";
     setIsAudioActive(false);
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
+    handleStopSpeaking();
   };
 
   const toggleVoiceOver = () => {
@@ -375,6 +529,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const loadSavedMessages = async () => {
     if (isGeneratingRef.current || !currentChatId) return;
     const targetChatId = currentChatId;
+    handleStopSpeaking();
+    pendingVoiceAutoSpeakRef.current = false;
     try {
       setIsFetchingMessages(true);
       setMessages([]);
@@ -400,7 +556,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
-  const handleSendSubmit = async (textPayload, audioBlob, selectedModelId, attachments = [], editIndex = undefined) => {
+  const handleSendSubmit = async (
+    textPayload,
+    audioBlob,
+    selectedModelId,
+    attachments = [],
+    editIndex = undefined,
+    isVoiceSubmission = false
+  ) => {
     if (isGeneratingRef.current) {
       console.warn("⚠️ Request blocked because generation is already active.");
       return;
@@ -416,10 +579,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       lastUsedModelRef.current = selectedModelId;
     }
 
+    // Cancel any active speech readout and clear audio pipeline BEFORE setting voice flags
+    clearAudioPipeline();
+    handleStopSpeaking();
+
+    // Arm voice auto-speech and continuous conversation mode if this message was submitted via microphone
+    pendingVoiceAutoSpeakRef.current = Boolean(isVoiceSubmission);
+    isStreamingSpeechActiveRef.current = Boolean(isVoiceSubmission);
+    isVoiceConversationModeRef.current = Boolean(isVoiceSubmission);
+
     isGeneratingRef.current = true;
     isAbortedRef.current = false;
     streamingChatIdRef.current = currentChatId;
-    clearAudioPipeline();
 
     const t0 = performance.now();
     let firstTokenTime = null;
@@ -551,7 +722,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   // Push raw text into the queue — the rAF drain loop
                   // will visually release it at a smooth 35 words/sec pace.
                   pushToQueue(textBit);
-                  handleIncomingTextChunk(textBit);
+                  handleIncomingStreamSpeech(textBit);
                 }
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
@@ -585,16 +756,61 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       // display the remaining queued tokens (~1-3s for a typical response).
       const finalResponseContent = await drainPromise;
 
-      if (currentSentenceBufferRef.current.trim()) {
-        audioQueueRef.current.push(currentSentenceBufferRef.current.trim());
-        processAudioQueue();
+      // Flush any remaining buffered sentence text to the speech queue
+      if ((isStreamingSpeechActiveRef.current || pendingVoiceAutoSpeakRef.current) && streamingSentenceBufferRef.current.trim()) {
+        const remainingClean = cleanMarkdownForSpeech(streamingSentenceBufferRef.current.trim());
+        streamingSentenceBufferRef.current = "";
+        if (remainingClean) {
+          isStreamingSpeechActiveRef.current = true;
+          streamingSpeechQueueRef.current.push(remainingClean);
+          if (!isSpeakingStreamingChunkRef.current) {
+            processStreamingSpeechQueue();
+          }
+        }
+      }
+
+      // Safety fallback: if voice submission was requested but streaming chunks didn't initiate speech, speak the full message
+      if (
+        (isStreamingSpeechActiveRef.current || pendingVoiceAutoSpeakRef.current) &&
+        !isSpeakingStreamingChunkRef.current &&
+        streamingSpeechQueueRef.current.length === 0 &&
+        finalResponseContent &&
+        finalResponseContent.trim()
+      ) {
+        const fullClean = cleanMarkdownForSpeech(finalResponseContent);
+        if (fullClean) {
+          isStreamingSpeechActiveRef.current = true;
+          speakText(fullClean, {
+            onWordBoundary: (chunk) => {
+              if (isStreamingSpeechActiveRef.current) {
+                setCurrentSubtitle(chunk);
+              }
+            },
+            onEnd: () => {
+              const shouldAutoListen = isVoiceConversationModeRef.current;
+              handleStopSpeaking();
+              if (shouldAutoListen) {
+                triggerMicAutoListen();
+              }
+            },
+            onError: () => {
+              handleStopSpeaking();
+            },
+          });
+        }
       }
 
       if (finalResponseContent && finalResponseContent.trim()) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: finalResponseContent },
-        ]);
+        setMessages((prev) => {
+          const next = [
+            ...prev,
+            { role: "assistant", content: finalResponseContent },
+          ];
+          if (isStreamingSpeechActiveRef.current) {
+            setActiveSpeakingIndex(next.length - 1);
+          }
+          return next;
+        });
       }
 
       const totalTime = (performance.now() - t0).toFixed(2);
@@ -620,6 +836,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsBotTyping(false);
       setIsSearching(false);
       isGeneratingRef.current = false;
+
+      // If speech finished already during visual token rendering, re-activate mic now
+      if (
+        !isSpeakingStreamingChunkRef.current &&
+        streamingSpeechQueueRef.current.length === 0 &&
+        isVoiceConversationModeRef.current
+      ) {
+        isStreamingSpeechActiveRef.current = false;
+        setActiveSpeakingIndex(null);
+        setCurrentSubtitle("");
+        isVoiceConversationModeRef.current = false;
+        triggerMicAutoListen();
+      }
       if (onChatUpdated) onChatUpdated();
       // Invalidate usage to refresh credits once stream completes without multiple get calls
       queryClient.invalidateQueries({ queryKey: ["usage"] });
@@ -804,6 +1033,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           })()}
         </div>
 
+        {/* Live Speech Subtitle Pill */}
+        {activeSpeakingIndex !== null && currentSubtitle && (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent-primary/10 dark:bg-accent-primary/20 border border-accent-primary/30 text-xs text-text-primary dark:text-white shadow-xs max-w-[220px] sm:max-w-[340px] md:max-w-[460px] truncate animate-in fade-in duration-200 mx-2">
+            <span className="flex items-center gap-0.5 text-accent-primary shrink-0">
+              <span className="w-1 h-1.5 rounded-full bg-accent-primary animate-pulse" />
+              <span className="w-1 h-3 rounded-full bg-accent-primary animate-pulse delay-75" />
+              <span className="w-1 h-2 rounded-full bg-accent-primary animate-pulse delay-150" />
+            </span>
+            <span className="font-medium truncate tracking-wide text-[12px] italic text-text-primary dark:text-zinc-200">
+              "{currentSubtitle}"
+            </span>
+            <button
+              onClick={handleStopSpeaking}
+              className="p-1 rounded-full hover:bg-accent-primary/20 text-text-muted hover:text-accent-primary transition cursor-pointer shrink-0 ml-auto flex items-center gap-1"
+              title="Stop reading aloud"
+            >
+              <FiVolumeX className="w-3.5 h-3.5 text-accent-primary" />
+              <span className="text-[10.5px] font-semibold text-accent-primary hidden sm:inline">Stop</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 md:gap-3">
           <div className="hidden md:flex items-center gap-2">
             <button
@@ -962,6 +1213,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   role={m.role}
                   content={m.content}
                   attachments={m.attachments}
+                  isSpeaking={activeSpeakingIndex === index}
+                  onToggleSpeak={
+                    !isUserMsg
+                      ? (rawContent) => handleToggleSpeak(index, rawContent)
+                      : undefined
+                  }
                   onRetry={
                     isUserMsg
                       ? (newContent) =>
@@ -1003,6 +1260,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             onSend={handleSendSubmit}
             isGenerating={isSearching || isBotTyping}
             onStop={handleStopGeneration}
+            autoListenTrigger={autoListenTrigger}
           />
         </div>
       </div>

@@ -33,20 +33,20 @@ const PlanCard = ({
       case "enterprise":
       case "power":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-            <FiShield className="w-3 h-3" /> Dedicated ({priorityScore})
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/30">
+            <FiShield className="w-3 h-3 text-purple-600 dark:text-purple-300" /> Dedicated ({priorityScore})
           </span>
         );
       case "pro":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-            <FiZap className="w-3 h-3 animate-pulse text-amber-400" /> High Priority ({priorityScore})
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30">
+            <FiZap className="w-3 h-3 animate-pulse text-amber-600 dark:text-amber-400" /> High Priority ({priorityScore})
           </span>
         );
       case "free":
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-500/15 text-zinc-300 border border-zinc-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-500/20 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-500/30">
             Standard ({priorityScore})
           </span>
         );
@@ -62,8 +62,8 @@ const PlanCard = ({
     <div
       className={`relative flex flex-col justify-between p-5 md:p-6 rounded-2xl transition-all duration-300 group h-full ${
         isRecommended
-          ? "bg-gradient-to-b from-accent-primary/[0.12] via-surface-primary to-surface-primary dark:from-[#1d1f36] dark:via-[#151726] dark:to-[#131420] border-2 border-accent-primary dark:border-[#7c83f6] shadow-xl shadow-accent-primary/20"
-          : "bg-surface-secondary/80 dark:bg-[#141522] border border-border-primary/70 dark:border-white/10 hover:border-accent-primary/50 dark:hover:border-white/20 shadow-md"
+          ? "bg-gradient-to-b from-accent-primary/[0.08] via-white to-white dark:from-[#1d1f36] dark:via-[#151726] dark:to-[#131420] border-2 border-accent-primary dark:border-[#7c83f6] shadow-xl shadow-accent-primary/15"
+          : "bg-white dark:bg-[#141522] border border-border-primary/80 dark:border-white/10 hover:border-accent-primary/50 dark:hover:border-white/20 shadow-sm hover:shadow-md"
       }`}
     >
       {/* Popular Badge */}
@@ -79,7 +79,7 @@ const PlanCard = ({
           <h3 className="text-lg font-bold tracking-tight text-text-primary dark:text-white flex items-center gap-2">
             {title}
           </h3>
-          <p className="text-zinc-400 dark:text-zinc-300 text-xs leading-relaxed mt-1 pr-2">
+          <p className="text-zinc-600 dark:text-zinc-300 text-xs leading-relaxed mt-1 pr-2">
             {description}
           </p>
         </div>
@@ -96,23 +96,23 @@ const PlanCard = ({
             >
               {monthlyPrice === 0 ? "$0" : `$${monthlyPrice}`}
             </span>
-            <span className="text-zinc-400 text-xs font-semibold">
+            <span className="text-zinc-600 dark:text-zinc-400 text-xs font-semibold">
               {monthlyPrice === 0 ? "forever free" : "one-time"}
             </span>
           </div>
 
           {monthlyPrice > 0 ? (
-            <div className="text-xs text-zinc-400 font-medium flex justify-between items-center mt-1.5">
-              <span className="flex items-center gap-1.5 text-amber-400 font-bold">
-                <FiZap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div className="text-xs font-medium flex justify-between items-center mt-1.5">
+              <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                <FiZap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                 {effectiveCredits.toLocaleString()} AI Credits
               </span>
-              <span className="text-[11px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold">
+              <span className="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-100/90 dark:bg-emerald-500/15 border border-emerald-300 dark:border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold">
                 Recharge anytime
               </span>
             </div>
           ) : (
-            <div className="text-xs text-zinc-400 font-medium mt-1.5">
+            <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium mt-1.5">
               Default free starter tier
             </div>
           )}
@@ -121,8 +121,8 @@ const PlanCard = ({
         {/* Clean Spec Rows */}
         <div className="space-y-2.5 mb-3 py-2.5 border-b border-border-primary/60 dark:border-white/10">
           <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <FiMessageSquare className="w-3.5 h-3.5 text-accent-primary" />
+            <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+              <FiMessageSquare className="w-3.5 h-3.5 text-accent-primary shrink-0" />
               <span className="font-medium text-text-primary dark:text-zinc-200">
                 Daily Messages
               </span>
@@ -133,8 +133,8 @@ const PlanCard = ({
           </div>
 
           <div className="flex justify-between items-center text-xs">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <FiCpu className="w-3.5 h-3.5 text-accent-primary" />
+            <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+              <FiCpu className="w-3.5 h-3.5 text-accent-primary shrink-0" />
               <span className="font-medium text-text-primary dark:text-zinc-200">
                 Model Priority
               </span>
@@ -145,13 +145,13 @@ const PlanCard = ({
 
         {/* Clean Feature List */}
         <div className="space-y-2 mb-4 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-400 mb-2">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">
             Included Features
           </p>
           {features.map((feat, idx) => (
             <div key={idx} className="flex items-start gap-2">
               <FiCheck className="text-accent-primary dark:text-[#8f95ff] w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <span className="text-xs text-text-secondary dark:text-zinc-200 font-medium leading-relaxed">
+              <span className="text-xs text-zinc-800 dark:text-zinc-200 font-medium leading-relaxed">
                 {feat}
               </span>
             </div>

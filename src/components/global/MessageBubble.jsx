@@ -15,6 +15,8 @@ import {
   FiImage,
   FiX,
   FiMaximize2,
+  FiVolume2,
+  FiVolumeX,
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -144,6 +146,8 @@ const MessageBubble = ({
   onRetry,
   isStreaming = false,
   isThinking = false,
+  isSpeaking = false,
+  onToggleSpeak,
 }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
@@ -513,8 +517,27 @@ const MessageBubble = ({
                   </>
                 )}
               </button>
+
+              {onToggleSpeak && (
+                <button
+                  onClick={() => onToggleSpeak(rawDisplayContent)}
+                  className={`p-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                    isSpeaking
+                      ? "text-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20"
+                      : "hover:bg-surface-secondary hover:text-text-primary"
+                  }`}
+                  title={isSpeaking ? "Stop reading" : "Read aloud"}
+                >
+                  {isSpeaking ? (
+                    <FiVolumeX className="w-4 h-4 text-accent-primary animate-pulse" />
+                  ) : (
+                    <FiVolume2 className="w-4 h-4" />
+                  )}
+                </button>
+              )}
+
               <button
-                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
+                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition cursor-pointer"
                 title="Good response"
               >
                 <FiThumbsUp className="w-4 h-4" />

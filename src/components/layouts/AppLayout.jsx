@@ -21,6 +21,7 @@ import {
   FiUser,
   FiChevronRight,
   FiChevronDown,
+  FiChevronUp,
   FiChevronLeft,
   FiSearch,
   FiMenu,
@@ -1653,24 +1654,39 @@ const AppLayout = ({ children }) => {
 
               <div
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className={`profile-btn px-1 transition hover:bg-surface-secondary dark:hover:bg-surface-dropdown bg-transparent flex items-center group-hover:justify-start cursor-pointer w-full ${isSidebarCollapsed ? "px-0 justify-center" : ""}`}
+                className={`profile-btn p-1.5 rounded-xl transition hover:bg-black/5 dark:hover:bg-white/5 bg-transparent flex items-center cursor-pointer w-full group ${
+                  isSidebarCollapsed ? "px-0 justify-center" : "justify-between"
+                }`}
+                title="Profile & Settings"
               >
-                <div className="flex items-center shrink-0">
-                  <UserAvatar
-                    user={user}
-                    className="w-8 h-8 text-[12px]"
-                    borderClassName="border border-border-primary/50"
-                  />
+                <div className="flex items-center min-w-0">
+                  <div className="flex items-center shrink-0">
+                    <UserAvatar
+                      user={user}
+                      className="w-8 h-8 text-[12px]"
+                      borderClassName="border border-border-primary/50"
+                    />
+                  </div>
+
+                  {!isSidebarCollapsed && (
+                    <div className="flex-col whitespace-nowrap overflow-hidden ml-2.5 flex transition-opacity duration-300 items-start leading-none min-w-0">
+                      <p className="text-[13px] font-normal truncate text-text-primary">
+                        {user?.name || "User"}
+                      </p>
+                      <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
+                        {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {!isSidebarCollapsed && (
-                  <div className="flex-col whitespace-nowrap overflow-hidden ml-3 flex transition-opacity duration-300 items-start leading-none">
-                    <p className="text-[13px] font-normal truncate">
-                      {user?.name || "User"}
-                    </p>
-                    <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
-                      {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
-                    </p>
+                  <div className="shrink-0 ml-auto pl-2 text-text-muted">
+                    <FiChevronUp
+                      className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${
+                        isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""
+                      }`}
+                    />
                   </div>
                 )}
               </div>

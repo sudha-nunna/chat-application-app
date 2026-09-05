@@ -1,35 +1,22 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "../context/SubscriptionContext";
 import { usePlans } from "../hooks/usePlans";
-import { NobackEndCall, NobackEndCallObj, backEndCallGet } from "../services/authService";
+import { NobackEndCallObj, backEndCallGet } from "../services/authService";
 import { useTanStackData, useTanStackQueryClient } from "../hooks/useTanStackData";
-import PlanBadge from "../components/subscription/PlanBadge";
 import PlanCard from "../components/subscription/PlanCard";
 import { useTheme } from "../context/ThemeContext";
+import { Link } from "react-router-dom";
 import {
   FiZap,
-  FiCalendar,
-  FiClock,
-  FiCreditCard,
-  FiAlertTriangle,
   FiRefreshCw,
   FiCheckCircle,
+  FiAlertTriangle,
   FiActivity,
+  FiArrowRight,
 } from "react-icons/fi";
 
 const SubscriptionPage = () => {
-  const {
-    subscription,
-    currentPlan,
-    subscriptionStatus,
-    billingCycle,
-    priorityScore,
-    refreshSubscription,
-    upgradePlan,
-    downgradePlan,
-    cancelSubscription,
-  } = useSubscription();
-
+  const { currentPlan, upgradePlan, downgradePlan } = useSubscription();
   const { plans, loading: plansLoading, error: plansError, refreshPlans } = usePlans();
   const { isDark } = useTheme();
 
@@ -46,10 +33,8 @@ const SubscriptionPage = () => {
     { enabled: !!token }
   );
 
-  const [isAnnual, setIsAnnual] = useState(billingCycle === "annual");
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [creditPacks, setCreditPacks] = useState([]);
 
   useEffect(() => {
@@ -69,12 +54,6 @@ const SubscriptionPage = () => {
     }
   };
 
-  const handleRefreshAll = () => {
-    refreshSubscription();
-    refreshPlans();
-    queryClient.invalidateQueries({ queryKey: ["usage"] });
-  };
-
   const handlePlanSelect = async (targetPlan) => {
     setActionLoading(true);
     setFeedback(null);
@@ -86,25 +65,14 @@ const SubscriptionPage = () => {
     }
     setActionLoading(false);
     if (res.success) {
-      setFeedback({ type: "success", message: res.data?.message || "Credits topped up successfully!" });
+      setFeedback({
+        type: "success",
+        message: res.data?.message || "Credits topped up successfully!",
+      });
       queryClient.invalidateQueries({ queryKey: ["usage"] });
       window.dispatchEvent(new Event("auth-change"));
     } else {
       setFeedback({ type: "error", message: res.message || "Operation failed" });
-    }
-  };
-
-  const handleCancelClick = async () => {
-    setActionLoading(true);
-    setFeedback(null);
-    const res = await cancelSubscription();
-    setActionLoading(false);
-    setShowCancelConfirm(false);
-
-    if (res.success) {
-      setFeedback({ type: "success", message: "Subscription set to cancel at end of current billing period." });
-    } else {
-      setFeedback({ type: "error", message: res.message || "Failed to cancel subscription." });
     }
   };
 
@@ -114,12 +82,17 @@ const SubscriptionPage = () => {
     try {
       const res = await NobackEndCallObj("/credits/purchase", { packId }, "post");
       if (res?.success) {
-        setFeedback({ type: "success", message: `Successfully purchased credit pack: ${packId}` });
+        setFeedback({
+          type: "success",
+          message: `Successfully purchased credit pack: ${packId}`,
+        });
         queryClient.invalidateQueries({ queryKey: ["usage"] });
-        // Optionally trigger global auth refresh
         window.dispatchEvent(new Event("auth-change"));
       } else {
-        setFeedback({ type: "error", message: res?.message || "Failed to purchase credits." });
+        setFeedback({
+          type: "error",
+          message: res?.message || "Failed to purchase credits.",
+        });
       }
     } catch (err) {
       setFeedback({ type: "error", message: "Error purchasing credits." });
@@ -127,259 +100,96 @@ const SubscriptionPage = () => {
     setActionLoading(false);
   };
 
+  // Filter out the 'free' tier so only top-up packages are displayed
+  const topUpPlans = (plans || []).filter(
+    (p) => p.key?.toLowerCase() !== "free" && (p.monthlyPrice > 0 || (p.creditsGranted || p.credits || 0) > 0)
+  );
+
+  const activeCredits = usage?.user?.credits ?? 0;
 
   return (
-    <div className={`flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-8xl mx-auto custom-scrollbar ${
-      "bg-transparent text-text-primary"
-    }`}>
-      {/* Header Banner */}
-      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl border shadow-xl ${
-        isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary"
-      }`}>
-        <div className="space-y-1">
-          <div className="flex items-center flex-wrap gap-3">
-            <h1 className={`text-xl lg:text-2xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Subscription & Billing</h1>
-            <PlanBadge showPriority={true} />
-          </div>
-          <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            Manage your AI model priority queues, agent capacity, and payment preferences.
+    <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-6xl mx-auto custom-scrollbar bg-transparent text-text-primary">
+      {/* Clean Unboxed Header Row */}
+      <div className="flex items-center justify-between pb-2">
+        <div>
+          <h1 className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>
+            Credit Top-Up
+          </h1>
+          <p className="text-xs text-text-muted mt-0.5">
+            Select a package to recharge your AI credits. Pay once, use until consumed.
           </p>
         </div>
 
-        <button
-          onClick={handleRefreshAll}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition self-start md:self-auto ${
-            isDark ? "bg-interactive-active hover:bg-interactive-active border-border-primary text-text-muted" : "bg-surface-secondary hover:bg-surface-secondary border-border-primary text-text-primary"
-          }`}
-        >
-          <FiRefreshCw className={plansLoading ? "animate-spin" : ""} />
-          <span>Refresh Details</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-1.5 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center gap-2">
+            <span className="text-xs text-text-muted font-medium">Balance:</span>
+            <span className="text-sm font-extrabold text-accent-primary font-mono">
+              {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Feedback Banner */}
       {feedback && (
         <div
-          className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between border ${
+          className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between border animate-in fade-in duration-200 ${
             feedback.type === "success"
-              ? "bg-interactive-base/20 text-text-muted border-border-primary/30"
-              : "bg-interactive-base/20 text-text-muted border-border-primary/30"
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+              : "bg-rose-500/10 text-rose-400 border-rose-500/20"
           }`}
         >
-          <div className="flex items-center gap-2">
-            {feedback.type === "success" ? <FiCheckCircle className="text-lg" /> : <FiAlertTriangle className="text-lg" />}
+          <div className="flex items-center gap-2.5">
+            {feedback.type === "success" ? (
+              <FiCheckCircle className="text-base shrink-0 text-emerald-400" />
+            ) : (
+              <FiAlertTriangle className="text-base shrink-0 text-rose-400" />
+            )}
             <span>{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-xs opacity-75 hover:opacity-100">
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-xs opacity-75 hover:opacity-100 cursor-pointer ml-3 underline"
+          >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Subscription Summary Details Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Active Tier */}
-        <div className={`p-5 rounded-2xl border space-y-2 ${
-          isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
-        }`}>
-          <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            <span>Active Tier</span>
-            <FiCreditCard className="text-text-primary" />
+      {/* Available Credit Packages Grid */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-wider font-bold text-zinc-600 dark:text-zinc-400">
+              Select Package
+            </span>
           </div>
-          <div className={`text-xl font-bold capitalize ${isDark ? "text-white" : "text-text-primary"}`}>{currentPlan} Plan</div>
-          <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            Status: <span className="text-text-primary capitalize font-semibold">{subscriptionStatus}</span>
-          </div>
-        </div>
-
-        {/* Card 2: Request Priority Score */}
-        <div className={`p-5 rounded-2xl border space-y-2 ${
-          isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
-        }`}>
-          <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            <span>Request Queue Priority</span>
-            <FiZap className="text-amber-500" />
-          </div>
-          <div className={`text-xl font-bold ${isDark ? "text-white" : "text-text-primary"}`}>{priorityScore} / 100</div>
-          <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            {priorityScore >= 50 ? "High priority processing queue" : "Standard processing queue"}
-          </div>
-        </div>
-
-        {/* Card 3: Messages Used Today */}
-        <div className={`p-5 rounded-2xl border space-y-2 ${
-          isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
-        }`}>
-          <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            <span>Daily Usage Today</span>
-            <FiActivity className="text-text-primary" />
-          </div>
-          <div className={`text-xl font-bold ${isDark ? "text-white" : "text-text-primary"}`}>
-            {usage?.today?.messagesUsed ?? 0} Messages
-          </div>
-          <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            Remaining: {usage?.today?.messagesRemaining ?? "0"}
-          </div>
-        </div>
-
-        {/* Card 4: AI Credits */}
-        <div className={`p-5 rounded-2xl border flex flex-col justify-between space-y-2 ${
-          isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
-        }`}>
-          <div>
-            <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-              <span>AI Credits</span>
-              <FiZap className="text-blue-500" />
-            </div>
-            <div className={`text-xl font-bold ${isDark ? "text-white" : "text-text-primary"}`}>
-              {usage?.user?.credits ?? 0}
-            </div>
-            <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-              Available Balance
-            </div>
-          </div>
-          <a
-            href="#credit-packs"
-            className="mt-2 w-full text-center block px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition"
-          >
-            Buy More Credits
-          </a>
-        </div>
-
-        {/* Card 4: Renewal Date */}
-        <div className={`p-5 rounded-2xl border space-y-2 ${
-          isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"
-        }`}>
-          <div className={`flex items-center justify-between text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            <span>Renewal / Expiration</span>
-            <FiCalendar className="text-text-primary" />
-          </div>
-          <div className={`text-xl font-bold ${isDark ? "text-white" : "text-text-primary"}`}>
-            {subscription?.endDate
-              ? new Date(subscription.endDate).toLocaleDateString()
-              : "Ongoing"}
-          </div>
-          <div className={`text-[11px] font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            {subscription?.cancelAtPeriodEnd ? "Cancels at end of cycle" : "Auto-renews"}
-          </div>
-        </div>
-      </div>
-
-      {/* Chart / Usage Analytics Section */}
-      <div className="space-y-6">
-        <div>
-          <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Usage Analytics</h2>
-          <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Your daily usage and limits breakdown.</p>
-        </div>
-        <div className={`p-6 rounded-3xl border flex flex-col gap-6 ${isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"}`}>
-          {/* Messages */}
-          <div>
-            <div className="flex items-center justify-between text-sm font-medium mb-2">
-              <span className={isDark ? "text-text-primary" : "text-text-primary"}>Daily Messages</span>
-              <span className={isDark ? "text-white font-bold" : "text-text-primary font-bold"}>
-                {usage?.today?.messagesUsed || 0} / {usage?.user?.isPaidUser ? "Unlimited" : (usage?.today?.messagesLimit || 50)}
-              </span>
-            </div>
-            <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-blue-500 h-2.5 rounded-full" 
-                style={{ width: usage?.user?.isPaidUser ? "10%" : `${Math.min(((usage?.today?.messagesUsed || 0) / (usage?.today?.messagesLimit || 50)) * 100, 100)}%` }}
-              ></div>
-            </div>
-          </div>
-          {/* Tokens */}
-          <div>
-            <div className="flex items-center justify-between text-sm font-medium mb-2">
-              <span className={isDark ? "text-text-primary" : "text-text-primary"}>Tokens Used Today</span>
-              <span className={isDark ? "text-white font-bold" : "text-text-primary font-bold"}>
-                {usage?.today?.tokensUsed?.toLocaleString() || 0}
-              </span>
-            </div>
-            <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
-              <div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${Math.min(((usage?.today?.tokensUsed || 0) / 10000) * 100, 100)}%` }}></div>
-            </div>
-          </div>
-          {/* Credits */}
-          <div>
-            <div className="flex items-center justify-between text-sm font-medium mb-2">
-              <span className={isDark ? "text-text-primary" : "text-text-primary"}>Credits Balance</span>
-              <span className={isDark ? "text-white font-bold" : "text-text-primary font-bold"}>
-                {usage?.user?.credits?.toFixed(2) || 0}
-              </span>
-            </div>
-            <div className="w-full bg-black/5 dark:bg-white/5 rounded-full h-2.5 overflow-hidden">
-              <div className="bg-amber-500 h-2.5 rounded-full" style={{ width: `${Math.min(((usage?.user?.credits || 0) / 100) * 100, 100)}%` }}></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Credit Packs Section */}
-      <div id="credit-packs" className="space-y-6 pt-4">
-        <div>
-          <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Credit Packs</h2>
-          <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Top up your account instantly with AI credits.</p>
-        </div>
-        
-        {creditPacks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {creditPacks.map((pack) => (
-              <div key={pack.packId} className={`p-6 rounded-3xl border flex flex-col justify-between ${isDark ? "bg-interactive-base border-border-primary" : "bg-white border-border-primary shadow-sm"}`}>
-                <div>
-                  <h3 className={`text-xl font-bold mb-1 ${isDark ? "text-white" : "text-text-primary"}`}>{pack.name}</h3>
-                  <p className={`text-xs mb-4 ${isDark ? "text-text-muted" : "text-text-muted"}`}>{pack.description || "Additional AI Credits"}</p>
-                  <div className={`text-3xl font-extrabold mb-4 ${isDark ? "text-white" : "text-text-primary"}`}>
-                    ${pack.price}
-                  </div>
-                  <ul className="text-sm space-y-2 mb-6">
-                    <li className="flex items-center gap-2">
-                      <FiZap className="text-blue-500" />
-                      <span className={isDark ? "text-text-primary" : "text-text-primary"}>{pack.credits} Credits</span>
-                    </li>
-                  </ul>
-                </div>
-                <button
-                  onClick={() => handlePurchaseCredits(pack.packId)}
-                  disabled={actionLoading}
-                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition ${isDark ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
-                >
-                  {actionLoading ? "Processing..." : "Purchase Pack"}
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-sm text-text-muted">Loading credit packages...</div>
-        )}
-      </div>
-
-      {/* Plan Selection Section */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>Available Credit Top-Up Packages</h2>
-            <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>Purchase AI credits to recharge your wallet. Pay once, use until consumed, top up anytime.</p>
-          </div>
-
-          <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary dark:text-[#a4a9ff] text-xs font-semibold">
-            <FiZap className="text-xs text-amber-400 animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-accent-primary/10 border border-indigo-200 dark:border-accent-primary/20 text-indigo-700 dark:text-[#a4a9ff] text-[11px] font-semibold">
+            <FiZap className="text-xs text-amber-600 dark:text-amber-400" />
             <span>Pay As You Go • Non-Expiring Credits</span>
           </div>
         </div>
 
-        {/* Dynamic Plan Cards Grid */}
         {plansLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 space-y-3">
-            <FiRefreshCw className="text-3xl text-text-primary animate-spin" />
-            <p className={`text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>Fetching credit packages from database...</p>
+          <div className="flex flex-col items-center justify-center py-24 space-y-3">
+            <FiRefreshCw className="text-3xl text-accent-primary animate-spin" />
+            <p className="text-xs font-medium text-text-muted">
+              Fetching available credit packages...
+            </p>
           </div>
         ) : plansError ? (
-          <div className="p-4 rounded-2xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs text-center">
-            {plansError}
+          <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center space-y-2">
+            <p>{plansError}</p>
+            <button
+              onClick={refreshPlans}
+              className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 font-semibold hover:bg-rose-500/30 transition text-xs"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {plans.map((p) => (
+            {topUpPlans.map((p) => (
               <PlanCard
                 key={p.key}
                 plan={p}
@@ -390,56 +200,59 @@ const SubscriptionPage = () => {
             ))}
           </div>
         )}
-      </div>
 
-      {/* Subscription Management / Cancellation Section */}
-      {currentPlan !== "free" && (
-        <div className={`p-6 rounded-3xl border space-y-4 ${
-          isDark ? "bg-interactive-base border-border-primary/80" : "bg-white border-border-primary shadow-sm"
-        }`}>
-          <h3 className={`text-sm font-bold ${isDark ? "text-white" : "text-text-primary"}`}>Subscription Actions</h3>
-          <p className={`text-xs ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            If you cancel your subscription, you will maintain access to your {currentPlan.toUpperCase()} plan until the end of your billing cycle on{" "}
-            <span className={`font-semibold ${isDark ? "text-text-muted" : "text-text-primary"}`}>
-              {subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString() : "the billing period end"}
-            </span>.
-          </p>
-
-          {!showCancelConfirm ? (
-            <button
-              onClick={() => setShowCancelConfirm(true)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-interactive-base/10 hover:bg-interactive-base/20 text-text-primary border border-border-primary/30 transition"
-            >
-              Cancel Subscription
-            </button>
-          ) : (
-            <div className={`p-4 rounded-2xl border space-y-3 ${
-              isDark ? "bg-interactive-base/40 border-border-primary/40" : "bg-interactive-base border-border-primary"
-            }`}>
-              <p className="text-xs font-semibold text-text-primary">
-                Are you sure you want to cancel your {currentPlan.toUpperCase()} subscription?
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCancelClick}
-                  disabled={actionLoading}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white transition"
-                >
-                  Confirm Cancellation
-                </button>
-                <button
-                  onClick={() => setShowCancelConfirm(false)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    isDark ? "bg-interactive-active hover:bg-interactive-base text-text-muted" : "bg-surface-secondary hover:bg-interactive-base text-text-primary"
+        {/* Optional Add-on Credit Packs (if configured on backend) */}
+        {creditPacks.length > 0 && (
+          <div className="pt-6 space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-text-muted">
+              Additional Instant Top-Up Packs
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {creditPacks.map((pack) => (
+                <div
+                  key={pack.packId}
+                  className={`p-6 rounded-2xl border flex flex-col justify-between ${
+                    isDark
+                      ? "bg-surface-secondary/70 border-border-primary"
+                      : "bg-white border-border-primary shadow-sm"
                   }`}
                 >
-                  Keep Subscription
-                </button>
-              </div>
+                  <div>
+                    <h4
+                      className={`text-lg font-bold mb-1 ${
+                        isDark ? "text-white" : "text-text-primary"
+                      }`}
+                    >
+                      {pack.name}
+                    </h4>
+                    <p className="text-xs text-text-muted mb-4">
+                      {pack.description || "Instant credit boost"}
+                    </p>
+                    <div
+                      className={`text-2xl font-extrabold mb-4 font-mono ${
+                        isDark ? "text-white" : "text-text-primary"
+                      }`}
+                    >
+                      ${pack.price}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-accent-primary mb-6">
+                      <FiZap className="text-amber-400" />
+                      <span>{pack.credits} Credits</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handlePurchaseCredits(pack.packId)}
+                    disabled={actionLoading}
+                    className="w-full py-2 rounded-xl text-xs font-bold bg-accent-primary hover:bg-indigo-600 text-white transition cursor-pointer shadow-sm"
+                  >
+                    {actionLoading ? "Processing..." : "Purchase Pack"}
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

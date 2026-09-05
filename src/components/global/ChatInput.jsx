@@ -3,7 +3,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
 import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip, FiGlobe } from "react-icons/fi";
 
-const ChatInput = ({ onSend, isGenerating, onStop }) => {
+const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [isListening, setIsListening] = useState(false);
@@ -291,15 +291,54 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const silenceTimerRef = useRef(null);
+  const latestTranscriptRef = useRef("");
+  const recognitionRef = useRef(null);
+
+  const handleVoiceAutoSubmit = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    const promptToSubmit = (latestTranscriptRef.current || text || "").trim();
+    if (promptToSubmit && onSend) {
+      setIsListening(false);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+      voiceRecorderRef.current?.stopRecording().catch(() => null);
+
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.resume();
+        } catch (e) {}
+      }
+
+      onSend(
+        promptToSubmit,
+        null,
+        selectedModel?.modelId || "auto",
+        attachments,
+        undefined,
+        true /* isVoiceSubmission */
+      );
+      setText("");
+      latestTranscriptRef.current = "";
+      setAttachments([]);
+    }
+  };
+
   // Initialize Speech Recognition on component mount
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
-      rec.continuous = false;
+      rec.continuous = true;
       rec.lang = "en-US";
-      rec.interimResults = false;
+      rec.interimResults = true;
 
       rec.onstart = () => {
         setIsListening(true);
@@ -307,15 +346,33 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
 
       rec.onend = () => {
         setIsListening(false);
+        // If silence timer was armed, trigger auto-submit immediately upon recognition stop
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+          handleVoiceAutoSubmit();
+        }
       };
 
       rec.onresult = (event) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+        let accumulated = "";
+        for (let i = 0; i < event.results.length; i++) {
+          accumulated += event.results[i][0].transcript;
         }
-        if (transcript && transcript.trim()) {
-          setText(transcript);
+        const trimmed = accumulated.trim();
+        if (trimmed) {
+          setText(trimmed);
+          latestTranscriptRef.current = trimmed;
+
+          // Clear previous silence timer
+          if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+          }
+
+          // Trigger auto-submit after 2s of silence
+          silenceTimerRef.current = setTimeout(() => {
+            handleVoiceAutoSubmit();
+          }, 2000);
         }
       };
 
@@ -323,41 +380,63 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
         if (event.error !== "no-speech" && event.error !== "aborted") {
           console.warn("Speech recognition warning:", event.error);
         }
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
         setIsListening(false);
       };
 
       setRecognition(rec);
+      recognitionRef.current = rec;
     }
+
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
+    };
   }, []);
 
   const handleVoiceClick = async () => {
     try {
       if (isListening) {
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
         setIsListening(false);
-        if (recognition) {
+        if (recognitionRef.current) {
           try {
-            recognition.stop();
+            recognitionRef.current.stop();
           } catch (e) {}
         }
-        const audioBlob = await voiceRecorderRef.current
-          .stopRecording()
-          .catch(() => null);
-        if (audioBlob && onSend) {
-          onSend(text, audioBlob, selectedModel.modelId, attachments);
+        await voiceRecorderRef.current?.stopRecording().catch(() => null);
+
+        const promptToSubmit = (latestTranscriptRef.current || text || "").trim();
+        if (promptToSubmit && onSend) {
+          if (typeof window !== "undefined" && "speechSynthesis" in window) {
+            try {
+              window.speechSynthesis.resume();
+            } catch (e) {}
+          }
+          onSend(
+            promptToSubmit,
+            null,
+            selectedModel?.modelId || "auto",
+            attachments,
+            undefined,
+            true /* isVoiceSubmission */
+          );
           setText("");
+          latestTranscriptRef.current = "";
           setAttachments([]);
         }
       } else {
-        await voiceRecorderRef.current.startRecording().catch((err) => {
-          console.warn("MediaRecorder start notice:", err.message);
-        });
-        if (recognition) {
-          try {
-            recognition.abort();
-            setTimeout(() => recognition.start(), 50);
-          } catch (e) {}
-        }
-        setIsListening(true);
+        await startVoiceListening();
       }
     } catch (err) {
       console.warn("Voice toggle error:", err);
@@ -365,21 +444,79 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
     }
   };
 
+  const startVoiceListening = async () => {
+    try {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      latestTranscriptRef.current = "";
+      setText("");
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.resume();
+        } catch (e) {}
+      }
+      await voiceRecorderRef.current?.startRecording().catch((err) => {
+        console.warn("MediaRecorder start notice:", err.message);
+      });
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+        setTimeout(() => {
+          try {
+            recognitionRef.current?.start();
+          } catch (e) {}
+        }, 50);
+      }
+      setIsListening(true);
+    } catch (err) {
+      console.warn("Voice start error:", err);
+      setIsListening(false);
+    }
+  };
+
+  // Automatically reopen mic to listen when AI finishes reading aloud (hands-free dialogue)
+  useEffect(() => {
+    if (autoListenTrigger > 0 && !isListening && !isGenerating) {
+      startVoiceListening();
+    }
+  }, [autoListenTrigger]);
+
   const hasText = Boolean(text && text.trim());
   const canSubmit = hasText && !isGenerating;
 
   const handleSend = () => {
     if (isSubmittingRef.current || isGenerating) return;
-    // Only image cannot be uploaded without text prompt (ChatGPT behavior)
     if (!canSubmit) return;
+
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (isListening) {
+      setIsListening(false);
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {}
+    }
 
     isSubmittingRef.current = true;
     setTimeout(() => {
       isSubmittingRef.current = false;
     }, 600);
 
-    onSend(text.trim(), null, selectedModel?.modelId || "auto", attachments);
+    onSend(
+      text.trim(),
+      null,
+      selectedModel?.modelId || "auto",
+      attachments,
+      undefined,
+      false /* isVoiceSubmission: regular text send */
+    );
     setText("");
+    latestTranscriptRef.current = "";
     setAttachments([]);
     setTimeout(() => {
       inputRef.current?.focus();
@@ -483,13 +620,34 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           </div>
         )}
 
+        {/* Active Speech Recognition Banner */}
+        {isListening && (
+          <div className="flex items-center justify-between px-3 py-1.5 mb-2 rounded-lg bg-red-500/10 dark:bg-red-500/15 border border-red-500/25 text-xs text-red-600 dark:text-red-400 select-none animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              <span className="font-semibold tracking-wide">Listening...</span>
+              <span className="opacity-80 text-[11.5px]">Pause for 2 sec to submit to AI</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleVoiceClick}
+              className="text-[11px] font-medium underline hover:no-underline cursor-pointer ml-auto"
+            >
+              Stop
+            </button>
+          </div>
+        )}
+
         <textarea
           ref={inputRef}
           rows={2}
           value={text}
           placeholder={
             isListening
-              ? "Listening..."
+              ? "Listening... Speak now (pause 2 sec to submit to AI)..."
               : attachments.length > 0
               ? "Add a prompt for your attachment..."
               : "Ask Codegene to build, explain, or explore..."
