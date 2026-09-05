@@ -48,25 +48,25 @@ const SubscriptionModal = () => {
 
   return (
     <div
-      className="w-full h-full flex flex-col bg-surface-primary dark:bg-[#13141f] text-text-primary dark:text-white overflow-hidden"
+      className="w-full h-full flex flex-col bg-surface-primary dark:bg-[#11121c] text-text-primary dark:text-white overflow-hidden"
     >
       {/* Header Bar */}
-      <div className="relative py-3.5 px-5 md:px-6 border-b shrink-0 bg-gradient-to-r from-accent-primary/10 via-surface-secondary/90 to-indigo-500/10 dark:from-[#1e2034] dark:via-[#161725] dark:to-[#1a1b2d] border-border-primary dark:border-white/10 overflow-hidden">
+      <div className="relative z-20 py-4 px-6 md:px-8 border-b shrink-0 bg-gradient-to-r from-accent-primary/10 via-surface-secondary/90 to-indigo-500/10 dark:from-[#1c1e30] dark:via-[#151624] dark:to-[#191a2c] border-border-primary dark:border-white/10 overflow-hidden shadow-sm">
         {/* Ambient Lighting Orbs */}
-        <div className="absolute -top-12 -left-12 w-32 h-32 bg-accent-primary/20 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -top-12 -left-12 w-40 h-40 bg-accent-primary/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Left side: Icon + Title & Subtitle */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0 font-bold">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shadow-lg shadow-accent-primary/20 shrink-0 font-bold">
               <FiZap className="animate-pulse text-amber-300" />
             </div>
             <div>
-              <h2 className="text-sm md:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-text-primary via-text-primary to-accent-primary dark:from-white dark:via-white dark:to-[#a4a9ff]">
+              <h2 className="text-base md:text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-text-primary via-text-primary to-accent-primary dark:from-white dark:via-white dark:to-[#a4a9ff]">
                 Upgrade Your Workspace
               </h2>
-              <p className="text-[11px] text-text-muted">
+              <p className="text-xs text-zinc-400 dark:text-zinc-400 leading-normal mt-0.5">
                 Recharge AI credits, unlock unlimited daily prompts & high-priority cluster models
               </p>
             </div>
@@ -74,14 +74,14 @@ const SubscriptionModal = () => {
 
           {/* Right side: Badge + Close Button */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-secondary/80 dark:bg-[#12131d] border border-border-primary/60 dark:border-white/10 shadow-inner text-[11px] font-semibold text-text-muted">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-surface-secondary/80 dark:bg-[#12131d] border border-border-primary/60 dark:border-white/10 shadow-inner text-xs font-semibold text-zinc-400 dark:text-zinc-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Credit Top-Up • Pay As You Go</span>
             </div>
 
             <button
               onClick={() => setIsUpgradeModalOpen(false)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-border-primary/50 dark:border-white/5"
+              className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-400 hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-border-primary/50 dark:border-white/10"
               title="Close Panel"
             >
               <FiX className="text-base" />
@@ -91,14 +91,14 @@ const SubscriptionModal = () => {
       </div>
 
       {/* Body Container */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar max-w-6xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar max-w-6xl mx-auto w-full flex flex-col justify-start">
         {/* Feedback banner */}
         {feedback && (
           <div
-            className={`p-2.5 rounded-xl text-xs font-semibold text-center border shadow-sm ${
+            className={`p-3 mb-4 rounded-xl text-xs sm:text-sm font-semibold text-center border shadow-sm ${
               feedback.type === "success"
-                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                : "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                : "bg-rose-500/10 text-rose-400 border-rose-500/30"
             }`}
           >
             {feedback.message}
@@ -108,15 +108,15 @@ const SubscriptionModal = () => {
         {/* Dynamic Plan Cards Grid */}
         {plansLoading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <FiRefreshCw className="text-xl text-accent-primary animate-spin" />
-            <p className="text-xs text-text-muted font-medium">Loading credit packages...</p>
+            <FiRefreshCw className="text-2xl text-accent-primary animate-spin" />
+            <p className="text-xs sm:text-sm text-zinc-400 font-medium">Loading credit packages...</p>
           </div>
         ) : plansError ? (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center font-medium">
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs sm:text-sm text-center font-medium">
             {plansError}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-0.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch w-full py-2">
             {plans.map((p) => (
               <PlanCard
                 key={p.key}
@@ -131,9 +131,9 @@ const SubscriptionModal = () => {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t shrink-0 flex items-center justify-between text-xs text-text-muted bg-surface-secondary/40 dark:bg-[#181926]/70 border-border-primary dark:border-white/10">
-        <div className="flex items-center gap-1.5">
-          <FiShield className="text-emerald-400 text-xs" />
+      <div className="py-3 px-6 md:px-8 border-t shrink-0 flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-400 bg-surface-secondary/40 dark:bg-[#161724]/80 border-border-primary dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <FiShield className="text-emerald-400 text-sm" />
           <span>Recharge anytime • Credits never expire</span>
         </div>
         <div className="flex items-center gap-4 font-semibold text-text-primary dark:text-zinc-300">
