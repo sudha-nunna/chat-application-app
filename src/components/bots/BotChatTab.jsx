@@ -31,8 +31,10 @@ import { formatMarkdownBreaks } from "../../services/externalBotService";
 import VisemeAvatarPlayer from "../global/VisemeAvatarPlayer";
 import VoiceConversationManager from "../avatar/VoiceConversationManager";
 import AvatarContainer from "../avatar/AvatarContainer";
+import { useTanStackQueryClient } from "../../hooks/useTanStackData";
 
 const BotChatTab = ({ bot }) => {
+  const queryClient = useTanStackQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId] = useState(searchParams.get("convId") || null);
@@ -78,6 +80,7 @@ const BotChatTab = ({ bot }) => {
   const [clusterNodes, setClusterNodes] = useState([]);
   const [isClusterLoading, setIsClusterLoading] = useState(false);
   const messagesContainerRef = useRef(null);
+  const isAutoScrollEnabledRef = useRef(true);
   const isStreamingRef = useRef(false);
 
   // Initialize Voice Conversation Manager with Barge-In Speech Interruption support
@@ -173,10 +176,22 @@ const BotChatTab = ({ bot }) => {
   }, [activeConvId]);
 
   useEffect(() => {
-    if (messagesContainerRef.current) {
+    if (isAutoScrollEnabledRef.current && messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages, loading]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    isAutoScrollEnabledRef.current = distanceFromBottom <= 80;
+  };
+
+  const handleWheel = (e) => {
+    if (e.deltaY < 0) {
+      isAutoScrollEnabledRef.current = false;
+    }
+  };
 
   const fetchConversations = async (selectLatest = true) => {
     try {
@@ -273,6 +288,7 @@ const BotChatTab = ({ bot }) => {
     const tempUserMsg = { role: "user", content: userText };
     const tempBotMsg = { role: "assistant", content: "", sources: [] };
 
+    isAutoScrollEnabledRef.current = true;
     setMessages((prev) => [...prev, tempUserMsg, tempBotMsg]);
 
     const controller = new AbortController();
@@ -382,6 +398,7 @@ const BotChatTab = ({ bot }) => {
       setLoading(false);
       setAbortController(null);
       fetchConversations(false);
+      queryClient.invalidateQueries({ queryKey: ["usage"] });
     }
   };
 
@@ -614,6 +631,8 @@ const BotChatTab = ({ bot }) => {
         {activeMode === "TEXT_CHAT" && (
         <div
           ref={messagesContainerRef}
+          onScroll={handleScroll}
+          onWheel={handleWheel}
           className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col bg-white dark:bg-interactive-active/40"
         >
           <div className="w-full flex-1 max-w-3xl mx-auto px-3 md:px-6 py-6 flex flex-col space-y-6">

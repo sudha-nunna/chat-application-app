@@ -1,59 +1,75 @@
-import { useState, useEffect } from "react";
 import {
-  FiX,
-  FiZap,
+  FiRefreshCw,
   FiActivity,
+  FiX,
+  FiShield,
+  FiZap,
   FiCpu,
   FiClock,
-  FiRefreshCw,
-  FiTrendingUp,
-  FiLayers,
-  FiShield,
   FiShoppingBag,
   FiArrowUpRight,
   FiArrowDownLeft,
+  FiTrendingUp,
+  FiLayers,
 } from "react-icons/fi";
 import { backEndCallGet } from "../../services/authService";
 import { useSubscription } from "../../context/SubscriptionContext";
+import { useTanStackData, useTanStackQueryClient } from "../../hooks/useTanStackData";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const CreditsModal = () => {
+const CreditsModal = ({ isPage = false }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isUsageRoute = location.pathname.startsWith("/usage") || isPage;
+
   const {
     isCreditsModalOpen,
     setIsCreditsModalOpen,
     setIsUpgradeModalOpen,
   } = useSubscription();
 
-  const [loading, setLoading] = useState(true);
-  const [usageData, setUsageData] = useState(null);
-  const [error, setError] = useState("");
+  const queryClient = useTanStackQueryClient();
+  const token = localStorage.getItem("token");
 
-  const fetchUsageData = async () => {
-    setLoading(true);
-    setError("");
-    try {
+  const {
+    data: usageData,
+    isLoading,
+    isFetching,
+    isError,
+  } = useTanStackData(
+    ["usage"],
+    async () => {
+      if (!token) return null;
       const res = await backEndCallGet("/usage/summary");
-      if (res?.success && res?.data) {
-        setUsageData(res.data);
-      } else if (res?.data) {
-        setUsageData(res.data);
-      } else if (res) {
-        setUsageData(res);
+      return res?.data || res || null;
+    },
+    { enabled: (isCreditsModalOpen || isUsageRoute) && !!token }
+  );
+
+  const loading = isLoading || isFetching;
+  const error = isError ? "Unable to load real-time usage stats. Please try again." : "";
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["usage"] });
+  };
+
+  const handleClose = () => {
+    setIsCreditsModalOpen(false);
+    if (isUsageRoute) {
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/chat");
       }
-    } catch (err) {
-      console.warn("Failed to fetch usage summary:", err);
-      setError("Unable to load real-time usage stats. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (isCreditsModalOpen) {
-      fetchUsageData();
-    }
-  }, [isCreditsModalOpen]);
+  const handleBuyCredits = () => {
+    setIsCreditsModalOpen(false);
+    navigate("/subscription");
+  };
 
-  if (!isCreditsModalOpen) return null;
+  if (!isCreditsModalOpen && !isUsageRoute) return null;
 
   const today = usageData?.today || {
     messagesUsed: 0,
@@ -120,7 +136,7 @@ const CreditsModal = () => {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchUsageData}
+              onClick={handleRefresh}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-secondary hover:bg-surface-tertiary dark:bg-[#1a1c2b] dark:hover:bg-[#23263a] text-text-primary dark:text-white border border-border-primary/60 dark:border-white/10 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
               title="Refresh Telemetry"
             >
@@ -131,7 +147,7 @@ const CreditsModal = () => {
             </button>
 
             <button
-              onClick={() => setIsCreditsModalOpen(false)}
+              onClick={handleClose}
               className="w-8 h-8 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-border-primary/50 dark:border-white/5"
               title="Close Panel"
             >
@@ -353,10 +369,7 @@ const CreditsModal = () => {
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => {
-                setIsCreditsModalOpen(false);
-                setIsUpgradeModalOpen(true);
-              }}
+              onClick={handleBuyCredits}
               className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-indigo-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-accent-primary/25"
             >
               <FiShoppingBag className="text-xs" />
@@ -364,7 +377,7 @@ const CreditsModal = () => {
             </button>
 
             <button
-              onClick={() => setIsCreditsModalOpen(false)}
+              onClick={handleClose}
               className="px-4 py-2 rounded-xl bg-surface-secondary dark:bg-[#1a1c2b] hover:bg-surface-tertiary dark:hover:bg-[#23263a] text-text-primary dark:text-white text-xs font-semibold transition cursor-pointer border border-border-primary/40 dark:border-white/10"
             >
               Close

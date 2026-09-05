@@ -54,6 +54,7 @@ import PlanBadge from "../subscription/PlanBadge";
 import SubscriptionModal from "../subscription/SubscriptionModal";
 import CreditsModal from "../subscription/CreditsModal";
 import FloatingExternalBotWidget from "../global/FloatingExternalBotWidget";
+import UserAvatar from "../common/UserAvatar";
 import { useTheme } from "../../context/ThemeContext";
 import { useSubscription } from "../../context/SubscriptionContext";
 import {
@@ -79,6 +80,45 @@ const AppLayout = ({ children }) => {
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("codegene_sidebar_width");
+    return saved ? Math.max(200, Math.min(520, parseInt(saved, 10))) : 280;
+  });
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const isResizingRef = useRef(false);
+
+  const handleMouseDownResize = (e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    setIsResizingSidebar(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (moveEvent) => {
+      if (!isResizingRef.current) return;
+      const newWidth = Math.max(200, Math.min(520, moveEvent.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = (upEvent) => {
+      isResizingRef.current = false;
+      setIsResizingSidebar(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      const finalWidth = Math.max(200, Math.min(520, upEvent.clientX));
+      localStorage.setItem("codegene_sidebar_width", finalWidth.toString());
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleDoubleClickReset = () => {
+    setSidebarWidth(280);
+    localStorage.setItem("codegene_sidebar_width", "280");
+  };
   const [tempClosed, setTempClosed] = useState(false);
   const [activePopover, setActivePopover] = useState(null);
 
@@ -114,7 +154,10 @@ const AppLayout = ({ children }) => {
   const [editTitleValue, setEditTitleValue] = useState("");
 
   useEffect(() => {
-    if (location.pathname.startsWith("/chat") || location.pathname === "/") {
+    setIsCreditsModalOpen(false);
+    setIsUpgradeModalOpen(false);
+
+    if (location.pathname.startsWith("/chat") || location.pathname === "/" || location.pathname.startsWith("/usage")) {
       setActiveSidebarTab("chat");
     } else if (location.pathname.startsWith("/bots")) {
       setActiveSidebarTab("agents");
@@ -165,7 +208,8 @@ const AppLayout = ({ children }) => {
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [activeDropdownItem, setActiveDropdownItem] = useState(null);
   const [activeDropdownType, setActiveDropdownType] = useState(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const [deleteModalItem, setDeleteModalItem] = useState(null);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
@@ -226,7 +270,7 @@ const AppLayout = ({ children }) => {
               localStorage.setItem("user", JSON.stringify(res.user));
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     };
 
@@ -275,16 +319,15 @@ const AppLayout = ({ children }) => {
     { enabled: !!authToken },
   );
 
-  // Fetch Usage
-  const { data: usage = null } = useTanStackData(
-    ["usage"],
-    async () => {
-      if (!authToken) return null;
-      const res = await fetchUsageSummary();
-      return res?.success ? res.data : null;
-    },
-    { enabled: !!authToken },
-  );
+  useEffect(() => {
+    if (usageData?.user?.credits !== undefined && user) {
+      if (user.credits !== usageData.user.credits) {
+        const updatedUser = { ...user, credits: usageData.user.credits };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+    }
+  }, [usageData, user]);
 
   // Fetch Bot Conversations
   const { data: botConversations = [] } = useTanStackData(
@@ -353,11 +396,14 @@ const AppLayout = ({ children }) => {
     },
   });
 
-  const handleDeleteItem = (e, id, type) => {
+  const handleDeleteItem = (e, id, type, item) => {
     e.stopPropagation();
     if (type === "chat") {
-      if (!window.confirm("Delete this conversation?")) return;
-      deleteChatMutation.mutate(id);
+      setDeleteModalItem({
+        id,
+        type,
+        title: item?.title || "this conversation",
+      });
     } else {
       alert("Bot deletion must be done from the bot settings page.");
     }
@@ -460,11 +506,11 @@ const AppLayout = ({ children }) => {
 
   const groupedRecentChats = (() => {
     const groups = [
-      { key: "today", label: "today", items: [] },
-      { key: "yesterday", label: "yesterday", items: [] },
-      { key: "previous7Days", label: "previous 7 days", items: [] },
-      { key: "previous30Days", label: "previous 30 days", items: [] },
-      { key: "older", label: "older", items: [] },
+      { key: "today", label: "Today", items: [] },
+      { key: "yesterday", label: "Yesterday", items: [] },
+      { key: "previous7Days", label: "Previous 7 days", items: [] },
+      { key: "previous30Days", label: "Previous 30 days", items: [] },
+      { key: "older", label: "Older", items: [] },
     ];
 
     const now = new Date();
@@ -534,11 +580,10 @@ const AppLayout = ({ children }) => {
           key={item._id}
           onClick={() => !isEditing && handleSelectItem(item._id, type)}
           title={title}
-          className={`group relative flex items-center justify-between py-1.5 rounded-lg cursor-pointer text-[13px]  font-normal transition select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-2.5"} ${
-            isActive
-              ? "bg-black/5 dark:bg-interactive-active text-text-primary"
-              : "hover:bg-surface-secondary dark:hover:bg-interactive-active/30 text-text-primary dark:text-text-muted dark:hover:text-text-primary opacity-70 dark:opacity-90"
-          }`}
+          className={`group relative flex items-center justify-between py-2 rounded-lg cursor-pointer text-[13px] font-normal transition-colors duration-150 select-none border-none outline-none ${collapseUI ? "px-0 justify-center" : "px-2.5"} ${isActive
+            ? "bg-black/5 dark:bg-white/[0.08] text-text-primary dark:text-white font-medium shadow-2xs"
+            : "hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-text-primary dark:text-text-muted hover:text-text-primary dark:hover:text-white"
+            }`}
         >
           <div
             className={`flex items-center gap-1 w-full relative ${collapseUI ? "justify-center pr-0" : "pr-12"}`}
@@ -606,11 +651,10 @@ const AppLayout = ({ children }) => {
               <>
                 <span className="truncate flex-1">{title}</span>
                 <div
-                  className={`absolute right-0 top-0 bottom-0 w-8 bg-gradien-to-l to-transparent pointer-events-none ${
-                    isActive
-                      ? "from-interactive-base dark:from-interactive-active"
-                      : "from-white dark:from-surface-secondary group-hover:from-surface-secondary dark:group-hover:from-interactive-active/80"
-                  }`}
+                  className={`absolute right-0 top-0 bottom-0 w-8 bg-gradien-to-l to-transparent pointer-events-none ${isActive
+                    ? "from-interactive-base dark:from-interactive-active"
+                    : "from-white dark:from-surface-secondary group-hover:from-surface-secondary dark:group-hover:from-interactive-active/80"
+                    }`}
                 ></div>
               </>
             ) : null}
@@ -658,10 +702,20 @@ const AppLayout = ({ children }) => {
                     setActiveDropdownItem(null);
                   } else {
                     const rect = e.currentTarget.getBoundingClientRect();
-                    setDropdownPos({
-                      top: rect.bottom + 4,
-                      right: window.innerWidth - rect.right,
-                    });
+                    const menuWidth = 170;
+                    let left = rect.left - 4;
+                    if (left + menuWidth > window.innerWidth - 12) {
+                      left = window.innerWidth - menuWidth - 12;
+                    }
+                    if (left < 12) left = 12;
+
+                    let top = rect.bottom + 4;
+                    const menuHeight = type === "bot" ? 170 : 135;
+                    if (top + menuHeight > window.innerHeight - 12) {
+                      top = Math.max(12, rect.top - menuHeight - 4);
+                    }
+
+                    setDropdownPos({ top, left });
                     setOpenDropdownId(item._id);
                     setActiveDropdownItem(item);
                     setActiveDropdownType(type);
@@ -696,39 +750,25 @@ const AppLayout = ({ children }) => {
                           navigate(`/bots/${item._id}?convId=${conv._id}`);
                           setIsMobileMenuOpen(false);
                         }}
-                        className={`group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition ${
-                          activeChatId === conv._id ||
+                        className={`group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition ${activeChatId === conv._id ||
                           searchParams.get("convId") === conv._id
-                            ? "bg-black/5 dark:bg-interactive-active text-text-primary font-medium"
-                            : "hover:bg-surface-secondary text-text-primary/80 hover:text-text-primary"
-                        }`}
+                          ? "bg-black/5 dark:bg-interactive-active text-text-primary font-medium"
+                          : "hover:bg-surface-secondary text-text-primary/80 hover:text-text-primary"
+                          }`}
                       >
                         <FiMessageSquare className="shrink-0 text-[10px]" />
                         <span className="truncate flex-1">
                           {conv.title || "New Conversation"}
                         </span>
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            if (!window.confirm("Delete this conversation?"))
-                              return;
-                            try {
-                              await backEndCallObjDel(
-                                `/bots/${item._id}/conversations`,
-                                conv._id,
-                              );
-                              queryClient.invalidateQueries({
-                                queryKey: ["botConversations", item._id],
-                              });
-                              if (searchParams.get("convId") === conv._id) {
-                                navigate(`/bots/${item._id}`);
-                              }
-                            } catch (err) {
-                              console.error(
-                                "Failed to delete conversation:",
-                                err,
-                              );
-                            }
+                            setDeleteModalItem({
+                              id: conv._id,
+                              type: "botConversation",
+                              botId: item._id,
+                              title: conv.title || "New Conversation",
+                            });
                           }}
                           className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition ml-auto"
                           title="Delete Conversation"
@@ -877,17 +917,11 @@ const AppLayout = ({ children }) => {
           >
             <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
               <div className="flex items-center gap-3">
-                {user?.image ? (
-                  <img
-                    src={user.image}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-[11px] shrink-0 border border-border-primary">
-                    {user?.name ? user.name.slice(0, 2).toUpperCase() : "YN"}
-                  </div>
-                )}
+                <UserAvatar
+                  user={user}
+                  className="w-8 h-8 text-[12px]"
+                  borderClassName="border border-border-primary"
+                />
                 <div className="flex flex-col">
                   <span className="text-[13px] font-bold truncate tracking-wide">
                     {user?.name || "User Name"}
@@ -933,17 +967,11 @@ const AppLayout = ({ children }) => {
           className={`profile-btn p-1.5 rounded-xl transition hover:bg-surface-secondary dark:hover:bg-surface-dropdown bg-transparent flex items-center justify-center group-hover:justify-start cursor-pointer w-full`}
         >
           <div className="flex items-center shrink-0">
-            {user?.image ? (
-              <img
-                src={user.image}
-                alt={user.name}
-                className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary/50"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-[13px] shrink-0 border border-border-primary/50">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : "YN"}
-              </div>
-            )}
+            <UserAvatar
+              user={user}
+              className="w-8 h-8 text-[13px]"
+              borderClassName="border border-border-primary/50"
+            />
           </div>
 
           <div className="flex-col whitespace-nowrap overflow-hidden ml-3 hidden group-hover:flex transition-opacity duration-300">
@@ -958,9 +986,9 @@ const AppLayout = ({ children }) => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setIsUpgradeModalOpen(true);
+              navigate("/subscription");
             }}
-            className="ml-auto px-3 py-1 rounded-full border border-border-primary/50 text-[11px] font-bold hover:bg-white/5 transition shadow-sm hidden group-hover:block shrink-0"
+            className="ml-auto px-3 py-1 rounded-full border border-border-primary/50 text-[11px] font-bold hover:bg-white/5 transition shadow-sm hidden group-hover:block shrink-0 cursor-pointer"
           >
             Upgrade
           </button>
@@ -1027,11 +1055,10 @@ const AppLayout = ({ children }) => {
           <button
             key={item.id}
             onClick={item.onClick}
-            className={`p-3 rounded-xl flex items-center justify-center transition-all ${
-              isActive
-                ? "bg-interactive-base/20 text-text-primary dark:bg-interactive-active/40 dark:text-white"
-                : "text-text-primary hover:bg-surface-secondary dark:text-text-muted dark:hover:text-text-primary"
-            }`}
+            className={`p-3 rounded-xl flex items-center justify-center transition-all ${isActive
+              ? "bg-interactive-base/20 text-text-primary dark:bg-interactive-active/40 dark:text-white"
+              : "text-text-primary hover:bg-surface-secondary dark:text-text-muted dark:hover:text-text-primary"
+              }`}
           >
             <item.icon className="text-xl" />
           </button>
@@ -1053,7 +1080,8 @@ const AppLayout = ({ children }) => {
           />
         )}
         <div
-          className={`flex flex-col h-full ${isSidebarCollapsed && !isMobile ? "overflow-visible px-1" : "overflow-hidden"} transition-all duration-300 bg-surface-secondary shrink-0 select-none relative ${isMobile ? "w-full" : isSidebarCollapsed ? "w-[65px] border-r border-border-primary z-[60]" : "w-[280px] border-r border-border-primary z-20"}`}
+          style={!isMobile && !isSidebarCollapsed ? { width: `${sidebarWidth}px` } : undefined}
+          className={`flex flex-col h-full ${isSidebarCollapsed && !isMobile ? "overflow-visible px-1" : "overflow-hidden"} ${isResizingSidebar ? "transition-none" : "transition-all duration-300"} bg-surface-secondary shrink-0 select-none relative ${isMobile ? "w-full" : isSidebarCollapsed ? "w-[65px] border-r border-border-primary z-[60]" : "border-r border-border-primary z-20"}`}
         >
           {isMobile ? (
             <div className="p-4 border-b border-border-primary/40 flex items-center gap-3 shrink-0 relative">
@@ -1089,19 +1117,11 @@ const AppLayout = ({ children }) => {
                 >
                   <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
                     <div className="flex items-center gap-3">
-                      {user?.image ? (
-                        <img
-                          src={user.image}
-                          alt={user.name}
-                          className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-[11px] shrink-0 border border-border-primary">
-                          {user?.name
-                            ? user.name.slice(0, 2).toUpperCase()
-                            : "YN"}
-                        </div>
-                      )}
+                      <UserAvatar
+                        user={user}
+                        className="w-8 h-8 text-[12px]"
+                        borderClassName="border border-border-primary"
+                      />
                       <div className="flex flex-col">
                         <span className="text-[13px] font-bold truncate tracking-wide">
                           {user?.name || "User Name"}
@@ -1116,7 +1136,7 @@ const AppLayout = ({ children }) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
-                      setIsUpgradeModalOpen(true);
+                      navigate("/subscription");
                     }}
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
@@ -1217,12 +1237,12 @@ const AppLayout = ({ children }) => {
               </div>
               {!isSidebarCollapsed && (
                 <span className="opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                  New chat
+                  New Chat
                 </span>
               )}
               {isSidebarCollapsed && !isMobile && (
                 <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                  New chat
+                  New Chat
                 </div>
               )}
             </button>
@@ -1238,7 +1258,7 @@ const AppLayout = ({ children }) => {
               />
               {!isSidebarCollapsed && (
                 <span className="text-[13px] opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                  Search conversations
+                  Search Conversations
                 </span>
               )}
               {isSidebarCollapsed && !isMobile && (
@@ -1272,9 +1292,9 @@ const AppLayout = ({ children }) => {
           </div>
 
           <div
-            className={`flex-1 relative ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-y-auto custom-scrollbar"}`}
+            className={`flex-1 relative ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"}`}
           >
-            {(activeSidebarTab === "chat" || activeSidebarTab === "agents") && (
+            {(activeSidebarTab === "chat" || activeSidebarTab === "agents" || activeSidebarTab === "subscription") && (
               <>
                 <div
                   className={`pt-2 pb-32 space-y-6 ${isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"}`}
@@ -1460,7 +1480,7 @@ const AppLayout = ({ children }) => {
                                 className="flex flex-col gap-0.5"
                               >
                                 <h4
-                                  className={`text-[13px] font-serif tracking-tight text-text-muted px-3 mb-1 ${idx > 0 ? "mt-2" : ""}`}
+                                  className={`text-[11.5px] font-sans font-medium text-text-muted/80 px-3 mb-1 ${idx > 0 ? "mt-2.5" : ""}`}
                                 >
                                   {group.label}
                                 </h4>
@@ -1565,19 +1585,11 @@ const AppLayout = ({ children }) => {
                 >
                   <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
                     <div className="flex items-center gap-3">
-                      {user?.image ? (
-                        <img
-                          src={user.image}
-                          alt={user.name}
-                          className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-[11px] shrink-0 border border-border-primary">
-                          {user?.name
-                            ? user.name.slice(0, 2).toUpperCase()
-                            : "YN"}
-                        </div>
-                      )}
+                      <UserAvatar
+                        user={user}
+                        className="w-8 h-8 text-[12px]"
+                        borderClassName="border border-border-primary"
+                      />
                       <div className="flex flex-col">
                         <span className="text-[13px] font-bold truncate tracking-wide">
                           {user?.name || "Nunna Sudha"}
@@ -1593,7 +1605,7 @@ const AppLayout = ({ children }) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
-                      setIsUpgradeModalOpen(true);
+                      navigate("/subscription");
                     }}
                     className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
@@ -1603,7 +1615,7 @@ const AppLayout = ({ children }) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
-                      setIsCreditsModalOpen(true);
+                      navigate("/usage");
                     }}
                     className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
@@ -1644,17 +1656,11 @@ const AppLayout = ({ children }) => {
                 className={`profile-btn px-1 transition hover:bg-surface-secondary dark:hover:bg-surface-dropdown bg-transparent flex items-center group-hover:justify-start cursor-pointer w-full ${isSidebarCollapsed ? "px-0 justify-center" : ""}`}
               >
                 <div className="flex items-center shrink-0">
-                  {user?.image ? (
-                    <img
-                      src={user.image}
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-primary/50"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-accent-primary text-white dark:text-[#090a10] flex items-center justify-center font-bold text-[12px] shrink-0">
-                      {user?.name ? user.name.slice(0, 2).toUpperCase() : "AV"}
-                    </div>
-                  )}
+                  <UserAvatar
+                    user={user}
+                    className="w-8 h-8 text-[12px]"
+                    borderClassName="border border-border-primary/50"
+                  />
                 </div>
 
                 {!isSidebarCollapsed && (
@@ -1668,6 +1674,26 @@ const AppLayout = ({ children }) => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Draggable resize border handle */}
+          {!isMobile && !isSidebarCollapsed && (
+            <div
+              onMouseDown={handleMouseDownResize}
+              onDoubleClick={handleDoubleClickReset}
+              className={`absolute top-0 -right-1 w-[8px] h-full cursor-col-resize z-50 group transition-all flex items-center justify-center ${isResizingSidebar
+                ? "bg-accent-primary/20"
+                : "hover:bg-accent-primary/10"
+                }`}
+              title="Drag left/right to adjust sidebar width (Double-click to reset)"
+            >
+              <div
+                className={`w-[2px] h-full transition-colors ${isResizingSidebar
+                  ? "bg-accent-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+                  : "bg-transparent group-hover:bg-accent-primary"
+                  }`}
+              />
             </div>
           )}
         </div>
@@ -1717,9 +1743,9 @@ const AppLayout = ({ children }) => {
       </div>
 
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-dotted">
-        {isUpgradeModalOpen ? (
+        {isUpgradeModalOpen && location.pathname !== "/subscription" ? (
           <SubscriptionModal />
-        ) : isCreditsModalOpen ? (
+        ) : isCreditsModalOpen && location.pathname !== "/usage" ? (
           <CreditsModal />
         ) : (
           children
@@ -1831,8 +1857,8 @@ const AppLayout = ({ children }) => {
       {openDropdownId && activeDropdownItem && (
         <div
           ref={dropdownRef}
-          className={`fixed z-[999] w-40 rounded-xl shadow-xl border py-1.5 text-sm ${"bg-surface-dropdown border-border-primary text-text-primary"}`}
-          style={{ top: dropdownPos.top, right: dropdownPos.right }}
+          className="fixed z-[999] w-42 rounded-xl shadow-xl border py-1.5 px-1 text-sm bg-surface-dropdown border-border-primary text-text-primary backdrop-blur-md animate-in fade-in zoom-in-95 duration-150"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
         >
           {activeDropdownType === "bot" && (
             <button
@@ -1860,9 +1886,9 @@ const AppLayout = ({ children }) => {
                   console.error("Failed to create new conversation:", err);
                 }
               }}
-              className="w-full text-left px-4 py-2 hover:bg-white/10 transition flex items-center gap-2"
+              className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition flex items-center gap-2.5 text-[13px] font-medium cursor-pointer"
             >
-              <FiPlus className="text-xs" /> New Chat
+              <FiPlus className="text-sm" /> New Chat
             </button>
           )}
           <button
@@ -1877,37 +1903,115 @@ const AppLayout = ({ children }) => {
               setOpenDropdownId(null);
               setActiveDropdownItem(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-white/10 transition cursor-pointer flex items-center gap-2"
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
           >
-            <FiEdit2 className="text-xs" /> Rename
+            <FiEdit2 className="text-sm" /> Rename
           </button>
           <button
             onClick={(e) => {
               togglePin(e, activeDropdownItem._id);
               setActiveDropdownItem(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-white/10 transition cursor-pointer flex items-center gap-2"
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
           >
             {pinnedItemIds.includes(activeDropdownItem._id) ? (
               <>
-                <TbPinnedOff className="text-xs" /> Unpin
+                <TbPinnedOff className="text-sm" /> Unpin
               </>
             ) : (
               <>
-                <TbPin className="text-xs" /> Pin
+                <TbPin className="text-sm" /> Pin
               </>
             )}
           </button>
-          <div className="h-px bg-white/10 my-1"></div>
+          <div className="h-px bg-border-primary/40 my-1"></div>
           <button
             onClick={(e) => {
-              handleDeleteItem(e, activeDropdownItem._id, activeDropdownType);
-              setActiveDropdownItem(null);
+              handleDeleteItem(
+                e,
+                activeDropdownItem._id,
+                activeDropdownType,
+                activeDropdownItem,
+              );
             }}
-            className="w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-500 transition cursor-pointer flex items-center gap-2"
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-600 dark:text-red-400 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
           >
-            <FiTrash2 className="text-xs" /> Delete
+            <FiTrash2 className="text-sm" /> Delete
           </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalItem && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setDeleteModalItem(null)}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl bg-surface-primary dark:bg-[#1a1b26] border border-border-primary dark:border-white/10 p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3.5 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                <FiTrash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-text-primary">
+                  Delete Chat?
+                </h3>
+                <p className="text-xs text-text-muted mt-0.5">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-text-muted my-4 leading-relaxed">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-text-primary">
+                "{deleteModalItem.title || "this conversation"}"
+              </span>
+              ?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 mt-5">
+              <button
+                type="button"
+                onClick={() => setDeleteModalItem(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-text-primary bg-surface-secondary hover:bg-black/5 dark:hover:bg-white/5 border border-border-primary transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const target = deleteModalItem;
+                  setDeleteModalItem(null);
+                  if (target.type === "chat") {
+                    deleteChatMutation.mutate(target.id);
+                  } else if (target.type === "botConversation") {
+                    try {
+                      await backEndCallObjDel(
+                        `/bots/${target.botId}/conversations`,
+                        target.id,
+                      );
+                      queryClient.invalidateQueries({
+                        queryKey: ["botConversations", target.botId],
+                      });
+                      if (searchParams.get("convId") === target.id) {
+                        navigate(`/bots/${target.botId}`);
+                      }
+                    } catch (err) {
+                      console.error("Failed to delete conversation:", err);
+                    }
+                  }
+                }}
+                disabled={deleteChatMutation.isPending || deleteChatMutation.isLoading}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-red-600 hover:bg-red-700 transition cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                {deleteChatMutation.isPending || deleteChatMutation.isLoading
+                  ? "Deleting..."
+                  : "Confirm"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

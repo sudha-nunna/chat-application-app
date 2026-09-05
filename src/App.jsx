@@ -5,6 +5,7 @@ import AppLayout from "./components/layouts/AppLayout";
 // import BotPlaceholderPage from "./pages/BotPlaceholderPage";
 import ChatPage from "./pages/ChatPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import UsagePage from "./pages/UsagePage";
 import GoogleCallbackPage from "./pages/GoogleCallbackPage";
 // import AdminServerPage from "./pages/AdminServerPage";
 import LandingPage from "./pages/LandingPage";
@@ -25,6 +26,7 @@ function App() {
             {/* <Route path="/bots" element={<BotPlaceholderPage />} /> */}
             {/* <Route path="/bots/:botId" element={<BotDetailPage />} /> */}
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/usage" element={<UsagePage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
             {/* <Route path="/admin/servers" element={<AdminServerPage />} /> */}
             <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />

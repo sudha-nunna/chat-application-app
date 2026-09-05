@@ -72,10 +72,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [showStatusModal, setShowStatusModal] = useState(false);
   const statusModalRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const isAutoScrollEnabledRef = useRef(true);
   const currentStreamingTextRef = useRef("");
   const isGeneratingRef = useRef(false);
   const streamingChatIdRef = useRef(null);
   const prevChatIdRef = useRef(currentChatId);
+  const lastUsedModelRef = useRef(null);
 
   // Health check polling removed as requested
 
@@ -217,19 +219,40 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   }, [currentChatId]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (force = true) => {
     if (messagesContainerRef.current) {
+      if (force) {
+        isAutoScrollEnabledRef.current = true;
+        setShowScrollBottom(false);
+      }
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (isAutoScrollEnabledRef.current && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, streamingReply, isSearching, isBotTyping]);
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
-    setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 100);
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const isAtBottom = distanceFromBottom <= 80;
+
+    setShowScrollBottom(distanceFromBottom > 100);
+
+    // If user scrolled up beyond threshold, pause auto-scroll
+    // If user scrolled back down to bottom, re-engage auto-scroll
+    isAutoScrollEnabledRef.current = isAtBottom;
+  };
+
+  const handleWheel = (e) => {
+    if (e.deltaY < 0) {
+      // User immediately indicated intent to scroll UP
+      isAutoScrollEnabledRef.current = false;
+      setShowScrollBottom(true);
+    }
   };
 
   const clearAudioPipeline = () => {
@@ -377,7 +400,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
-  const handleSendSubmit = async (textPayload, audioBlob, selectedModelId, attachments = []) => {
+  const handleSendSubmit = async (textPayload, audioBlob, selectedModelId, attachments = [], editIndex = undefined) => {
     if (isGeneratingRef.current) {
       console.warn("⚠️ Request blocked because generation is already active.");
       return;
@@ -387,6 +410,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     if (!cleanText) {
       console.warn("⚠️ Request blocked: A text prompt is required to send.");
       return;
+    }
+
+    if (selectedModelId) {
+      lastUsedModelRef.current = selectedModelId;
     }
 
     isGeneratingRef.current = true;
@@ -403,7 +430,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       window.speechSynthesis.resume();
     }
 
-    setMessages((prev) => [...prev, { role: "user", content: cleanText, attachments }]);
+    if (editIndex !== undefined && editIndex >= 0) {
+      setMessages((prev) => [...prev.slice(0, editIndex), { role: "user", content: cleanText, attachments }]);
+    } else {
+      setMessages((prev) => [...prev, { role: "user", content: cleanText, attachments }]);
+    }
     setIsSearching(true);
     setIsBotTyping(true);
     setStreamingReply("");
@@ -411,6 +442,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     tokenQueueRef.current = [];
     streamNetworkDoneRef.current = false;
     streamCompleteCbRef.current = null;
+    isAutoScrollEnabledRef.current = true;
+    setShowScrollBottom(false);
+    scrollToBottom(true);
 
     try {
       const token = localStorage.getItem("token");
@@ -420,18 +454,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       abortControllerRef.current = new AbortController();
 
       const requestEndpoint = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/message/${targetChatEndpoint}`;
+      const activeModel = selectedModelId || lastUsedModelRef.current;
       const requestPayload = {
         message: cleanText,
         mode: conversationMode,
-        model: selectedModelId,
-        modelId: selectedModelId,
+        model: activeModel,
+        modelId: activeModel,
         attachments,
         stream: true
       };
 
       console.log("📤 [AI CHAT REQUEST SENT FROM BROWSER]", {
         endpoint: requestEndpoint,
-        model: selectedModelId,
+        model: activeModel,
         message: cleanText,
         attachmentsCount: attachments?.length || 0,
         payload: requestPayload
@@ -586,6 +621,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsSearching(false);
       isGeneratingRef.current = false;
       if (onChatUpdated) onChatUpdated();
+      // Invalidate usage to refresh credits once stream completes without multiple get calls
+      queryClient.invalidateQueries({ queryKey: ["usage"] });
     } catch (err) {
       if (err.message && err.message.includes("INSUFFICIENT_CREDITS")) {
         try {
@@ -805,10 +842,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col relative"
+        onWheel={handleWheel}
+        className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
       >
         <div
-          className={`w-full flex-1 max-w-2xl md:max-w-[720px] mx-auto px-4 py-4 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
+          className={`w-full flex-1 max-w-[820px] mx-auto px-4 sm:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
         >
           {!isSearching && !isBotTyping && isFetchingMessages && (
             <div className="flex flex-col items-center justify-center flex-1 text-center">
@@ -821,7 +859,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             messages.length === 0 &&
             !isSearching &&
             !isBotTyping && (
-              <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-2xl md:max-w-[720px] mx-auto py-6 md:py-10">
+              <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-[820px] mx-auto py-6 md:py-10">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-[1px] w-8 bg-accent-primary"></div>
                   <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-muted">
@@ -846,7 +884,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 </p>
 
                 {/* Quick Actions */}
-                <div className="flex flex-col md:flex-row w-full max-w-2xl md:max-w-[720px] rounded-xl border border-border-primary dark:border-white/5 overflow-hidden shadow-sm bg-white dark:bg-[#191a24]">
+                <div className="flex flex-col md:flex-row w-full max-w-[820px] mx-auto rounded-xl border border-border-primary dark:border-white/5 overflow-hidden shadow-sm bg-white dark:bg-[#191a24]">
                   {/* Build Card */}
                   <button
                     onClick={() =>
@@ -912,9 +950,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
           {!isFetchingMessages &&
             messages.map((m, index) => {
-              const userMsg = [...messages.slice(0, index)]
-                .reverse()
-                .find((msg) => msg.role === "user");
+              const isUserMsg = m.role === "user";
+              const prevUserMsg = !isUserMsg
+                ? [...messages.slice(0, index)]
+                    .reverse()
+                    .find((msg) => msg.role === "user")
+                : null;
               return (
                 <MessageBubble
                   key={index}
@@ -922,9 +963,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   content={m.content}
                   attachments={m.attachments}
                   onRetry={
-                    userMsg
+                    isUserMsg
                       ? (newContent) =>
-                          handleSendSubmit(newContent || userMsg.content)
+                          handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index)
+                      : prevUserMsg
+                      ? (newContent) =>
+                          handleSendSubmit(newContent || prevUserMsg.content)
                       : undefined
                   }
                 />
@@ -942,23 +986,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         </div>
       </div>
 
-      {/* Fixed Input Area with ChatGPT style Stop Button inside */}
-      <div className="shrink-0 z-10 relative pb-2 md:pb-4 bg-transparent">
+      {/* Fixed Input Area - Text stops above this line; background pattern shows through */}
+      <div className="shrink-0 z-10 relative pb-2 md:pb-4 bg-transparent pr-[6px]">
         {showScrollBottom && (
           <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50">
             <button
-              onClick={scrollToBottom}
+              onClick={() => scrollToBottom(true)}
               className="p-2.5 rounded-full bg-surface-primary border border-border-primary text-text-primary shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_14px_rgba(0,0,0,0.4)] hover:bg-surface-secondary transition-all"
             >
               <FiArrowDown className="w-4 h-4" />
             </button>
           </div>
         )}
-        <ChatInput
-          onSend={handleSendSubmit}
-          isGenerating={isSearching || isBotTyping}
-          onStop={handleStopGeneration}
-        />
+        <div className="w-full max-w-[820px] mx-auto px-4 sm:px-6">
+          <ChatInput
+            onSend={handleSendSubmit}
+            isGenerating={isSearching || isBotTyping}
+            onStop={handleStopGeneration}
+          />
+        </div>
       </div>
     </div>
   );

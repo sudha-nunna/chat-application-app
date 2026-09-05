@@ -1,10 +1,12 @@
 import { useSubscription } from "../../context/SubscriptionContext";
 import { useTheme } from "../../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
 import { FiZap, FiShield } from "react-icons/fi";
 
 const PlanBadge = ({ showPriority = false, className = "" }) => {
-  const { currentPlan, priorityScore, setIsUpgradeModalOpen } = useSubscription();
+  const { currentPlan, priorityScore } = useSubscription();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   const getBadgeStyle = () => {
     switch (currentPlan.toLowerCase()) {
@@ -37,7 +39,7 @@ const PlanBadge = ({ showPriority = false, className = "" }) => {
 
   return (
     <div 
-      onClick={(e) => { e.stopPropagation(); setIsUpgradeModalOpen(true); }}
+      onClick={(e) => { e.stopPropagation(); navigate("/subscription"); }}
       className={`cursor-pointer transition-all inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider border shadow-sm ${badge.bg} ${className}`}
       title="Manage Subscription"
     >

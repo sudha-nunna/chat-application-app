@@ -48,10 +48,12 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props
   if (inline || (!match && !isMultiLine)) {
     return (
       <code
-        className={`px-1.5 py-0.5 rounded font-mono text-[12px] break-words [overflow-wrap:anywhere] ${
+        className={`px-1.5 py-0.5 rounded-[6px] font-mono text-[13px] font-normal break-words [overflow-wrap:anywhere] ${
           isUser
-            ? "bg-black/10 text-black"
-            : "bg-[#16171d] text-[#e5e5e5] border border-white/5"
+            ? "bg-white/20 text-white"
+            : isDark
+            ? "bg-white/[0.09] text-[#e5e7eb] border border-white/[0.08]"
+            : "bg-black/[0.06] text-[#1f2328] border border-black/[0.06]"
         }`}
         {...props}
       >
@@ -184,14 +186,16 @@ const MessageBubble = ({
     <div
       className={`flex items-start ${
         isUser
-          ? "flex-row-reverse ml-auto max-w-[85%] md:max-w-[72%] gap-2"
+          ? isEditing
+            ? "w-full max-w-full"
+            : "flex-row-reverse ml-auto max-w-[85%] md:max-w-[72%] gap-2"
           : "mr-auto w-full max-w-full"
       } my-2.5 min-w-0`}
     >
       {/* Bubble Container & Actions */}
       <div
         className={`flex flex-col group ${
-          isUser ? "items-end" : "items-start"
+          isUser && !isEditing ? "items-end" : "items-start"
         } w-full min-w-0`}
       >
         {/* Attachments Section */}
@@ -270,19 +274,13 @@ const MessageBubble = ({
         <div
           className={`min-w-0 w-full leading-relaxed overflow-hidden break-words [overflow-wrap:anywhere] [word-break:break-word] ${
             isUser
-              ? "rounded-2xl px-4 py-2 bg-accent-primary text-white text-[14px] shadow-sm border-none ml-auto"
-              : "rounded-lg py-0.5 text-text-primary dark:text-[#e5e5e5] bg-transparent border-transparent flex items-start gap-2.5"
+              ? isEditing
+                ? "w-full rounded-[20px] p-4 md:p-5 bg-surface-secondary dark:bg-[#1e1f2b] border border-border-primary/60 dark:border-white/10 shadow-sm text-text-primary"
+                : "rounded-xl px-4 py-2.5 bg-accent-primary text-white text-[15px] shadow-sm border-none ml-auto"
+              : "rounded-lg py-0.5 text-text-primary dark:text-[#e5e5e5] bg-transparent border-transparent"
           }`}
         >
-          {!isUser && (
-            <img
-              src="/codegene-mark.png"
-              alt="Codegene"
-              className="w-5 h-5 object-contain rounded-md select-none shrink-0 mt-1"
-            />
-          )}
-
-          <div className="flex-1 min-w-0">
+          <div className="w-full min-w-0">
           {/* Thinking / Bubbling Animation — shown while waiting for first token */}
           {isThinking && !content ? (
             <div className="flex items-center gap-1.5 h-7 select-none py-1">
@@ -300,7 +298,7 @@ const MessageBubble = ({
               />
             </div>
           ) : isEditing && isUser ? (
-            <div className="flex flex-col w-full min-w-[200px] sm:min-w-[300px]">
+            <div className="flex flex-col w-full">
               <textarea
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
@@ -309,31 +307,31 @@ const MessageBubble = ({
                   e.target.value = "";
                   e.target.value = val;
                 }}
-                className="w-full bg-transparent text-text-primary dark:text-white outline-none resize-none custom-scrollbar"
+                className="w-full bg-transparent text-text-primary dark:text-white outline-none resize-none text-[15px] leading-relaxed custom-scrollbar placeholder:text-text-muted"
                 rows={Math.max(2, editValue.split("\n").length)}
                 autoFocus
               />
-              <div className="flex justify-end gap-2 mt-3">
+              <div className="flex justify-end items-center gap-2.5 mt-3 pt-1">
                 <button
+                  type="button"
                   onClick={() => {
                     setIsEditing(false);
                     setEditValue(content);
                   }}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-secondary/50 hover:bg-surface-secondary text-text-primary transition"
+                  className="px-4 py-1.5 text-xs font-medium rounded-full bg-white hover:bg-gray-100 dark:bg-white/10 dark:hover:bg-white/15 text-text-primary dark:text-white border border-border-primary dark:border-white/10 transition shadow-xs cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  disabled={
-                    editValue.trim() === content.trim() || !editValue.trim()
-                  }
+                  type="button"
+                  disabled={!editValue.trim()}
                   onClick={() => {
                     setIsEditing(false);
                     if (onRetry) onRetry(editValue);
                   }}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-text-primary text-text-inverse dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 transition"
+                  className="px-4 py-1.5 text-xs font-medium rounded-full bg-text-primary text-text-inverse dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-40 transition shadow-xs cursor-pointer"
                 >
-                  Update
+                  Send
                 </button>
               </div>
             </div>
@@ -375,19 +373,25 @@ const MessageBubble = ({
                 ),
                 h1: ({ node, ...props }) => (
                   <h1
-                    className={`text-[19px] font-serif font-medium mt-4 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[19px] font-bold tracking-tight mt-5 mb-2.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h2: ({ node, ...props }) => (
                   <h2
-                    className={`text-[17px] font-serif font-medium mt-3 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[16px] font-bold tracking-tight mt-4 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h3: ({ node, ...props }) => (
                   <h3
-                    className={`text-[15px] font-serif font-medium mt-2.5 mb-1.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`text-[14.5px] font-semibold tracking-tight mt-3 mb-1.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    {...props}
+                  />
+                ),
+                h4: ({ node, ...props }) => (
+                  <h4
+                    className={`text-[14px] font-semibold tracking-tight mt-2.5 mb-1 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
@@ -408,13 +412,13 @@ const MessageBubble = ({
                 ),
                 p: ({ node, ...props }) => (
                   <p
-                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[14px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
+                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
                     {...props}
                   />
                 ),
                 strong: ({ node, ...props }) => (
                   <strong
-                    className={`font-semibold ${isUser ? "text-white font-bold" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`font-semibold ${isUser ? "text-white font-bold" : "text-text-primary dark:text-white"}`}
                     {...props}
                   />
                 ),
@@ -428,13 +432,13 @@ const MessageBubble = ({
                 ),
                 ul: ({ node, ...props }) => (
                   <ul
-                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
+                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
                     {...props}
                   />
                 ),
                 ol: ({ node, ...props }) => (
                   <ol
-                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[14px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-[#7c83f6]" : "text-text-primary marker:text-[#7c83f6]"}`}
+                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
                     {...props}
                   />
                 ),

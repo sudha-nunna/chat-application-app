@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
-import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip } from "react-icons/fi";
+import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip, FiGlobe } from "react-icons/fi";
 
 const ChatInput = ({ onSend, isGenerating, onStop }) => {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [isListening, setIsListening] = useState(false);
+  const [isWebSearchActive, setIsWebSearchActive] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const voiceRecorderRef = useRef(new VoiceRecorder());
   const { isDark } = useTheme();
@@ -184,6 +185,14 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
       inputRef.current?.focus();
     }
   }, [isGenerating]);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      const scrollHeight = inputRef.current.scrollHeight;
+      inputRef.current.style.height = `${Math.min(Math.max(scrollHeight, 48), 120)}px`;
+    }
+  }, [text]);
 
   useEffect(() => {
     if (isModelMenuOpen) {
@@ -378,7 +387,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
   };
 
   return (
-    <div className={`px-4 py-2 md:py-3 bg-transparent w-full`}>
+    <div className="w-full bg-transparent">
       <input
         ref={fileInputRef}
         type="file"
@@ -391,7 +400,7 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
       {/* Vision model warning toast */}
       {visionWarning && (
         <div
-          className="w-full max-w-2xl md:max-w-[720px] mx-auto mb-2 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl
+          className="w-full mb-2 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl
             bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700/40
             text-orange-700 dark:text-orange-300 text-[12.5px] leading-snug
             animate-[slideInUp_0.22s_ease-out]"
@@ -420,9 +429,9 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           if (canSubmit) handleSend();
         }}
         className={`
-        w-full max-w-2xl md:max-w-[720px] mx-auto relative flex flex-col p-2.5 md:p-3
+        w-full relative flex flex-col p-2.5 md:p-3
         bg-white dark:bg-[#191A24] border border-border-primary dark:border-white/5
-        rounded-2xl shadow-lg focus-within:border-border-focus dark:focus-within:border-white/10
+        rounded-xl shadow-lg focus-within:border-border-focus dark:focus-within:border-white/10
         transition-all duration-300
       `}
       >
@@ -474,9 +483,9 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
           </div>
         )}
 
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
+          rows={2}
           value={text}
           placeholder={
             isListening
@@ -493,18 +502,19 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
             }
           }}
           className={`
-            outline-none transition placeholder:text-text-muted
+            outline-none transition-all placeholder:text-text-muted
             w-full py-1 px-2.5 text-sm md:text-[14px] bg-transparent border-0 text-text-primary dark:text-white mb-1.5
+            resize-none min-h-[48px] max-h-[120px] overflow-y-auto custom-scrollbar leading-[22px]
           `}
         />
 
         <div className="flex items-center justify-between w-full mt-1">
-          <div className="flex items-center gap-2 md:pl-2">
+          <div className="flex items-center gap-1.5 md:pl-1">
             <div className="relative" ref={attachMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
-                className="group flex items-center gap-2.5 cursor-pointer"
+                className="group flex items-center cursor-pointer"
                 title="Attach Files (Max 10MB)"
               >
                 <div className="flex items-center justify-center w-8 h-8 rounded-[10px] border border-border-primary dark:border-white/5 group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors duration-200 shadow-sm">
@@ -523,9 +533,6 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
                     />
                   </svg>
                 </div>
-                <span className="text-text-muted dark:text-[#8A8A93] group-hover:text-text-primary dark:group-hover:text-white text-[13px] font-medium tracking-wide transition-colors duration-200">
-                  Attach
-                </span>
               </button>
 
               {/* ChatGPT Style Attach Popover Menu */}
@@ -610,16 +617,30 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsWebSearchActive(!isWebSearchActive)}
+              className={`flex items-center justify-center w-8 h-8 rounded-[10px] border transition-all duration-200 shadow-sm cursor-pointer ${
+                isWebSearchActive
+                  ? "border-accent-primary bg-accent-primary/10 text-accent-primary"
+                  : "border-border-primary dark:border-white/5 text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
+              }`}
+              title={isWebSearchActive ? "Web Search: Enabled" : "Search the web"}
+            >
+              <FiGlobe className="w-4 h-4" />
+            </button>
           </div>
 
           <div className="flex items-center gap-1 md:gap-2">
             {/* Model Selector */}
             <div className="relative" ref={modelMenuRef}>
               <button
+                type="button"
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
+                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[12px] font-medium px-2 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 border-0"
               >
-                <span className="truncate max-w-[90px] sm:max-w-[150px] md:max-w-[200px] text-left">
+                <span className="truncate max-w-[100px] sm:max-w-[160px] md:max-w-[220px] text-left">
                   {selectedModel.displayName}
                 </span>
                 <svg
@@ -640,25 +661,26 @@ const ChatInput = ({ onSend, isGenerating, onStop }) => {
 
               {/* Dropdown Menu */}
               <div 
-                className={`absolute bottom-full right-0 mb-2 w-48 bg-surface-dropdown dark:bg-[#191A24] border border-border-primary dark:border-white/10 rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-bottom-right ${isModelMenuOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
+                className={`absolute bottom-full right-0 mb-2 w-64 bg-surface-dropdown dark:bg-[#191A24] border border-border-primary dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 origin-bottom-right ${isModelMenuOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
               >
-                <div className="p-1.5 flex flex-col gap-0.5 max-h-[220px] overflow-y-auto custom-scrollbar">
+                <div className="p-1.5 flex flex-col gap-0.5 max-h-[260px] overflow-y-auto custom-scrollbar">
                   {filteredModels.map((model, index) => (
                     <button
                       key={`${model.modelId}-${model.serverId || index}`}
+                      type="button"
                       onClick={() => {
                         setSelectedModel(model);
                         setIsModelMenuOpen(false);
                       }}
-                      className={`text-left px-3 py-2 text-[11px] md:text-[13px] font-medium rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+                      className={`text-left px-3 py-2 text-[12px] md:text-[13px] font-medium rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-2 ${
                         selectedModel.modelId === model.modelId 
                           ? "bg-accent-primary/10 text-text-primary dark:text-[#e5e5e5]" 
                           : "text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-[#e5e5e5]"
                       }`}
                     >
-                      {model.displayName || model.modelId}
+                      <span className="truncate flex-1">{model.displayName || model.modelId}</span>
                       {selectedModel.modelId === model.modelId && (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent-primary shrink-0">
                           <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
                         </svg>
                       )}

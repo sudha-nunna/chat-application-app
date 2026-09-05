@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "../context/SubscriptionContext";
 import { usePlans } from "../hooks/usePlans";
-import { NobackEndCall, NobackEndCallObj, fetchUsageSummary } from "../services/authService";
+import { NobackEndCall, NobackEndCallObj, backEndCallGet } from "../services/authService";
+import { useTanStackData, useTanStackQueryClient } from "../hooks/useTanStackData";
 import PlanBadge from "../components/subscription/PlanBadge";
 import PlanCard from "../components/subscription/PlanCard";
 import { useTheme } from "../context/ThemeContext";
@@ -32,7 +33,19 @@ const SubscriptionPage = () => {
   const { plans, loading: plansLoading, error: plansError, refreshPlans } = usePlans();
   const { isDark } = useTheme();
 
-  const [usage, setUsage] = useState(null);
+  const queryClient = useTanStackQueryClient();
+  const token = localStorage.getItem("token");
+
+  const { data: usage = null } = useTanStackData(
+    ["usage"],
+    async () => {
+      if (!token) return null;
+      const res = await backEndCallGet("/usage/summary");
+      return res?.data || res || null;
+    },
+    { enabled: !!token }
+  );
+
   const [isAnnual, setIsAnnual] = useState(billingCycle === "annual");
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -40,7 +53,6 @@ const SubscriptionPage = () => {
   const [creditPacks, setCreditPacks] = useState([]);
 
   useEffect(() => {
-    fetchUsage();
     fetchCreditPacks();
   }, []);
 
@@ -57,21 +69,10 @@ const SubscriptionPage = () => {
     }
   };
 
-  const fetchUsage = async () => {
-    try {
-      const res = await fetchUsageSummary();
-      if (res?.success && res?.data) {
-        setUsage(res.data);
-      }
-    } catch (err) {
-      console.error("Error fetching usage statistics:", err);
-    }
-  };
-
   const handleRefreshAll = () => {
     refreshSubscription();
     refreshPlans();
-    fetchUsage();
+    queryClient.invalidateQueries({ queryKey: ["usage"] });
   };
 
   const handlePlanSelect = async (targetPlan) => {
@@ -86,7 +87,7 @@ const SubscriptionPage = () => {
     setActionLoading(false);
     if (res.success) {
       setFeedback({ type: "success", message: res.data?.message || "Credits topped up successfully!" });
-      fetchUsage();
+      queryClient.invalidateQueries({ queryKey: ["usage"] });
       window.dispatchEvent(new Event("auth-change"));
     } else {
       setFeedback({ type: "error", message: res.message || "Operation failed" });
@@ -114,7 +115,7 @@ const SubscriptionPage = () => {
       const res = await NobackEndCallObj("/credits/purchase", { packId }, "post");
       if (res?.success) {
         setFeedback({ type: "success", message: `Successfully purchased credit pack: ${packId}` });
-        fetchUsage(); // Refresh usage
+        queryClient.invalidateQueries({ queryKey: ["usage"] });
         // Optionally trigger global auth refresh
         window.dispatchEvent(new Event("auth-change"));
       } else {

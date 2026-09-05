@@ -103,6 +103,8 @@ const FloatingExternalBotWidget = () => {
   const hasMovedRef = useRef(false);
 
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const isAutoScrollEnabledRef = useRef(true);
   const abortControllerRef = useRef(null);
 
   // Initialize Voice Conversation Manager
@@ -245,10 +247,22 @@ const FloatingExternalBotWidget = () => {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isAutoScrollEnabledRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    isAutoScrollEnabledRef.current = distanceFromBottom <= 80;
+  };
+
+  const handleWheel = (e) => {
+    if (e.deltaY < 0) {
+      isAutoScrollEnabledRef.current = false;
+    }
+  };
 
   const handleStopStream = () => {
     if (abortControllerRef.current) {
@@ -267,6 +281,8 @@ const FloatingExternalBotWidget = () => {
     if (e) e.preventDefault();
     const messageText = customPrompt || input.trim();
     if (!messageText || loading) return;
+
+    isAutoScrollEnabledRef.current = true;
 
     const formattedPrompt = toCapitalized(messageText);
 
@@ -626,7 +642,12 @@ const FloatingExternalBotWidget = () => {
           </div>
 
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar">
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+            onWheel={handleWheel}
+            className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar"
+          >
             {messages.map((msg) => {
               const isUser = msg.role === "user";
               return (
