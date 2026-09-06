@@ -32,6 +32,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const latestUserMsgRef = useRef(null);
 
   const [isSearching, setIsSearching] = useState(false);
+  const [isWebSearching, setIsWebSearching] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [streamingReply, setStreamingReply] = useState("");
   const [isAudioActive, setIsAudioActive] = useState(false);
@@ -45,6 +46,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [autoListenTrigger, setAutoListenTrigger] = useState(0);
   const pendingVoiceAutoSpeakRef = useRef(false);
   const isVoiceConversationModeRef = useRef(false);
+  const streamFollowUpsRef = useRef([]);
 
   // Streaming speech queue & buffer refs for sentence-by-sentence TTS
   const streamingSpeechQueueRef = useRef([]);
@@ -589,7 +591,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     selectedModelId,
     attachments = [],
     editIndex = undefined,
-    isVoiceSubmission = false
+    isVoiceSubmission = false,
+    enableSearch = false
   ) => {
     if (isGeneratingRef.current) {
       console.warn("⚠️ Request blocked because generation is already active.");
@@ -618,22 +621,27 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     isGeneratingRef.current = true;
     isAbortedRef.current = false;
     streamingChatIdRef.current = currentChatId;
+    streamFollowUpsRef.current = [];
+
+    const isSearchRequested = Boolean(enableSearch);
+    const userMsgObj = { role: "user", content: cleanText, attachments, enableSearch: isSearchRequested };
 
     const t0 = performance.now();
     let firstTokenTime = null;
 
-    console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${cleanText || (hasAttachments ? "[Attachment only]" : "")}" with ${attachments.length} attachments at t=0 ms`);
+    console.log(`\n🚀 [FRONTEND GENERAL CHAT START] User Prompt: "${cleanText || (hasAttachments ? "[Attachment only]" : "")}" with ${attachments.length} attachments (Web Search: ${isSearchRequested ? "ON" : "OFF"}) at t=0 ms`);
 
     if (window.speechSynthesis && window.speechSynthesis.paused && !isVoicePausedRef.current) {
       window.speechSynthesis.resume();
     }
 
     if (editIndex !== undefined && editIndex >= 0) {
-      setMessages((prev) => [...prev.slice(0, editIndex), { role: "user", content: cleanText, attachments }]);
+      setMessages((prev) => [...prev.slice(0, editIndex), userMsgObj]);
     } else {
-      setMessages((prev) => [...prev, { role: "user", content: cleanText, attachments }]);
+      setMessages((prev) => [...prev, userMsgObj]);
     }
     setIsSearching(true);
+    setIsWebSearching(isSearchRequested);
     setIsBotTyping(true);
     setStreamingReply("");
     currentStreamingTextRef.current = "";
@@ -660,7 +668,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         model: activeModel,
         modelId: activeModel,
         attachments,
-        stream: true
+        stream: true,
+        enableSearch: isSearchRequested,
+        webSearch: isSearchRequested
       };
 
       console.log("📤 [AI CHAT REQUEST SENT FROM BROWSER]", {
@@ -745,6 +755,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     console.log(`⚡ [FRONTEND TTFT] Time To First Token received in browser: ${ttftMs} ms (${(ttftMs / 1000).toFixed(2)} s)`);
                     // Transition from "thinking dots" → streaming text
                     setIsSearching(false);
+                    setIsWebSearching(false);
                     setIsBotTyping(true);
                   }
                   // Push raw text into the queue — the rAF drain loop
@@ -752,6 +763,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   pushToQueue(textBit);
                   handleIncomingStreamSpeech(textBit);
                 }
+              } else if (parsed.type === "follow_ups") {
+                streamFollowUpsRef.current = Array.isArray(parsed.followUps) ? parsed.followUps : [];
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
                   ...prev,
@@ -771,6 +784,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         streamNetworkDoneRef.current = false;
         streamCompleteCbRef.current = null;
         setIsSearching(false);
+        setIsWebSearching(false);
         setIsBotTyping(false);
         isGeneratingRef.current = false;
         return;
@@ -832,7 +846,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         setMessages((prev) => {
           const next = [
             ...prev,
-            { role: "assistant", content: finalResponseContent },
+            {
+              role: "assistant",
+              content: finalResponseContent,
+              followUps: streamFollowUpsRef.current || []
+            },
           ];
           if (isStreamingSpeechActiveRef.current) {
             setActiveSpeakingIndex(next.length - 1);
@@ -863,6 +881,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       currentStreamingTextRef.current = "";
       setIsBotTyping(false);
       setIsSearching(false);
+      setIsWebSearching(false);
       isGeneratingRef.current = false;
 
       // If speech finished already during visual token rendering, re-activate mic now
@@ -904,6 +923,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         ]);
       }
       setIsSearching(false);
+      setIsWebSearching(false);
       setIsBotTyping(false);
       isGeneratingRef.current = false;
       setStreamingReply("");
@@ -915,6 +935,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       streamCompleteCbRef.current = null;
       isGeneratingRef.current = false;
       setIsSearching(false);
+      setIsWebSearching(false);
       setIsBotTyping(false);
       setStreamingReply("");
       currentStreamingTextRef.current = "";
@@ -1234,10 +1255,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             </div>
           )}
 
-          {!isFetchingMessages &&
-            messages.map((m, index) => {
+          {!isFetchingMessages && messages.length > 0 && (() => {
+            const lastAssistantMsgIdx = messages.reduce(
+              (lastIdx, msg, idx) => (msg.role === "assistant" ? idx : lastIdx),
+              -1
+            );
+            return messages.map((m, index) => {
               const isUserMsg = m.role === "user";
               const isLatestUserMsg = index === lastUserMsgIdx;
+              const isLatestAssistant = index === lastAssistantMsgIdx && !isSearching && !isBotTyping;
               const prevUserMsg = !isUserMsg
                 ? [...messages.slice(0, index)]
                     .reverse()
@@ -1253,6 +1279,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     role={m.role}
                     content={m.content}
                     attachments={m.attachments}
+                    followUps={m.followUps || []}
+                    isLatestAssistant={isLatestAssistant}
+                    onSelectFollowUp={(followUpPrompt) => handleSendSubmit(followUpPrompt)}
                     isSpeaking={activeSpeakingIndex === index}
                     onToggleSpeak={
                       !isUserMsg
@@ -1262,16 +1291,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     onRetry={
                       isUserMsg
                         ? (newContent) =>
-                            handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index)
+                            handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index, false, m.enableSearch)
                         : prevUserMsg
                         ? (newContent) =>
-                            handleSendSubmit(newContent || prevUserMsg.content)
+                            handleSendSubmit(newContent || prevUserMsg.content, null, undefined, prevUserMsg.attachments, undefined, false, prevUserMsg.enableSearch)
                         : undefined
                     }
                   />
                 </div>
               );
-            })}
+            });
+          })()}
 
           {(isSearching || isBotTyping) && (
             <MessageBubble
@@ -1279,6 +1309,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               content={streamingReply}
               isStreaming={true}
               isThinking={!streamingReply}
+              isWebSearching={isWebSearching}
             />
           )}
         </div>

@@ -322,7 +322,8 @@ const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
         selectedModel?.modelId || "auto",
         attachments,
         undefined,
-        true /* isVoiceSubmission */
+        true /* isVoiceSubmission */,
+        isWebSearchActive
       );
       setText("");
       latestTranscriptRef.current = "";
@@ -513,7 +514,8 @@ const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
       selectedModel?.modelId || "auto",
       attachments,
       undefined,
-      false /* isVoiceSubmission: regular text send */
+      false /* isVoiceSubmission: regular text send */,
+      isWebSearchActive
     );
     setText("");
     latestTranscriptRef.current = "";
@@ -778,15 +780,18 @@ const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
 
             <button
               type="button"
-              onClick={() => setIsWebSearchActive(!isWebSearchActive)}
-              className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-sm cursor-pointer shrink-0 ${
+              onClick={() => setIsWebSearchActive((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs cursor-pointer shrink-0 ${
                 isWebSearchActive
-                  ? "border-accent-primary bg-accent-primary/10 text-accent-primary"
+                  ? "border-accent-primary bg-accent-primary text-white shadow-sm font-semibold"
                   : "border-border-primary dark:border-white/5 text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
               }`}
-              title={isWebSearchActive ? "Web Search: Enabled" : "Search the web"}
+              title={isWebSearchActive ? "Web Search: Enabled (Click to disable)" : "Search the web (Click to enable)"}
             >
-              <FiGlobe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <FiGlobe className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWebSearchActive ? "text-white" : ""}`} />
+              <span className="text-[11px] font-medium hidden xs:inline">
+                {isWebSearchActive ? "Search ON" : "Search"}
+              </span>
             </button>
           </div>
 

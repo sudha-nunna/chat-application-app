@@ -17,6 +17,9 @@ import {
   FiMaximize2,
   FiVolume2,
   FiVolumeX,
+  FiGlobe,
+  FiCompass,
+  FiArrowRight,
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -146,8 +149,12 @@ const MessageBubble = ({
   onRetry,
   isStreaming = false,
   isThinking = false,
+  isWebSearching = false,
   isSpeaking = false,
   onToggleSpeak,
+  followUps = [],
+  onSelectFollowUp,
+  isLatestAssistant = false,
 }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
@@ -287,20 +294,27 @@ const MessageBubble = ({
           <div className={`${isUser && !isEditing ? "w-fit max-w-full" : "w-full"} min-w-0`}>
           {/* Thinking / Bubbling Animation — shown while waiting for first token */}
           {isThinking && !content ? (
-            <div className="flex items-center gap-1.5 h-7 select-none py-1">
-              <span
-                className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
-                style={{ animationDelay: "-0.32s" }}
-              />
-              <span
-                className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
-                style={{ animationDelay: "-0.16s" }}
-              />
-              <span
-                className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
-                style={{ animationDelay: "0s" }}
-              />
-            </div>
+            isWebSearching ? (
+              <div className="flex items-center gap-2 h-7 select-none py-1 text-xs text-accent-primary dark:text-accent-primary/90 font-medium animate-pulse">
+                <FiGlobe className="w-3.5 h-3.5 animate-spin shrink-0 text-accent-primary" />
+                <span>Searching the web...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 h-7 select-none py-1">
+                <span
+                  className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
+                  style={{ animationDelay: "-0.32s" }}
+                />
+                <span
+                  className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
+                  style={{ animationDelay: "-0.16s" }}
+                />
+                <span
+                  className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
+                  style={{ animationDelay: "0s" }}
+                />
+              </div>
+            )
           ) : isEditing && isUser ? (
             <div className="flex flex-col w-full">
               <textarea
@@ -557,6 +571,29 @@ const MessageBubble = ({
                   <FiRotateCw className="w-4 h-4" />
                 </button>
               )}
+            </div>
+          )}
+
+          {/* AI Follow-up Suggestions (ChatGPT / OpenWebUI Style) */}
+          {!isUser && !hasPauseNotice && !isStreaming && !isThinking && isLatestAssistant && Array.isArray(followUps) && followUps.length > 0 && (
+            <div className="mt-3.5 pt-2 flex flex-col gap-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted select-none">
+                <FiCompass className="w-3.5 h-3.5 text-accent-primary shrink-0" />
+                <span>Suggested follow-ups</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {followUps.map((question, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => onSelectFollowUp && onSelectFollowUp(question)}
+                    className="text-left text-xs px-3 py-2 rounded-xl bg-surface-secondary/70 dark:bg-white/5 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/15 border border-border-primary/80 dark:border-white/10 text-text-primary dark:text-[#e5e5e5] hover:text-accent-primary dark:hover:text-accent-primary hover:border-accent-primary/40 transition-all duration-150 cursor-pointer shadow-2xs active:scale-98 flex items-center justify-between gap-2 group max-w-full"
+                  >
+                    <span>{question}</span>
+                    <FiArrowRight className="w-3 h-3 text-text-muted group-hover:text-accent-primary group-hover:translate-x-0.5 transition-transform shrink-0" />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
