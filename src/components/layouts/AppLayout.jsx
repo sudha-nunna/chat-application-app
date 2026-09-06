@@ -1732,6 +1732,15 @@ const AppLayout = ({ children }) => {
     );
   }
 
+  const isSharedRoute = location.pathname.startsWith("/share/");
+  if (isSharedRoute) {
+    return (
+      <div className="h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex flex-col md:flex-row h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary`}

@@ -3,6 +3,7 @@ import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
+import ShareModal from "./ShareModal";
 import { useTheme } from "../../context/ThemeContext";
 import { useTanStackQueryClient, useTanStackData } from "../../hooks/useTanStackData";
 import { NobackEndCall } from "../../services/authService";
@@ -38,6 +39,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(true);
   const [isCopiedShare, setIsCopiedShare] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const isVoicePausedRef = useRef(true);
   const isAbortedRef = useRef(false);
   const abortControllerRef = useRef(null);
@@ -198,33 +200,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     };
   }, []);
 
-  const handleShare = async () => {
-    const shareData = {
-      title: chatTitle,
-      text: `Check out this AI chat on Codegene: "${chatTitle}"`,
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.warn("Native share fallback to clipboard:", err);
-        } else {
-          return;
-        }
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setIsCopiedShare(true);
-      setTimeout(() => setIsCopiedShare(false), 2500);
-    } catch (err) {
-      console.error("Failed to copy link:", err);
-    }
+  const handleShare = () => {
+    setIsShareModalOpen(true);
   };
 
   const [clusterNodes, setClusterNodes] = useState([]);
@@ -238,6 +215,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const streamingChatIdRef = useRef(null);
   const prevChatIdRef = useRef(currentChatId);
   const lastUsedModelRef = useRef(null);
+  const [isWebSearchActive, setIsWebSearchActive] = useState(false);
+  const [activeSearchSources, setActiveSearchSources] = useState([]);
+  const activeSearchSourcesRef = useRef([]);
+  const [isSearchGuidanceActive, setIsSearchGuidanceActive] = useState(false);
+  const isSearchGuidanceRef = useRef(false);
 
   // Health check polling removed as requested
 
@@ -648,6 +630,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     tokenQueueRef.current = [];
     streamNetworkDoneRef.current = false;
     streamCompleteCbRef.current = null;
+    activeSearchSourcesRef.current = [];
+    setActiveSearchSources([]);
+    isSearchGuidanceRef.current = false;
+    setIsSearchGuidanceActive(false);
     isAutoScrollEnabledRef.current = true;
     setShowScrollBottom(false);
     setShowScrollToUser(false);
@@ -746,6 +732,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   setCurrentChatId(parsed.chatId);
                   queryClient.invalidateQueries({ queryKey: ["chats"] });
                 }
+              } else if (parsed.type === "search_status") {
+                const incomingSources = Array.isArray(parsed.sources) ? parsed.sources : [];
+                activeSearchSourcesRef.current = incomingSources;
+                setActiveSearchSources(incomingSources);
+              } else if (parsed.type === "search_guidance") {
+                isSearchGuidanceRef.current = true;
+                setIsSearchGuidanceActive(true);
               } else if (parsed.type === "chunk") {
                 const textBit = parsed.text || "";
                 if (textBit) {
@@ -849,7 +842,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             {
               role: "assistant",
               content: finalResponseContent,
-              followUps: streamFollowUpsRef.current || []
+              followUps: streamFollowUpsRef.current || [],
+              sources: activeSearchSourcesRef.current || [],
+              requiresWebSearch: isSearchGuidanceRef.current || false,
             },
           ];
           if (isStreamingSpeechActiveRef.current) {
@@ -1091,7 +1086,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
         {/* Live Speech Subtitle Pill */}
         {activeSpeakingIndex !== null && currentSubtitle && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent-primary/10 dark:bg-accent-primary/20 border border-accent-primary/30 text-xs text-text-primary dark:text-white shadow-xs max-w-[220px] sm:max-w-[340px] md:max-w-[460px] truncate animate-in fade-in duration-200 mx-2">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent-primary/10 dark:bg-accent-primary/20 border border-accent-primary/30 text-xs text-text-primary dark:text-white shadow-xs max-w-[260px] sm:max-w-[380px] md:max-w-[520px] animate-in fade-in duration-200 mx-2">
             <span className="flex items-center gap-0.5 text-accent-primary shrink-0">
               <span className="w-1 h-1.5 rounded-full bg-accent-primary animate-pulse" />
               <span className="w-1 h-3 rounded-full bg-accent-primary animate-pulse delay-75" />
@@ -1112,25 +1107,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         )}
 
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-all cursor-pointer active:scale-95"
-              title="Share conversation link"
-            >
-              {isCopiedShare ? (
-                <>
-                  <FiCheck className="text-[14px] text-green-500" />
-                  <span className="text-green-500 font-semibold">Link Copied</span>
-                </>
-              ) : (
-                <>
-                  <FiShare2 className="text-[14px]" />
-                  <span>Share</span>
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-all cursor-pointer active:scale-95"
+            title="Share conversation"
+          >
+            <FiShare2 className="text-[14px]" />
+            <span className="hidden xs:inline sm:inline">Share</span>
+          </button>
           <button
             onClick={toggleTheme}
             className="flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-white/20 border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer"
@@ -1269,6 +1253,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     .reverse()
                     .find((msg) => msg.role === "user")
                 : null;
+
+              const isSearchActuallyExecuted = isUserMsg
+                ? Boolean(
+                    m.searchExecuted ||
+                    (messages[index + 1] && Array.isArray(messages[index + 1].sources) && messages[index + 1].sources.length > 0) ||
+                    (isLatestUserMsg && Array.isArray(activeSearchSources) && activeSearchSources.length > 0)
+                  )
+                : false;
+
               return (
                 <div
                   key={index}
@@ -1279,6 +1272,24 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     role={m.role}
                     content={m.content}
                     attachments={m.attachments}
+                    enableSearch={m.enableSearch}
+                    searchExecuted={isSearchActuallyExecuted}
+                    sources={m.sources || []}
+                    requiresWebSearch={m.requiresWebSearch || false}
+                    onEnableSearchAndRetry={() => {
+                      setIsWebSearchActive(true);
+                      if (prevUserMsg?.content) {
+                        handleSendSubmit(
+                          prevUserMsg.content,
+                          null,
+                          undefined,
+                          prevUserMsg.attachments,
+                          undefined,
+                          false,
+                          true
+                        );
+                      }
+                    }}
                     followUps={m.followUps || []}
                     isLatestAssistant={isLatestAssistant}
                     onSelectFollowUp={(followUpPrompt) => handleSendSubmit(followUpPrompt)}
@@ -1310,6 +1321,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               isStreaming={true}
               isThinking={!streamingReply}
               isWebSearching={isWebSearching}
+              sources={activeSearchSources}
+              requiresWebSearch={isSearchGuidanceActive}
+              onEnableSearchAndRetry={() => setIsWebSearchActive(true)}
             />
           )}
         </div>
@@ -1347,9 +1361,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             isGenerating={isSearching || isBotTyping}
             onStop={handleStopGeneration}
             autoListenTrigger={autoListenTrigger}
+            isWebSearchActive={isWebSearchActive}
+            setIsWebSearchActive={setIsWebSearchActive}
           />
         </div>
       </div>
+
+      {/* ChatGPT-style Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        chatId={currentChatId}
+        chatTitle={chatTitle}
+      />
     </div>
   );
 };

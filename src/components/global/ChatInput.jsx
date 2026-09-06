@@ -3,11 +3,20 @@ import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
 import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip, FiGlobe } from "react-icons/fi";
 
-const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
+const ChatInput = ({
+  onSend,
+  isGenerating,
+  onStop,
+  autoListenTrigger,
+  isWebSearchActive: controlledWebSearchActive,
+  setIsWebSearchActive: setControlledWebSearchActive,
+}) => {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [isListening, setIsListening] = useState(false);
-  const [isWebSearchActive, setIsWebSearchActive] = useState(false);
+  const [internalWebSearchActive, setInternalWebSearchActive] = useState(false);
+  const isWebSearchActive = controlledWebSearchActive !== undefined ? controlledWebSearchActive : internalWebSearchActive;
+  const setIsWebSearchActive = setControlledWebSearchActive || setInternalWebSearchActive;
   const [recognition, setRecognition] = useState(null);
   const voiceRecorderRef = useRef(new VoiceRecorder());
   const { isDark } = useTheme();
@@ -430,7 +439,8 @@ const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
             selectedModel?.modelId || "auto",
             attachments,
             undefined,
-            true /* isVoiceSubmission */
+            true /* isVoiceSubmission */,
+            isWebSearchActive
           );
           setText("");
           latestTranscriptRef.current = "";
@@ -643,6 +653,21 @@ const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
           </div>
         )}
 
+        {isWebSearchActive && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 mb-1.5 rounded-full bg-accent-primary/10 dark:bg-accent-primary/20 border border-accent-primary/30 text-accent-primary w-fit text-[11px] font-medium animate-in fade-in duration-200">
+            <FiGlobe className="w-3.5 h-3.5 shrink-0" />
+            <span>Search the Web is active</span>
+            <button
+              type="button"
+              onClick={() => setIsWebSearchActive(false)}
+              className="ml-1 p-0.5 hover:bg-accent-primary/20 rounded-full cursor-pointer transition"
+              title="Disable web search"
+            >
+              <FiX className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         <textarea
           ref={inputRef}
           rows={2}
@@ -650,6 +675,8 @@ const ChatInput = ({ onSend, isGenerating, onStop, autoListenTrigger }) => {
           placeholder={
             isListening
               ? "Listening... Speak now (pause 2 sec to submit to AI)..."
+              : isWebSearchActive
+              ? "Web Search enabled — Ask anything or look up latest live info..."
               : attachments.length > 0
               ? "Add a prompt for your attachment..."
               : "Ask Codegene to build, explain, or explore..."

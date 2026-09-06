@@ -20,6 +20,8 @@ import {
   FiGlobe,
   FiCompass,
   FiArrowRight,
+  FiChevronDown,
+  FiExternalLink,
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -150,11 +152,16 @@ const MessageBubble = ({
   isStreaming = false,
   isThinking = false,
   isWebSearching = false,
+  enableSearch = false,
+  searchExecuted = false,
   isSpeaking = false,
   onToggleSpeak,
   followUps = [],
   onSelectFollowUp,
   isLatestAssistant = false,
+  sources = [],
+  requiresWebSearch = false,
+  onEnableSearchAndRetry,
 }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
@@ -163,6 +170,7 @@ const MessageBubble = ({
   const [editValue, setEditValue] = useState(content);
   const [isCopied, setIsCopied] = useState(false);
   const [modalImage, setModalImage] = useState(null);
+  const [showSources, setShowSources] = useState(false);
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -292,6 +300,52 @@ const MessageBubble = ({
           }`}
         >
           <div className={`${isUser && !isEditing ? "w-fit max-w-full" : "w-full"} min-w-0`}>
+          {/* Expandable Web Search Explored Banner */}
+          {!isUser && Array.isArray(sources) && sources.length > 0 && (
+            <div className="mb-3">
+              <button
+                type="button"
+                onClick={() => setShowSources((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15 text-text-secondary dark:text-gray-300 transition cursor-pointer border border-border-primary/40 dark:border-white/10 select-none shadow-2xs"
+                title="Click to view web sources explored"
+              >
+                <FiCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Explored search_web ({sources.length} sources)</span>
+                <FiChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showSources ? "rotate-180" : ""}`} />
+              </button>
+
+              {showSources && (
+                <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-xl bg-surface-secondary/70 dark:bg-[#191a24] border border-border-primary/50 dark:border-white/10 animate-in fade-in duration-200">
+                  {sources.map((s, idx) => (
+                    <a
+                      key={idx}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition group text-left"
+                    >
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${s.domain || "google.com"}&sz=32`}
+                        alt=""
+                        className="w-4 h-4 mt-0.5 rounded shrink-0"
+                        onError={(e) => { e.target.style.display = "none"; }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12px] font-medium text-text-primary dark:text-gray-200 truncate group-hover:text-accent-primary transition">
+                          {s.title}
+                        </div>
+                        <div className="text-[10.5px] text-text-muted truncate">
+                          {s.domain}
+                        </div>
+                      </div>
+                      <FiExternalLink className="w-3 h-3 text-text-muted group-hover:text-accent-primary shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Thinking / Bubbling Animation — shown while waiting for first token */}
           {isThinking && !content ? (
             isWebSearching ? (
@@ -440,14 +494,27 @@ const MessageBubble = ({
                     {...props}
                   />
                 ),
-                a: ({ node, ...props }) => (
-                  <a
-                    className={`${isUser ? "text-white underline font-semibold" : "text-[#7c83f6] hover:underline font-medium"} break-all`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    {...props}
-                  />
-                ),
+                a: ({ node, children, href, ...props }) => {
+                  const linkText = String(children || "");
+                  const isCitation = /^(\[\d+\]|\d+|Source\s*\d+|Yahoo|Google|NSE|BSE|Reuters|Bloomberg|CNBC)/i.test(linkText) || linkText.length < 28;
+                  return (
+                    <a
+                      href={href}
+                      className={
+                        isUser
+                          ? "text-white underline font-semibold break-all"
+                          : isCitation
+                          ? "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md text-[11px] font-medium bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary border border-accent-primary/25 transition no-underline align-baseline align-middle shadow-2xs"
+                          : "text-accent-primary hover:underline font-medium break-all"
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      {...props}
+                    >
+                      {children}
+                    </a>
+                  );
+                },
                 ul: ({ node, ...props }) => (
                   <ul
                     className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
@@ -509,6 +576,59 @@ const MessageBubble = ({
               )}
             </div>
           )}
+          {/* Web Search Required Guidance Action Button */}
+          {!isUser && (requiresWebSearch || /(don't have access to real-time|don't have real-time|switch on the .*web search|turn on the .*web search|enable web search|cannot provide real-time|real-time.*data.*(unable|cannot|don't)|live.*data.*(unable|cannot|don't)|no access to live)/i.test(content || "")) && (
+            <div className="mt-3 pt-1">
+              <button
+                type="button"
+                onClick={() => onEnableSearchAndRetry && onEnableSearchAndRetry()}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary border border-accent-primary/30 transition active:scale-95 cursor-pointer shadow-xs"
+                title="Enable Web Search and retry this query"
+              >
+                <FiGlobe className="w-3.5 h-3.5 shrink-0" />
+                <span>Turn On Web Search & Check Now</span>
+                <FiArrowRight className="w-3 h-3 shrink-0" />
+              </button>
+            </div>
+          )}
+
+          {/* Sources Cards Tray at Bottom of Response */}
+          {!isUser && !isStreaming && !isThinking && Array.isArray(sources) && sources.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-border-primary/40 dark:border-white/10">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted select-none mb-2">
+                <FiGlobe className="w-3.5 h-3.5 text-accent-primary shrink-0" />
+                <span>Sources</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {sources.map((s, idx) => (
+                  <a
+                    key={idx}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 p-2 rounded-xl bg-surface-secondary/50 dark:bg-white/5 hover:bg-accent-primary/5 dark:hover:bg-white/10 border border-border-primary/60 dark:border-white/10 transition group text-left"
+                  >
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${s.domain || "google.com"}&sz=32`}
+                      alt=""
+                      className="w-4 h-4 rounded shrink-0"
+                      onError={(e) => { e.target.style.display = "none"; }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11.5px] font-medium text-text-primary dark:text-gray-200 truncate group-hover:text-accent-primary transition">
+                        {s.title}
+                      </div>
+                      <div className="text-[10px] text-text-muted truncate">
+                        {s.domain}
+                      </div>
+                    </div>
+                    <FiExternalLink className="w-3 h-3 text-text-muted group-hover:text-accent-primary shrink-0 opacity-0 group-hover:opacity-100 transition" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons for AI Message — hidden during thinking/streaming */}
           {!isUser && !hasPauseNotice && !isStreaming && !isThinking && content && (
             <div className="flex items-center gap-1.5 mt-2 opacity-100 transition-opacity text-text-muted">
@@ -599,9 +719,17 @@ const MessageBubble = ({
         </div>
         </div>
 
-        {/* Action Buttons for User Message */}
+        {/* Action Buttons for User Message (Visible on Hover) */}
         {isUser && !isEditing && (
-          <div className="flex items-center gap-1 mt-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 mt-1 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            {searchExecuted && (
+              <div
+                className="p-1.5 rounded-lg text-accent-primary hover:bg-surface-secondary transition flex items-center justify-center cursor-help"
+                title="This message used web search"
+              >
+                <FiGlobe className="w-3.5 h-3.5 text-accent-primary" />
+              </div>
+            )}
             <button
               onClick={() => handleCopy(content)}
               className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text-primary transition flex items-center gap-1.5 cursor-pointer"

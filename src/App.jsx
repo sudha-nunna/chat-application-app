@@ -10,6 +10,7 @@ import GoogleCallbackPage from "./pages/GoogleCallbackPage";
 // import AdminServerPage from "./pages/AdminServerPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import SharedChatPage from "./pages/SharedChatPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { SubscriptionProvider } from "./context/SubscriptionContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -26,6 +27,7 @@ function App() {
             {/* <Route path="/bots" element={<BotPlaceholderPage />} /> */}
             {/* <Route path="/bots/:botId" element={<BotDetailPage />} /> */}
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/share/:chatId" element={<SharedChatPage />} />
             <Route path="/usage" element={<UsagePage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
             {/* <Route path="/admin/servers" element={<AdminServerPage />} /> */}
