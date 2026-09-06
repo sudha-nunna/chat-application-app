@@ -22,6 +22,9 @@ import {
   FiArrowRight,
   FiChevronDown,
   FiExternalLink,
+  FiEye,
+  FiLayers,
+  FiPlay,
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -41,7 +44,7 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
-const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props }) => {
+const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStreaming, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
   const isMultiLine = String(children).includes("\n");
   const [isCopied, setIsCopied] = useState(false);
@@ -52,7 +55,7 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  if (inline || (!match && !isMultiLine)) {
+  if (inline || (!match && !isMultiLine && !isStreaming)) {
     return (
       <code
         className={`px-1.5 py-0.5 rounded-[6px] font-mono text-[13px] font-normal break-words [overflow-wrap:anywhere] ${
@@ -68,6 +71,138 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props
       </code>
     );
   }
+
+  const rawCode = String(children).trim();
+  const lang = (match ? match[1] : "").toLowerCase();
+  const isPreviewable =
+    ["html", "jsx", "tsx", "javascript", "js", "css"].includes(lang) ||
+    /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode) ||
+    /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*\s*=\s*\(|return\s*\(\s*<)/.test(rawCode);
+  const lineCount = rawCode.split("\n").length;
+
+  // While code is actively streaming: render an animated status card instead of streaming raw code into chat!
+  if (isStreaming) {
+    return (
+      <div
+        className={`my-3 w-full p-4 rounded-2xl border transition-all shadow-xs animate-in fade-in duration-200 ${
+          isDark
+            ? "bg-[#10131d] border-emerald-500/30 text-white"
+            : "bg-emerald-50/60 border-emerald-300 text-slate-900"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+              <FiCode className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-semibold truncate">
+                  Writing Code in Code Preview...
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  LIVE
+                </span>
+              </div>
+              <p className="text-[11px] text-text-muted truncate mt-0.5">
+                Streaming code directly into the right-hand Code Preview panel
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent("open-artifact", {
+                  detail: {
+                    code: rawCode,
+                    language: lang || "html",
+                    title: "Live Code Preview",
+                  },
+                })
+              );
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
+            title="Open Live Preview"
+          >
+            <FiEye className="w-3.5 h-3.5" />
+            <span>Open Preview</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If code is previewable UI code or multi-line (> 2 lines), render a sleek Artifact Card instead of dumping 500 lines of raw code in chat!
+  if (isPreviewable || lineCount > 2) {
+    return (
+      <div
+        className={`my-3 w-full p-4 rounded-2xl border transition-all shadow-xs ${
+          isDark
+            ? "bg-[#13141f] border-white/10 text-white"
+            : "bg-surface-secondary/80 border-border-primary text-text-primary"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+              <FiLayers className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-semibold truncate">
+                  Interactive Web Preview
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary font-bold uppercase font-mono">
+                  {lang || "html"}
+                </span>
+                <span className="text-[10px] text-text-muted">
+                  ({lineCount} lines)
+                </span>
+              </div>
+              <p className="text-[11px] text-text-muted truncate mt-0.5">
+                Code & live sandbox ready in the Code Preview panel on the right
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent("open-artifact", {
+                    detail: {
+                      code: rawCode,
+                      language: lang || "html",
+                      title: "Interactive Preview",
+                    },
+                  })
+                );
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95"
+              title="Open in Right Panel Live Sandbox"
+            >
+              <FiEye className="w-3.5 h-3.5" />
+              <span>Open Preview</span>
+            </button>
+            <button
+              onClick={handleCopy}
+              className="p-2 rounded-xl border border-border-primary/60 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer text-text-muted hover:text-text-primary"
+              title="Copy code"
+            >
+              {isCopied ? (
+                <FiCheck className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <FiCopy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`my-3 w-full max-w-full overflow-hidden rounded-xl border ${
@@ -84,17 +219,39 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, ...props
             <FiCode className="w-3.5 h-3.5" />
             {match[1]}
           </span>
-          <button
-            onClick={handleCopy}
-            className="hover:text-text-primary transition cursor-pointer flex items-center gap-1.5"
-            title="Copy code"
-          >
-            {isCopied ? (
-              <FiCheck className="w-3.5 h-3.5 text-green-500" />
-            ) : (
-              <FiCopy className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2">
+            {["html", "jsx", "tsx"].includes((match[1] || "").toLowerCase()) && (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("open-artifact", {
+                      detail: {
+                        code: String(children),
+                        language: match[1],
+                        title: "Code Preview",
+                      },
+                    })
+                  );
+                }}
+                className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20 transition cursor-pointer font-medium"
+                title="Open in Live Interactive Sandbox"
+              >
+                <FiEye className="w-3 h-3" />
+                <span>Live Preview</span>
+              </button>
             )}
-          </button>
+            <button
+              onClick={handleCopy}
+              className="hover:text-text-primary transition cursor-pointer flex items-center gap-1.5"
+              title="Copy code"
+            >
+              {isCopied ? (
+                <FiCheck className="w-3.5 h-3.5 text-green-500" />
+              ) : (
+                <FiCopy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
         </div>
       )}
       <div className="custom-scrollbar overflow-x-auto w-full">
@@ -162,6 +319,8 @@ const MessageBubble = ({
   sources = [],
   requiresWebSearch = false,
   onEnableSearchAndRetry,
+  isStoppedMidway = false,
+  onContinueGeneration,
 }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
@@ -480,7 +639,7 @@ const MessageBubble = ({
                   </div>
                 ),
                 code: (props) => (
-                  <CodeBlock {...props} isUser={isUser} isDark={isDark} />
+                  <CodeBlock {...props} isUser={isUser} isDark={isDark} isStreaming={isStreaming} />
                 ),
                 p: ({ node, ...props }) => (
                   <p
@@ -691,6 +850,24 @@ const MessageBubble = ({
                   <FiRotateCw className="w-4 h-4" />
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Continue Generating Button (When response was stopped midway) */}
+          {!isUser && isStoppedMidway && onContinueGeneration && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onContinueGeneration}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 text-xs font-semibold shadow-xs cursor-pointer active:scale-95 transition-all"
+                title="Resume generating from where it stopped"
+              >
+                <FiPlay className="w-3.5 h-3.5 fill-current" />
+                <span>Continue Generating</span>
+              </button>
+              <span className="text-[11px] text-text-muted">
+                Generation stopped midway
+              </span>
             </div>
           )}
 

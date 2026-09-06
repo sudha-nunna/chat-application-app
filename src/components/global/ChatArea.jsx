@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon } from "react-icons/fi";
+import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon, FiEye } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
 import ShareModal from "./ShareModal";
+import ArtifactPreviewPanel from "../artifacts/ArtifactPreviewPanel";
+import { extractPreviewableCode } from "../../utils/codeExportUtils";
 import { useTheme } from "../../context/ThemeContext";
 import { useTanStackQueryClient, useTanStackData } from "../../hooks/useTanStackData";
 import { NobackEndCall } from "../../services/authService";
@@ -40,6 +42,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [isVoicePaused, setIsVoicePaused] = useState(true);
   const [isCopiedShare, setIsCopiedShare] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [activeArtifact, setActiveArtifact] = useState(null);
+  const [isArtifactOpen, setIsArtifactOpen] = useState(false);
+  const [isDevModeActive, setIsDevModeActive] = useState(false);
   const isVoicePausedRef = useRef(true);
   const isAbortedRef = useRef(false);
   const abortControllerRef = useRef(null);
@@ -49,6 +54,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const pendingVoiceAutoSpeakRef = useRef(false);
   const isVoiceConversationModeRef = useRef(false);
   const streamFollowUpsRef = useRef([]);
+  const lastArtifactUpdateRef = useRef(0);
 
   // Streaming speech queue & buffer refs for sentence-by-sentence TTS
   const streamingSpeechQueueRef = useRef([]);
@@ -204,6 +210,130 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     setIsShareModalOpen(true);
   };
 
+  // Listen for custom open-artifact events from message code blocks
+  useEffect(() => {
+    const handleOpenArtifact = (e) => {
+      if (e.detail?.code) {
+        setActiveArtifact({
+          code: e.detail.code,
+          language: e.detail.language || "html",
+          title: e.detail.title || chatTitle || "Interactive Preview",
+        });
+        setIsArtifactOpen(true);
+      }
+    };
+
+    window.addEventListener("open-artifact", handleOpenArtifact);
+    return () => window.removeEventListener("open-artifact", handleOpenArtifact);
+  }, [chatTitle]);
+
+  // Automatically detect artifacts from latest assistant message or streaming reply
+  useEffect(() => {
+    if (streamingReply) {
+      const now = Date.now();
+      if (now - lastArtifactUpdateRef.current > 120) {
+        lastArtifactUpdateRef.current = now;
+        const parsed = extractPreviewableCode(streamingReply);
+        if (parsed) {
+          setActiveArtifact(parsed);
+          setIsArtifactOpen(true);
+        }
+      }
+      return;
+    }
+
+    if (Array.isArray(messages) && messages.length > 0) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "assistant" && messages[i].content) {
+          const parsed = extractPreviewableCode(messages[i].content);
+          if (parsed) {
+            setActiveArtifact(parsed);
+            setIsArtifactOpen(true);
+            break;
+          }
+        }
+      }
+    }
+  }, [messages, streamingReply]);
+
+  const handleToggleDevMode = (newState) => {
+    setIsDevModeActive((prev) => {
+      const next = typeof newState === "boolean" ? newState : !prev;
+      if (next) {
+        setIsWebSearchActive(false);
+        setIsArtifactOpen(true);
+        window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: true } }));
+        if (!activeArtifact) {
+          setActiveArtifact({
+            code: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Live Code Preview</title>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex items-center justify-center min-h-screen p-6 font-sans">
+  <div class="max-w-md text-center">
+    <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/10">
+      ⚡
+    </div>
+    <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">Code Preview Ready</h1>
+    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+      Dev Mode is active. Ask Codegene to build any landing page, website, or React component. Code will stream directly here!
+    </p>
+    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-mono">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      Sandbox Ready
+    </div>
+  </div>
+</body>
+</html>`,
+            language: "html",
+            title: "Live Code Preview Sandbox",
+            isStarter: true,
+          });
+        }
+      } else {
+        if (activeArtifact?.isStarter) {
+          setIsArtifactOpen(false);
+          setActiveArtifact(null);
+          window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: false } }));
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleToggleWebSearch = (newState) => {
+    setIsWebSearchActive((prev) => {
+      const next = typeof newState === "boolean" ? newState : !prev;
+      if (next) {
+        handleToggleDevMode(false);
+      }
+      return next;
+    });
+  };
+
+  const handleCloseArtifact = () => {
+    setIsArtifactOpen(false);
+    window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: false } }));
+  };
+
+  // Automatically collapse sidebar whenever live preview panel opens, restore when closed
+  useEffect(() => {
+    if (isArtifactOpen) {
+      window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: true } }));
+    } else {
+      window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: false } }));
+    }
+  }, [isArtifactOpen]);
+
+  useEffect(() => {
+    setActiveArtifact(null);
+    setIsArtifactOpen(false);
+  }, [currentChatId]);
+
   const [clusterNodes, setClusterNodes] = useState([]);
   const [isClusterLoading, setIsClusterLoading] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -245,6 +375,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsBotTyping(false);
       setIsFetchingMessages(false);
       clearAudioPipeline();
+      setActiveArtifact(null);
+      setIsArtifactOpen(false);
     };
 
     window.addEventListener("new-chat-action", handleNewChatReset);
@@ -466,8 +598,26 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     if (partialText && partialText.trim()) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: partialText }
+        { role: "assistant", content: partialText, isStoppedMidway: true }
       ]);
+
+      // Synchronize stop with backend so switching chats or reloading preserves the Continue button
+      try {
+        const token = localStorage.getItem("token");
+        const targetChat = currentChatId && currentChatId !== "new" ? currentChatId : null;
+        if (targetChat && token) {
+          fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChat}/messages/stop`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ content: partialText })
+          }).catch((e) => console.warn("Failed to notify stop:", e.message));
+        }
+      } catch (err) {
+        console.warn("Stop notification error:", err);
+      }
     }
 
     setStreamingReply("");
@@ -475,6 +625,32 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     setIsSearching(false);
     setIsBotTyping(false);
     clearAudioPipeline();
+  };
+
+  const handleContinueGeneration = (stoppedContent, messageIndex) => {
+    if (isGeneratingRef.current) return;
+
+    const tailSnippet = (stoppedContent || "").slice(-120).trim();
+    const openFences = (stoppedContent.match(/```/g) || []).length;
+    const isInsideCode = openFences % 2 !== 0;
+
+    let continuationPrompt = "";
+    if (isInsideCode) {
+      continuationPrompt = `Continue writing the code and response exactly from where you stopped. Do not repeat what was already written. Do not open a new code block. Continue directly with the remaining code and tags from: "${tailSnippet}"`;
+    } else {
+      continuationPrompt = `Continue your response exactly from where you stopped without repeating. Continue immediately from: "${tailSnippet}"`;
+    }
+
+    handleSendSubmit(
+      continuationPrompt,
+      null,
+      undefined,
+      [],
+      undefined,
+      false,
+      false,
+      { baseContent: stoppedContent, messageIndex, isInsideCode }
+    );
   };
 
   const processAudioQueue = () => {
@@ -574,7 +750,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     attachments = [],
     editIndex = undefined,
     isVoiceSubmission = false,
-    enableSearch = false
+    enableSearch = false,
+    continuationContext = null
   ) => {
     if (isGeneratingRef.current) {
       console.warn("⚠️ Request blocked because generation is already active.");
@@ -589,6 +766,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     if (selectedModelId) {
       lastUsedModelRef.current = selectedModelId;
+    }
+
+    // When Dev Mode is active, immediately open the split view with a clean ready state (no old code from previous chats)
+    if (isDevModeActive && !continuationContext) {
+      setIsArtifactOpen(true);
+      setActiveArtifact({
+        code: `<!-- Generating live code preview... -->\n<div class="flex items-center justify-center min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans p-6 text-center">\n  <div>\n    <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/10 animate-pulse">\n      ⚡\n    </div>\n    <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">Generating Web App...</h1>\n    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">\n      Codegene AI is writing the code. It will stream live directly here in real-time.\n    </p>\n    <div class="inline-flex items-center gap-2 mt-5 px-3.5 py-1.5 rounded-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-mono">\n      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>\n      Streaming live\n    </div>\n  </div>\n</div>`,
+        language: "html",
+        title: "Generating...",
+        isStreaming: true,
+      });
     }
 
     // Cancel any active speech readout and clear audio pipeline BEFORE setting voice flags
@@ -617,16 +805,23 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       window.speechSynthesis.resume();
     }
 
-    if (editIndex !== undefined && editIndex >= 0) {
+    if (continuationContext) {
+      // Seamless continuation: keep prior history up to the stopped message and start stream with baseContent
+      setMessages((prev) => prev.slice(0, continuationContext.messageIndex));
+      currentStreamingTextRef.current = continuationContext.baseContent || "";
+      setStreamingReply(continuationContext.baseContent || "");
+    } else if (editIndex !== undefined && editIndex >= 0) {
       setMessages((prev) => [...prev.slice(0, editIndex), userMsgObj]);
+      currentStreamingTextRef.current = "";
+      setStreamingReply("");
     } else {
       setMessages((prev) => [...prev, userMsgObj]);
+      currentStreamingTextRef.current = "";
+      setStreamingReply("");
     }
     setIsSearching(true);
     setIsWebSearching(isSearchRequested);
     setIsBotTyping(true);
-    setStreamingReply("");
-    currentStreamingTextRef.current = "";
     tokenQueueRef.current = [];
     streamNetworkDoneRef.current = false;
     streamCompleteCbRef.current = null;
@@ -694,6 +889,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       const decoder = new TextDecoder("utf-8");
       let streamFinished = false;
       let buffer = "";
+      let isFirstContinuationChunk = Boolean(continuationContext?.isInsideCode);
 
       // Start the visual drain loop BEFORE reading — so the first token
       // renders as soon as it's pushed into the queue.
@@ -740,8 +936,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 isSearchGuidanceRef.current = true;
                 setIsSearchGuidanceActive(true);
               } else if (parsed.type === "chunk") {
-                const textBit = parsed.text || "";
+                let textBit = parsed.text || "";
                 if (textBit) {
+                  if (isFirstContinuationChunk) {
+                    const stripped = textBit.replace(/^```[a-zA-Z0-9_.-]*\s*\n?/, "");
+                    if (stripped !== textBit) {
+                      textBit = stripped;
+                      isFirstContinuationChunk = false;
+                    } else if (textBit.trim().length > 6) {
+                      isFirstContinuationChunk = false;
+                    }
+                  }
                   if (!firstTokenTime) {
                     firstTokenTime = performance.now();
                     const ttftMs = (firstTokenTime - t0).toFixed(2);
@@ -1107,6 +1312,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         )}
 
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Live Preview / Builder Mode Button */}
+          {(activeArtifact || isDevModeActive) && (
+            <button
+              onClick={() => {
+                if (!isArtifactOpen && !activeArtifact) {
+                  handleToggleDevMode(true);
+                } else {
+                  setIsArtifactOpen((prev) => !prev);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${
+                isArtifactOpen
+                  ? "bg-accent-primary text-white border-accent-primary shadow-xs"
+                  : "bg-accent-primary/10 text-accent-primary border-accent-primary/30 hover:bg-accent-primary/20"
+              }`}
+              title={isArtifactOpen ? "Hide Live Preview Panel" : "Open Live Preview Panel"}
+            >
+              <FiEye className="text-[14px]" />
+              <span className="hidden xs:inline">Preview</span>
+            </button>
+          )}
+
           <button
             onClick={handleShare}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-all cursor-pointer active:scale-95"
@@ -1129,13 +1356,23 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         </div>
       </div>
 
-      {/* Messages Scroll Area - ONLY this section scrolls */}
-      <div
-        ref={messagesContainerRef}
-        onScroll={handleScroll}
-        onWheel={handleWheel}
-        className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
-      >
+      {/* Main Split Layout: Left is Chat Area, Right is Live Preview Sandbox */}
+      <div className="flex-1 min-h-0 min-w-0 flex flex-row overflow-hidden relative">
+        {/* Left: Chat Area */}
+        <div
+          className={`h-full flex flex-col min-w-0 transition-all duration-300 ${
+            isArtifactOpen && activeArtifact
+              ? "w-full md:w-[48%] lg:w-[45%]"
+              : "w-full"
+          }`}
+        >
+          {/* Messages Scroll Area - ONLY this section scrolls */}
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+            onWheel={handleWheel}
+            className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
+          >
         <div
           className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
         >
@@ -1277,7 +1514,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     sources={m.sources || []}
                     requiresWebSearch={m.requiresWebSearch || false}
                     onEnableSearchAndRetry={() => {
-                      setIsWebSearchActive(true);
+                      handleToggleWebSearch(true);
                       if (prevUserMsg?.content) {
                         handleSendSubmit(
                           prevUserMsg.content,
@@ -1308,6 +1545,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                             handleSendSubmit(newContent || prevUserMsg.content, null, undefined, prevUserMsg.attachments, undefined, false, prevUserMsg.enableSearch)
                         : undefined
                     }
+                    isStoppedMidway={m.isStoppedMidway}
+                    onContinueGeneration={() => handleContinueGeneration(m.content, index)}
                   />
                 </div>
               );
@@ -1323,7 +1562,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               isWebSearching={isWebSearching}
               sources={activeSearchSources}
               requiresWebSearch={isSearchGuidanceActive}
-              onEnableSearchAndRetry={() => setIsWebSearchActive(true)}
+              onEnableSearchAndRetry={() => handleToggleWebSearch(true)}
             />
           )}
         </div>
@@ -1355,17 +1594,43 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             )}
           </div>
         )}
-        <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6">
+        <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6 pb-2 shrink-0">
           <ChatInput
             onSend={handleSendSubmit}
             isGenerating={isSearching || isBotTyping}
             onStop={handleStopGeneration}
             autoListenTrigger={autoListenTrigger}
             isWebSearchActive={isWebSearchActive}
-            setIsWebSearchActive={setIsWebSearchActive}
+            setIsWebSearchActive={handleToggleWebSearch}
+            isDevModeActive={isDevModeActive}
+            setIsDevModeActive={handleToggleDevMode}
           />
         </div>
       </div>
+    </div>
+
+      {/* Right Pane: Live Artifact Sandbox (Desktop/Tablet) */}
+      {isArtifactOpen && activeArtifact && (
+        <div className="hidden md:flex flex-1 min-w-0 h-full overflow-hidden transition-all duration-300">
+          <ArtifactPreviewPanel
+            artifact={activeArtifact}
+            onClose={handleCloseArtifact}
+          />
+        </div>
+      )}
+    </div>
+
+    {/* Mobile Fullscreen Preview Overlay */}
+    {isArtifactOpen && activeArtifact && (
+      <div className="md:hidden fixed inset-0 z-50 bg-black/80 flex flex-col">
+        <div className="flex-1 h-full w-full">
+          <ArtifactPreviewPanel
+            artifact={activeArtifact}
+            onClose={handleCloseArtifact}
+          />
+        </div>
+      </div>
+    )}
 
       {/* ChatGPT-style Share Modal */}
       <ShareModal

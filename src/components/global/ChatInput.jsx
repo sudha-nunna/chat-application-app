@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
-import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip, FiGlobe } from "react-icons/fi";
+import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip, FiGlobe, FiCode } from "react-icons/fi";
 
 const ChatInput = ({
   onSend,
@@ -10,6 +10,8 @@ const ChatInput = ({
   autoListenTrigger,
   isWebSearchActive: controlledWebSearchActive,
   setIsWebSearchActive: setControlledWebSearchActive,
+  isDevModeActive: controlledDevModeActive,
+  setIsDevModeActive: setControlledDevModeActive,
 }) => {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -17,6 +19,10 @@ const ChatInput = ({
   const [internalWebSearchActive, setInternalWebSearchActive] = useState(false);
   const isWebSearchActive = controlledWebSearchActive !== undefined ? controlledWebSearchActive : internalWebSearchActive;
   const setIsWebSearchActive = setControlledWebSearchActive || setInternalWebSearchActive;
+
+  const [internalDevModeActive, setInternalDevModeActive] = useState(false);
+  const isDevModeActive = controlledDevModeActive !== undefined ? controlledDevModeActive : internalDevModeActive;
+  const setIsDevModeActive = setControlledDevModeActive || setInternalDevModeActive;
   const [recognition, setRecognition] = useState(null);
   const voiceRecorderRef = useRef(new VoiceRecorder());
   const { isDark } = useTheme();
@@ -668,6 +674,21 @@ const ChatInput = ({
           </div>
         )}
 
+        {isDevModeActive && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 mb-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 w-fit text-[11px] font-medium animate-in fade-in duration-200">
+            <FiCode className="w-3.5 h-3.5 shrink-0" />
+            <span>Dev Mode is active (Live Sandbox)</span>
+            <button
+              type="button"
+              onClick={() => setIsDevModeActive(false)}
+              className="ml-1 p-0.5 hover:bg-emerald-500/20 rounded-full cursor-pointer transition"
+              title="Disable dev mode"
+            >
+              <FiX className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         <textarea
           ref={inputRef}
           rows={2}
@@ -675,6 +696,8 @@ const ChatInput = ({
           placeholder={
             isListening
               ? "Listening... Speak now (pause 2 sec to submit to AI)..."
+              : isDevModeActive
+              ? "Dev Mode enabled — Ask Codegene to build any app, site, or component..."
               : isWebSearchActive
               ? "Web Search enabled — Ask anything or look up latest live info..."
               : attachments.length > 0
@@ -807,7 +830,13 @@ const ChatInput = ({
 
             <button
               type="button"
-              onClick={() => setIsWebSearchActive((prev) => !prev)}
+              onClick={() => {
+                const next = !isWebSearchActive;
+                setIsWebSearchActive(next);
+                if (next) {
+                  setIsDevModeActive(false);
+                }
+              }}
               className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs cursor-pointer shrink-0 ${
                 isWebSearchActive
                   ? "border-accent-primary bg-accent-primary text-white shadow-sm font-semibold"
@@ -818,6 +847,29 @@ const ChatInput = ({
               <FiGlobe className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWebSearchActive ? "text-white" : ""}`} />
               <span className="text-[11px] font-medium hidden xs:inline">
                 {isWebSearchActive ? "Search ON" : "Search"}
+              </span>
+            </button>
+
+            {/* Dev / Builder Mode Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !isDevModeActive;
+                setIsDevModeActive(next);
+                if (next) {
+                  setIsWebSearchActive(false);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs cursor-pointer shrink-0 ${
+                isDevModeActive
+                  ? "border-emerald-500 bg-emerald-500 text-white shadow-sm font-semibold animate-in fade-in"
+                  : "border-border-primary dark:border-white/5 text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
+              }`}
+              title={isDevModeActive ? "Dev Mode: ON (Live Sandbox split-screen enabled)" : "Turn on Dev Mode (Live App/Web Builder)"}
+            >
+              <FiCode className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isDevModeActive ? "text-white" : ""}`} />
+              <span className="text-[11px] font-medium hidden xs:inline">
+                {isDevModeActive ? "Dev Mode ON" : "Dev Mode"}
               </span>
             </button>
           </div>

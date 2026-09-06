@@ -197,6 +197,15 @@ const AppLayout = ({ children }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleSetSidebarCollapsed = (e) => {
+      setIsSidebarCollapsed(Boolean(e.detail?.collapsed));
+    };
+
+    window.addEventListener("setSidebarCollapsed", handleSetSidebarCollapsed);
+    return () => window.removeEventListener("setSidebarCollapsed", handleSetSidebarCollapsed);
+  }, []);
+
   const [pinnedItemIds, setPinnedItemIds] = useState(() => {
     try {
       const saved = localStorage.getItem("pinnedChats");

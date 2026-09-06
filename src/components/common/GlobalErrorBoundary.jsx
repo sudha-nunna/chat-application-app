@@ -57,30 +57,28 @@ class GlobalErrorBoundary extends React.Component {
             }
 
             // You can render any custom fallback UI
-            return (
-                <div className="flex flex-col items-center justify-center min-h-screen bg-black/95 text-white p-6 font-mono">
-                    <div className="w-full max-w-lg bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-8 shadow-2xl relative">
+                <div className="flex flex-col items-center justify-center min-h-screen bg-surface-secondary text-text-primary p-6 font-sans">
+                    <div className="w-full max-w-lg bg-surface-primary border border-border-primary rounded-2xl p-8 shadow-2xl relative">
                         <h1 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-lg bg-interactive-base/10 flex items-center justify-center text-text-primary">
+                            <span className="w-8 h-8 rounded-lg bg-accent-primary/10 flex items-center justify-center text-accent-primary">
                                 ⚠️
                             </span>
                             Application Error
                         </h1>
-                        <p className="text-sm text-text-primary mb-6">
+                        <p className="text-sm text-text-muted mb-6">
                             Something went wrong. We've logged this issue and our team will look into it.
                         </p>
-                        <div className="bg-black/50 border border-[var(--border)] rounded-xl p-4 overflow-auto max-h-48 text-xs text-text-primary/80 mb-6 font-mono">
+                        <div className="bg-black/5 dark:bg-black/50 border border-border-primary rounded-xl p-4 overflow-auto max-h-48 text-xs text-text-primary mb-6 font-mono">
                             {this.state.error && this.state.error.toString()}
                         </div>
                         <button
                             onClick={() => window.location.replace("/")}
-                            className="w-full px-4 py-3 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white font-bold rounded-xl transition-all uppercase tracking-wider text-xs"
+                            className="w-full px-4 py-3 bg-accent-primary hover:bg-accent-primary/90 text-white font-bold rounded-xl transition-all uppercase tracking-wider text-xs cursor-pointer shadow-sm"
                         >
                             Return to Dashboard
                         </button>
                     </div>
                 </div>
-            );
         }
 
         return this.props.children;
