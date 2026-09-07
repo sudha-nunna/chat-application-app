@@ -29,7 +29,7 @@ import { useSearchParams } from "react-router-dom";
 import ClusterStatusWidget from "../global/ClusterStatusWidget";
 import { formatMarkdownBreaks } from "../../services/externalBotService";
 import VisemeAvatarPlayer from "../global/VisemeAvatarPlayer";
-import VoiceConversationManager from "../avatar/VoiceConversationManager";
+import VoiceConversationManager, { isSelfEcho } from "../avatar/VoiceConversationManager";
 import AvatarContainer from "../avatar/AvatarContainer";
 import { useTanStackQueryClient } from "../../hooks/useTanStackData";
 
@@ -45,6 +45,7 @@ const BotChatTab = ({ bot }) => {
   const [openSourcesIdx, setOpenSourcesIdx] = useState(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isDark } = useTheme();
+  const lastAssistantSpokenTextRef = useRef("");
 
   const urlConvId = searchParams.get("convId");
 
@@ -91,6 +92,7 @@ const BotChatTab = ({ bot }) => {
         setMicPermissionError("");
       },
       onSpeechDetected: (text) => {
+        if (voiceManagerRef.current?.isAssistantSpeaking) return;
         setSttInterimText(text);
         setVoiceState("LISTENING");
       },
@@ -100,6 +102,10 @@ const BotChatTab = ({ bot }) => {
       },
       onTranscriptComplete: (finalTranscript) => {
         if (finalTranscript && finalTranscript.trim()) {
+          if (isSelfEcho(finalTranscript, lastAssistantSpokenTextRef.current)) {
+            console.info("🛡️ [BotChatTab] Suppressed self-echo query:", finalTranscript);
+            return;
+          }
           setSttInterimText("");
           setVoiceState("THINKING");
           handleSendMessage(null, finalTranscript);

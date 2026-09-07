@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiCpu,
@@ -7,8 +7,18 @@ import {
   FiCode,
   FiTrash2,
   FiEdit2,
-  FiLayers
+  FiLayers,
+  FiMessageSquare,
+  FiMic,
+  FiZap,
+  FiSearch,
+  FiFilter,
+  FiChevronRight,
+  FiKey,
+  FiX,
+  FiActivity,
 } from "react-icons/fi";
+import { Sparkles } from "lucide-react";
 import { backEndCallGet, backEndCallObjDel } from "../services/authService";
 import CreateBotModal from "../components/bots/CreateBotModal";
 import EditBotModal from "../components/bots/EditBotModal";
@@ -17,7 +27,7 @@ import { useTheme } from "../context/ThemeContext";
 import {
   useTanStackData,
   useTanStackMutation,
-  useTanStackQueryClient
+  useTanStackQueryClient,
 } from "../hooks/useTanStackData";
 
 const DashboardPage = () => {
@@ -25,23 +35,71 @@ const DashboardPage = () => {
   const [editingBot, setEditingBot] = useState(null);
   const [selectedApiBot, setSelectedApiBot] = useState(null);
   const [apiModalMode, setApiModalMode] = useState("generate");
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef(null);
+
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const queryClient = useTanStackQueryClient();
 
+  // Keyboard shortcut: Cmd+K / Ctrl+K or '/' to focus search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // 1. GET Route: Fetch bots using authService's backEndCallGet & useTanStackData hook
-  const {
-    data: bots = [],
-    isLoading: loading
-  } = useTanStackData(
+  const { data: bots = [], isLoading: loading } = useTanStackData(
     ["bots"],
     async () => {
       const res = await backEndCallGet("/bots");
       return Array.isArray(res) ? res : res?.data || [];
-    }
+    },
   );
 
-  // 2. DELETE Route: Delete bot mutation using authService's backEndCallObjDel & useTanStackMutation hook
+  // Filter and stats computation
+  const counts = {
+    ALL: bots.length,
+    CHAT: bots.filter(
+      (b) => !b.botType || b.botType === "CHAT" || b.botType === "HYBRID",
+    ).length,
+    VOICE: bots.filter((b) => b.botType === "VOICE").length,
+    ACTION: bots.filter((b) => b.botType === "ACTION").length,
+    AVATAR: bots.filter((b) => b.botType === "AVATAR").length,
+  };
+
+  const filteredBots = bots.filter((bot) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      bot.name?.toLowerCase().includes(q) ||
+      bot.model?.toLowerCase().includes(q) ||
+      bot.description?.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (selectedTypeFilter === "ALL") return true;
+    if (selectedTypeFilter === "CHAT") {
+      return !bot.botType || bot.botType === "CHAT" || bot.botType === "HYBRID";
+    }
+    return bot.botType === selectedTypeFilter;
+  });
+
+  // 2. DELETE Route: Delete bot mutation
   const deleteBotMutation = useTanStackMutation({
     mutationFn: async (botId) => {
       return await backEndCallObjDel("/bots", botId);
@@ -51,12 +109,17 @@ const DashboardPage = () => {
     },
     onError: (err) => {
       console.error("Failed to delete bot:", err);
-    }
+    },
   });
 
   const handleDeleteBot = (e, botId) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this AI Agent and all its knowledge files?")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this AI Agent and all its knowledge files?",
+      )
+    )
+      return;
     deleteBotMutation.mutate(botId);
   };
 
@@ -65,195 +128,500 @@ const DashboardPage = () => {
     setEditingBot(bot);
   };
 
-  return (
-    <div className={`flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar ${"bg-transparent text-text-primary"
-      }`}>
+  // Helper for bot type metadata & styling
+  const getBotTypeMeta = (type) => {
+    switch (type) {
+      case "VOICE":
+        return {
+          label: "Voice Bot",
+          badgeClass:
+            "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30",
+          iconBg: "bg-cyan-500/15 text-cyan-500 border-cyan-500/25",
+          dotColor: "bg-cyan-500",
+          icon: <FiMic className="text-base" />,
+          accentGlow: "from-cyan-500/20 via-cyan-500/5 to-transparent",
+        };
+      case "ACTION":
+        return {
+          label: "Action Bot",
+          badgeClass:
+            "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+          iconBg: "bg-amber-500/15 text-amber-500 border-amber-500/25",
+          dotColor: "bg-amber-500",
+          icon: <FiZap className="text-base" />,
+          accentGlow: "from-amber-500/20 via-amber-500/5 to-transparent",
+        };
+      case "AVATAR":
+        return {
+          label: "Avatar Bot",
+          badgeClass:
+            "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30",
+          iconBg: "bg-purple-500/15 text-purple-500 border-purple-500/25",
+          dotColor: "bg-purple-500",
+          icon: <Sparkles className="w-4 h-4" />,
+          accentGlow: "from-purple-500/20 via-purple-500/5 to-transparent",
+        };
+      case "CHAT":
+      default:
+        return {
+          label: "Chat Bot",
+          badgeClass:
+            "bg-accent-primary/10 text-accent-primary border-accent-primary/30",
+          iconBg: "bg-accent-primary/15 text-accent-primary border-accent-primary/25",
+          dotColor: "bg-accent-primary",
+          icon: <FiMessageSquare className="text-base" />,
+          accentGlow: "from-accent-primary/20 via-accent-primary/5 to-transparent",
+        };
+    }
+  };
 
+  return (
+    <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar bg-transparent text-text-primary">
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Multi-Agent AI Applications</h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-interactive-base/10 text-amber-700 font-normal tracking-wider border border-border-primary/20 font-bold uppercase">
-              Production Architecture
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-text-primary">
+              Multi-Agent AI Applications
+            </h1>
+            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-accent-primary/15 text-accent-primary font-bold uppercase tracking-wider border border-accent-primary/30 shadow-2xs">
+              {bots.length} {bots.length === 1 ? "Agent" : "Agents"} Deployed
             </span>
           </div>
-          <p className={`text-xs mt-1 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            Application Workspaces &mdash; Shared Knowledge Base, Shared APIs & Specialized Agents (<span className="font-semibold text-text-primary">Chat, Voice, Avatar, Action, Hybrid</span>).
+          <p className="text-xs mt-1.5 text-text-muted max-w-xl leading-relaxed">
+           AI-powered conversations, voice interactions, and task automation in one place.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => navigate("/bots/new")}
-            className="flex items-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-lg shadow-black/10/20 transition active:scale-[0.98] cursor-pointer"
+            onClick={() =>
+              navigate(
+                "/bots/new" +
+                  (selectedTypeFilter && selectedTypeFilter !== "ALL"
+                    ? `?type=${selectedTypeFilter}`
+                    : "")
+              )
+            }
+            className="flex items-center gap-2 bg-accent-primary hover:opacity-95 text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-sm transition active:scale-[0.98] cursor-pointer"
           >
             <FiPlus className="text-sm" />
-            <span>Create Agent / Application</span>
+            <span>Create New Agent</span>
           </button>
         </div>
       </div>
 
-      {/* Shared Application Architecture Overview Banner */}
-      <div className={`mb-6 p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? "bg-interactive-base/80 border-border-primary" : "bg-white border-border-primary"}`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-center text-text-primary text-xl font-bold shrink-0">
-            <FiLayers />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-text-muted">Application Workspace Shared Resources</h4>
-            <p className="text-[11px] text-text-primary mt-0.5">
-              Agents inside the same application automatically share PDFs, vector embeddings, system rules & REST APIs without duplicate uploads.
-            </p>
-          </div>
+      {/* Category Filter Pills & Compact Creative Search Bar */}
+      <div className="mb-7 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-1.5 bg-surface-secondary/80 dark:bg-[#121420]/80 backdrop-blur-xl border border-border-primary/70 dark:border-white/[0.07] rounded-xl shadow-xs">
+        {/* Multi-bot category buttons */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-0.5">
+          {/* All Bots */}
+          <button
+            type="button"
+            onClick={() => setSelectedTypeFilter("ALL")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap select-none ${
+              selectedTypeFilter === "ALL"
+                ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-xs border border-border-primary/60 dark:border-white/10"
+                : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+            }`}
+          >
+            <FiLayers
+              className={`text-sm ${
+                selectedTypeFilter === "ALL" ? "text-accent-primary" : ""
+              }`}
+            />
+            <span>All Agents</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                selectedTypeFilter === "ALL"
+                  ? "bg-accent-primary/15 text-accent-primary"
+                  : "bg-black/5 dark:bg-white/10 text-text-muted"
+              }`}
+            >
+              {counts.ALL}
+            </span>
+          </button>
+
+          {/* Chat Bots */}
+          <button
+            type="button"
+            onClick={() => setSelectedTypeFilter("CHAT")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap select-none ${
+              selectedTypeFilter === "CHAT"
+                ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-xs border border-accent-primary/40"
+                : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+            }`}
+          >
+            <FiMessageSquare
+              className={`text-sm ${
+                selectedTypeFilter === "CHAT" ? "text-accent-primary" : ""
+              }`}
+            />
+            <span>Chat Bots</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                selectedTypeFilter === "CHAT"
+                  ? "bg-accent-primary/15 text-accent-primary"
+                  : "bg-black/5 dark:bg-white/10 text-text-muted"
+              }`}
+            >
+              {counts.CHAT}
+            </span>
+          </button>
+
+          {/* Voice Bots */}
+          <button
+            type="button"
+            onClick={() => setSelectedTypeFilter("VOICE")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap select-none ${
+              selectedTypeFilter === "VOICE"
+                ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-xs border border-cyan-500/40"
+                : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+            }`}
+          >
+            <FiMic
+              className={`text-sm ${
+                selectedTypeFilter === "VOICE" ? "text-cyan-500" : ""
+              }`}
+            />
+            <span>Voice Bots</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                selectedTypeFilter === "VOICE"
+                  ? "bg-cyan-500/15 text-cyan-500"
+                  : "bg-black/5 dark:bg-white/10 text-text-muted"
+              }`}
+            >
+              {counts.VOICE}
+            </span>
+          </button>
+
+          {/* Action Bots */}
+          <button
+            type="button"
+            onClick={() => setSelectedTypeFilter("ACTION")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap select-none ${
+              selectedTypeFilter === "ACTION"
+                ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-xs border border-amber-500/40"
+                : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+            }`}
+          >
+            <FiZap
+              className={`text-sm ${
+                selectedTypeFilter === "ACTION" ? "text-amber-500" : ""
+              }`}
+            />
+            <span>Action Bots</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                selectedTypeFilter === "ACTION"
+                  ? "bg-amber-500/15 text-amber-500"
+                  : "bg-black/5 dark:bg-white/10 text-text-muted"
+              }`}
+            >
+              {counts.ACTION}
+            </span>
+          </button>
+
+          {/* Avatar Bots (if existing or selected) */}
+          {(counts.AVATAR > 0 || selectedTypeFilter === "AVATAR") && (
+            <button
+              type="button"
+              onClick={() => setSelectedTypeFilter("AVATAR")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap select-none ${
+                selectedTypeFilter === "AVATAR"
+                  ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-xs border border-purple-500/40"
+                  : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+              }`}
+            >
+              <Sparkles
+                className={`w-3.5 h-3.5 ${
+                  selectedTypeFilter === "AVATAR" ? "text-purple-500" : ""
+                }`}
+              />
+              <span>Avatar Bots</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                  selectedTypeFilter === "AVATAR"
+                    ? "bg-purple-500/15 text-purple-500"
+                    : "bg-black/5 dark:bg-white/10 text-text-muted"
+                }`}
+              >
+                {counts.AVATAR}
+              </span>
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-3 text-xs shrink-0 font-mono">
-          <span className="px-2.5 py-1 rounded-lg bg-interactive-active border border-border-primary text-text-primary font-semibold">
-            {bots.length} Active Agents
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-interactive-active border border-border-primary text-text-primary font-semibold">
-            Shared Memory Active
-          </span>
+        {/* Compact Creative Search Input */}
+        <div className="relative flex items-center w-full md:w-72 px-1">
+          <div className="relative flex items-center w-full bg-white dark:bg-[#0c0e18] border border-border-primary/60 dark:border-white/10 rounded-xl px-3 py-1.5 focus-within:border-accent-primary/70 focus-within:ring-2 focus-within:ring-accent-primary/20 transition-all shadow-inner">
+            <FiSearch className="text-xs text-text-muted mr-2 shrink-0" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, model..."
+              className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none tracking-wide"
+            />
+            {searchQuery ? (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-text-muted hover:text-text-primary text-xs cursor-pointer ml-1.5"
+                title="Clear search"
+              >
+                <FiX className="text-xs" />
+              </button>
+            ) : (
+              <kbd className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/5 text-text-muted border border-border-primary/40 dark:border-white/10 shrink-0 select-none">
+                ⌘K
+              </kbd>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main Content View */}
       {loading ? (
-        <div className={`flex items-center justify-center h-64 text-xs font-medium ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-          Loading Multi-Agent Applications...
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-xs font-medium text-text-muted">
+          <div className="w-8 h-8 rounded-full border-2 border-accent-primary/20 border-t-accent-primary animate-spin" />
+          <span>Loading AI Agents & Workspaces...</span>
         </div>
       ) : bots.length === 0 ? (
         /* EMPTY STATE: "No Applications / Agents Found" */
-        <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 text-center my-8 ${isDark ? "border-border-primary bg-interactive-base/40" : "border-border-primary bg-white"
-          }`}>
-          <div className="w-16 h-16 rounded-2xl bg-interactive-base/10 border border-border-primary/20 flex items-center justify-center text-text-primary text-3xl mb-4">
+        <div className="flex flex-col items-center justify-center border-2 border-dashed border-border-primary/60 rounded-3xl p-12 text-center my-8 bg-surface-secondary/40">
+          <div className="w-16 h-16 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary text-3xl mb-4 shadow-sm">
             <FiCpu />
           </div>
-          <h3 className={`text-lg font-bold ${isDark ? "text-text-muted" : "text-text-primary"}`}>No AI Applications Found</h3>
-          <p className={`text-xs max-w-sm mt-1 mb-6 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-            Create your first application workspace with shared knowledge bases, REST API tools, and specialized AI agents.
+          <h3 className="text-lg font-bold text-text-primary">
+            No AI Agents Created Yet
+          </h3>
+          <p className="text-xs text-text-muted max-w-sm mt-1.5 mb-6 leading-relaxed">
+            Create your first specialized agent with custom instructions, uploaded knowledge files, or REST API tool connections.
           </p>
           <button
-            onClick={() => navigate("/bots/new")}
-            className="flex items-center gap-2 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-5 py-3 rounded-xl shadow-lg shadow-black/10/20 transition cursor-pointer"
+            onClick={() =>
+              navigate(
+                "/bots/new" +
+                  (selectedTypeFilter && selectedTypeFilter !== "ALL"
+                    ? `?type=${selectedTypeFilter}`
+                    : "")
+              )
+            }
+            className="flex items-center gap-2 bg-accent-primary text-white hover:opacity-90 text-xs font-semibold px-5 py-3 rounded-xl shadow-md transition active:scale-[0.98] cursor-pointer"
           >
             <FiPlus className="text-base" />
             <span>Create Your First Agent</span>
           </button>
         </div>
-      ) : (
-        /* AGENTS & APPLICATIONS GRID */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {bots.map((bot) => (
-            <div
-              key={bot._id}
-              onClick={() => navigate(`/bots/${bot._id}`)}
-              className={`border rounded-2xl p-5 cursor-pointer transition shadow-sm group relative flex flex-col justify-between ${isDark
-                ? "bg-interactive-active/70 border-border-primary hover:border-border-primary"
-                : "bg-white border-border-primary hover:border-border-primary hover:shadow-lg"
-                }`}
+      ) : filteredBots.length === 0 ? (
+        /* FILTER EMPTY STATE */
+        <div className="flex flex-col items-center justify-center border-2 border-dashed border-border-primary/60 rounded-3xl p-10 text-center my-6 bg-surface-secondary/30">
+          <div className="w-12 h-12 rounded-2xl bg-accent-primary/10 text-accent-primary flex items-center justify-center text-xl mb-3">
+            <FiFilter />
+          </div>
+          <h3 className="text-sm font-bold text-text-primary">
+            No{" "}
+            {selectedTypeFilter === "VOICE"
+              ? "Voice Bots"
+              : selectedTypeFilter === "ACTION"
+                ? "Action Bots"
+                : selectedTypeFilter === "CHAT"
+                  ? "Chat Bots"
+                  : selectedTypeFilter === "AVATAR"
+                    ? "Avatar Bots"
+                    : "matching agents"}{" "}
+            found
+          </h3>
+          <p className="text-xs text-text-muted mt-1 mb-4 max-w-sm leading-relaxed">
+            {searchQuery
+              ? `No agents matched "${searchQuery}". Try searching a different term or clear the filter.`
+              : `You don't have any ${selectedTypeFilter.toLowerCase()} bots yet. Create one to get started.`}
+          </p>
+          <div className="flex items-center gap-2.5">
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="px-3.5 py-1.5 rounded-xl border border-border-primary text-xs font-semibold hover:bg-surface-secondary transition cursor-pointer"
+              >
+                Clear Search
+              </button>
+            )}
+            <button
+              onClick={() =>
+                navigate(
+                  "/bots/new" +
+                    (selectedTypeFilter && selectedTypeFilter !== "ALL"
+                      ? `?type=${selectedTypeFilter}`
+                      : "")
+                )
+              }
+              className="flex items-center gap-1.5 bg-accent-primary text-white text-xs font-semibold px-4.5 py-1.5 rounded-xl shadow-sm hover:opacity-90 transition cursor-pointer"
             >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-interactive-base/10 border border-border-primary/30 flex items-center justify-center text-text-primary font-bold text-lg">
-                      <FiCpu />
+              <FiPlus className="text-xs" />
+              <span>
+                Create{" "}
+                {selectedTypeFilter === "VOICE"
+                  ? "Voice Bot"
+                  : selectedTypeFilter === "ACTION"
+                    ? "Action Bot"
+                    : "New Agent"}
+              </span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* AGENTS & APPLICATIONS GRID - ULTRA CLEAN & SENIOR DEVELOPER GRADE */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredBots.map((bot) => {
+            const meta = getBotTypeMeta(bot.botType);
+
+            return (
+              <div
+                key={bot._id}
+                onClick={() => navigate(`/bots/${bot._id}`)}
+                className="group relative flex flex-col justify-between p-5 rounded-2xl border border-border-primary/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#131522]/90 backdrop-blur-xl hover:border-accent-primary/60 dark:hover:border-accent-primary/50 hover:shadow-[0_18px_38px_-12px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
+              >
+                {/* Top Subtle Ambient Accent Glow */}
+                <div
+                  className={`absolute -top-12 -left-12 w-36 h-36 rounded-full bg-gradient-to-br ${meta.accentGlow} blur-2xl pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity`}
+                />
+
+                {/* Top Accent Hover Line */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-accent-primary/0 to-transparent group-hover:via-accent-primary transition-all duration-500" />
+
+                <div>
+                  {/* Card Header: Avatar on Left, [First: Bot Name], [Next: Model + Aside of Model: Chat Bot Badge] */}
+                  <div className="flex items-start gap-3 mb-3.5">
+                    {/* Compact Avatar Icon */}
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base shrink-0 shadow-2xs transition-transform duration-300 group-hover:scale-105 border mt-0.5 ${meta.iconBg}`}
+                    >
+                      {bot.avatarEmoji ? (
+                        <span className="text-lg">{bot.avatarEmoji}</span>
+                      ) : (
+                        meta.icon
+                      )}
                     </div>
-                    <div>
-                      <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${isDark ? "text-text-muted group-hover:text-text-primary" : "text-text-primary group-hover:text-text-primary"
-                        }`}>
-                        {bot.name ? (bot.name.charAt(0).toUpperCase() + bot.name.slice(1)) : "Bot"}
-                      </h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-interactive-active text-text-primary" : "bg-surface-secondary text-text-primary"
-                          }`}>
-                          {bot.model}
+
+                    {/* Main Header Info */}
+                    <div className="min-w-0 flex-1">
+                      {/* First: Bot Name on top with Actions */}
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-bold text-[15.5px] text-text-primary group-hover:text-accent-primary transition-colors truncate leading-tight">
+                          {bot.name
+                            ? bot.name.charAt(0).toUpperCase() + bot.name.slice(1)
+                            : "Agent"}
+                        </h3>
+
+                        {/* Top-Right Quick Actions */}
+                        <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
+                          <button
+                            onClick={(e) => handleEditBot(e, bot)}
+                            className="p-1.5 text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition cursor-pointer"
+                            title="Edit Agent Configuration"
+                          >
+                            <FiEdit2 className="text-xs" />
+                          </button>
+
+                          <button
+                            onClick={(e) => handleDeleteBot(e, bot._id)}
+                            disabled={deleteBotMutation.isPending}
+                            className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                            title="Delete Agent"
+                          >
+                            <FiTrash2 className="text-xs" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Next: Model Name, Aside of Model Name: Chat Bot Badge */}
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {/* Model Chip */}
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium bg-black/5 dark:bg-white/[0.06] border border-border-primary/60 dark:border-white/10 text-text-muted whitespace-nowrap">
+                          <FiCpu className="text-[10px] shrink-0 text-text-muted/70" />
+                          <span>{bot.model || "Default"}</span>
                         </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
-                          bot.botType === "VOICE" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
-                          bot.botType === "ACTION" ? "bg-amber-900/10 text-amber-800 border-amber-800/30" :
-                          bot.botType === "AVATAR" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
-                          bot.botType === "CHAT" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
-                          "bg-interactive-base/10 text-text-primary border-border-primary/30"
-                        }`}>
-                          {bot.botType === "VOICE" ? "🎙️ Voice Agent" :
-                           bot.botType === "ACTION" ? "⚡ Action Agent" :
-                           bot.botType === "AVATAR" ? "🎭 Avatar Agent" :
-                           bot.botType === "CHAT" ? "💬 Chat Agent" : "🌐 Hybrid Agent"}
+
+                        {/* Aside of Model: Chat Bot Badge */}
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap border ${meta.badgeClass}`}
+                        >
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span
+                              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${meta.dotColor}`}
+                            />
+                            <span
+                              className={`relative inline-flex rounded-full h-1.5 w-1.5 ${meta.dotColor}`}
+                            />
+                          </span>
+                          <span>{meta.label}</span>
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => handleEditBot(e, bot)}
-                      className={`p-1.5 transition ${isDark ? "text-text-primary hover:text-text-primary" : "text-text-primary hover:text-text-primary"
-                        }`}
-                      title="Edit Agent Capabilities & Settings"
-                    >
-                      <FiEdit2 className="text-sm" />
-                    </button>
+                  {/* Description - Unclipped & Clean Line Height */}
+                  <p className="text-xs text-text-muted leading-relaxed line-clamp-2 min-h-[38px] mb-3.5">
+                    {bot.description ||
+                      "Specialized AI agent sharing application knowledge base & API tools."}
+                  </p>
 
-                    <button
-                      onClick={(e) => handleDeleteBot(e, bot._id)}
-                      disabled={deleteBotMutation.isPending}
-                      className={`p-1.5 transition ${isDark ? "text-text-primary hover:text-text-primary" : "text-text-primary hover:text-text-primary"
-                        }`}
-                      title="Delete Agent"
-                    >
-                      <FiTrash2 className="text-sm" />
-                    </button>
+                  {/* Capabilities & Knowledge Stats Strip */}
+                  <div className="flex flex-wrap items-center gap-1.5 mb-3.5">
+                    {["CHAT", "HYBRID"].includes(bot.botType || "HYBRID") && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] text-[11px] text-text-secondary border border-border-primary/40 font-medium">
+                        <FiFileText className="text-[11px] text-accent-primary" />
+                        <span>{bot.fileCount || 0} Knowledge Files</span>
+                      </span>
+                    )}
+
+                    {["ACTION", "HYBRID"].includes(bot.botType || "HYBRID") && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] text-[11px] text-text-secondary border border-border-primary/40 font-medium">
+                        <FiCode className="text-[11px] text-amber-500" />
+                        <span>{bot.apiCount || bot.apis?.length || 0} API Tools</span>
+                      </span>
+                    )}
+
+                    {bot.botType === "VOICE" && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[11px] border border-cyan-500/25 font-medium">
+                        <FiMic className="text-[11px]" />
+                        <span>Real-time Audio</span>
+                      </span>
+                    )}
+
+                    {bot.botType === "ACTION" && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] border border-amber-500/25 font-medium">
+                        <FiZap className="text-[11px]" />
+                        <span>Autonomous Execution</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <p className={`text-xs line-clamp-2 mb-4 h-8 capitalize ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-                  {bot.description || "Specialized AI agent sharing application knowledge base & API tools."}
-                </p>
-              </div>
+                {/* Card Footer: Integration Keys & Open Studio CTA */}
+                <div className="pt-3.5 border-t border-border-primary/50 dark:border-white/[0.06] flex items-center justify-between text-xs">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedApiBot(bot);
+                      setApiModalMode("generate");
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-accent-primary px-2.5 py-1 rounded-lg hover:bg-accent-primary/10 transition cursor-pointer"
+                  >
+                    <FiKey className="text-xs text-accent-primary" />
+                    <span>+ API Keys</span>
+                  </button>
 
-              <div className={`pt-4 border-t flex items-center justify-between text-xs ${isDark ? "border-border-primary/60" : "border-border-primary"
-                }`}>
-                <div className={`flex items-center gap-4 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
-                  {(["CHAT", "HYBRID"].includes(bot.botType || "HYBRID")) && (
-                    <span className="flex items-center gap-1">
-                      <FiFileText className="text-text-primary" />
-                      <strong className={isDark ? "text-text-muted" : "text-text-primary"}>{bot.fileCount || 0}</strong> Files
-                    </span>
-                  )}
-
-                  {(["ACTION", "HYBRID"].includes(bot.botType || "HYBRID")) && (
-                    <span className="flex items-center gap-1">
-                      <FiCode className="text-text-primary" />
-                      <strong className={isDark ? "text-text-muted" : "text-text-primary"}>
-                        {bot.apiCount || bot.apis?.length || 0}
-                      </strong>{" "}
-                      {(bot.apiCount || bot.apis?.length || 0) === 1 ? "API" : "APIs"}
-                    </span>
-                  )}
-
-                  {(["AVATAR", "VOICE"].includes(bot.botType)) && (
-                    <span className="flex items-center gap-1 font-semibold text-text-primary">
-                      <span>🎭</span> {bot.botType === "AVATAR" ? "3D Talking Head" : "Voice Audio"}
-                    </span>
-                  )}
+                  <div className="inline-flex items-center gap-1 text-xs font-bold text-accent-primary group-hover:translate-x-1 transition-transform">
+                    <span>Open Studio</span>
+                    <FiChevronRight className="text-sm" />
+                  </div>
                 </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedApiBot(bot);
-                    setApiModalMode("generate");
-                  }}
-                  className="flex items-center gap-1 text-xs font-semibold text-text-primary hover:text-text-primary hover:underline transition cursor-pointer"
-                >
-                  <FiPlus className="text-xs" />
-                  <span>API Keys</span>
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -291,3 +659,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+

@@ -35,39 +35,13 @@ const AgentSidebar = ({
   const currentConvId = searchParams.get("convId");
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Top Controls: Return to Normal Chat & New Agent */}
+    <div className="flex flex-col h-full min-h-0 flex-1">
+      {/* Top Controls: New Agent */}
       <div
-        className={`pt-3 pb-3 flex flex-col gap-2.5 shrink-0 ${
+        className={`pt-2 pb-2 flex flex-col gap-2 shrink-0 ${
           isSidebarCollapsed ? "px-1 items-center" : "px-4"
         }`}
       >
-        {/* Return to Normal Chat Button */}
-        <button
-          type="button"
-          onClick={onExitAgentMode}
-          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-text-primary border border-border-primary/50 hover:border-border-primary ${
-            isSidebarCollapsed ? "justify-center px-0!" : ""
-          } group relative`}
-        >
-          <FiArrowLeft
-            className={`shrink-0 ${isSidebarCollapsed ? "text-lg" : "text-sm"} text-text-muted group-hover:text-text-primary transition-colors`}
-          />
-          {!isSidebarCollapsed && (
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs font-semibold text-text-primary">
-                Normal Chat
-              </span>
-              <span className="text-[10px] text-text-muted">Exit Agent</span>
-            </div>
-          )}
-          {isSidebarCollapsed && !isMobile && (
-            <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-              Back to Normal Chat
-            </div>
-          )}
-        </button>
-
         {/* New Agent Button (Studio Builder) */}
         <button
           onClick={() => {
@@ -104,7 +78,7 @@ const AgentSidebar = ({
         }`}
       >
         <div
-          className={`pt-1 pb-32 space-y-4 ${
+          className={`pt-1 pb-6 space-y-4 ${
             isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"
           }`}
         >
@@ -360,41 +334,8 @@ const AgentSidebar = ({
                 </div>
               )}
 
-              {/* My AI Agents */}
+              {/* Agents List (Direct list under New Agent) */}
               <div>
-                {(!isSidebarCollapsed || isMobile) && (
-                  <div className="flex items-center justify-between px-3 mb-1.5">
-                    <div
-                      className="text-xs font-semibold text-text-primary flex items-center gap-1.5 cursor-pointer hover:text-text-muted transition select-none"
-                      onClick={() => setIsAgentsOpen(!isAgentsOpen)}
-                    >
-                      <TbRobotFace className="text-sm text-text-primary" />
-                      <span>My AI Agents</span>
-                      {bots.length > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-interactive-base/15 border border-border-primary/30 font-mono text-text-primary font-bold">
-                          {bots.length}
-                        </span>
-                      )}
-                      {isAgentsOpen ? (
-                        <FiChevronDown className="text-[10px]" />
-                      ) : (
-                        <FiChevronRight className="text-[10px]" />
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate("/bots/new");
-                        if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
-                      }}
-                      className="p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 text-text-primary transition cursor-pointer"
-                      title="Create New AI Agent"
-                    >
-                      <FiPlus className="text-xs" />
-                    </button>
-                  </div>
-                )}
-
                 {isSidebarCollapsed && !isMobile ? (
                   <div className="relative group flex justify-center">
                     <button
@@ -411,13 +352,13 @@ const AgentSidebar = ({
                     >
                       <TbRobotFace className="text-xl" />
                       <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                        My AI Agents
+                        Agents
                       </div>
                     </button>
                     {activePopover === "otherBots" && (
                       <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
                         <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 flex items-center justify-between shrink-0">
-                          <span>My AI Agents</span>
+                          <span>Agents</span>
                           <button
                             onClick={() => {
                               setActivePopover(null);
@@ -443,31 +384,21 @@ const AgentSidebar = ({
                     )}
                   </div>
                 ) : (
-                  <div
-                    className={`grid transition-all duration-300 ease-in-out ${
-                      isAgentsOpen
-                        ? "grid-rows-[1fr] opacity-100"
-                        : "grid-rows-[0fr] opacity-0"
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="space-y-0.5">
-                        {otherBots.length === 0 ? (
-                          <button
-                            onClick={() => {
-                              navigate("/bots/new");
-                              if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
-                            }}
-                            className="w-full text-left text-xs px-3 py-2 rounded-lg text-text-primary/70 hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center gap-2 cursor-pointer"
-                          >
-                            <FiPlus className="text-xs shrink-0" />
-                            <span>Create your first agent</span>
-                          </button>
-                        ) : (
-                          otherBots.map((b) => renderSidebarItem(b, "bot"))
-                        )}
-                      </div>
-                    </div>
+                  <div className="space-y-0.5">
+                    {otherBots.length === 0 ? (
+                      <button
+                        onClick={() => {
+                          navigate("/bots/new");
+                          if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left text-xs px-3 py-2 rounded-lg text-text-primary/70 hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center gap-2 cursor-pointer"
+                      >
+                        <FiPlus className="text-xs shrink-0" />
+                        <span>Create your first agent</span>
+                      </button>
+                    ) : (
+                      otherBots.map((b) => renderSidebarItem(b, "bot"))
+                    )}
                   </div>
                 )}
               </div>

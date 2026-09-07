@@ -25,21 +25,33 @@ const Sidebar = ({ currentChatId, setCurrentChatId, refreshTrigger, onChatUpdate
     }
   );
 
-  // 2. DELETE Route: Delete Thread Mutation
+  // 2. DELETE Route: Delete Thread Mutation with Optimistic UI
   const deleteChatMutation = useTanStackMutation({
     mutationFn: async (chatId) => {
       return await backEndCallObjDel("/chats", chatId);
     },
-    onSuccess: (_, chatId) => {
+    onMutate: async (chatId) => {
+      await queryClient.cancelQueries({ queryKey: ["chats"] });
+      const previousChats = queryClient.getQueryData(["chats"]);
+      queryClient.setQueryData(["chats"], (old) => {
+        if (!Array.isArray(old)) return [];
+        return old.filter((c) => c._id !== chatId);
+      });
       if (currentChatId === chatId) {
         setCurrentChatId(null);
       }
+      return { previousChats };
+    },
+    onError: (err, chatId, context) => {
+      if (context?.previousChats) {
+        queryClient.setQueryData(["chats"], context.previousChats);
+      }
+      console.error("Error deleting chat:", err);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       if (onChatUpdated) onChatUpdated();
     },
-    onError: (err) => {
-      console.error("Error deleting chat:", err);
-    }
   });
 
   const handleDeleteChat = (e, chatId) => {

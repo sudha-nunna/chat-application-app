@@ -137,10 +137,10 @@ const AppLayout = ({ children }) => {
   const [editingItemId, setEditingItemId] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState("");
 
-  const activeSidebarTab = location.pathname.startsWith("/bots")
-    ? "agents"
-    : location.pathname.startsWith("/dashboard")
-      ? "dashboard"
+  const activeSidebarTab =
+    location.pathname.startsWith("/bots") ||
+    location.pathname.startsWith("/dashboard")
+      ? "agents"
       : location.pathname.startsWith("/subscription")
         ? "subscription"
         : location.pathname.startsWith("/admin/servers")
@@ -399,28 +399,56 @@ const AppLayout = ({ children }) => {
   const handleDeleteBotConv = async (e, convId, targetBotId = currentBotId) => {
     e.stopPropagation();
     if (!window.confirm("Delete this conversation?")) return;
+    // Optimistic instant removal (0ms latency)
+    queryClient.setQueryData(["botConversations", targetBotId], (oldConvs) => {
+      if (!Array.isArray(oldConvs)) return [];
+      return oldConvs.filter((c) => c._id !== convId);
+    });
+    if (searchParams.get("convId") === convId) {
+      navigate(`/bots/${targetBotId}`);
+    }
     try {
       await backEndCallObjDel(`/bots/${targetBotId}/conversations`, convId);
+    } catch (err) {
+      console.error("Failed to delete bot conversation:", err);
       queryClient.invalidateQueries({
         queryKey: ["botConversations", targetBotId],
       });
-      if (searchParams.get("convId") === convId) {
-        navigate(`/bots/${targetBotId}`);
-      }
-    } catch (err) {
-      console.error("Failed to delete bot conversation:", err);
     }
   };
 
-  // Delete Mutation
+  // Delete Mutation with Instant Optimistic UI Reflection
   const deleteChatMutation = useTanStackMutation({
     mutationFn: async (chatId) => {
       return await backEndCallObjDel("/chats", chatId);
     },
-    onSuccess: (_, chatId) => {
+    onMutate: async (chatId) => {
+      // 1. Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ["chats"] });
+      // 2. Snapshot previous chats
+      const previousChats = queryClient.getQueryData(["chats"]);
+      // 3. Optimistically remove deleted chat immediately (0ms latency)
+      queryClient.setQueryData(["chats"], (oldChats) => {
+        if (!Array.isArray(oldChats)) return [];
+        return oldChats.filter((c) => c._id !== chatId);
+      });
+      // 4. Instantly unpin if pinned
       setPinnedItemIds((prev) => prev.filter((id) => id !== chatId));
+      // 5. Instantly reset active chat view if currently viewing
+      if (activeChatId === chatId) {
+        handleNewChat();
+      }
+      return { previousChats };
+    },
+    onError: (err, chatId, context) => {
+      // Rollback on network failure
+      if (context?.previousChats) {
+        queryClient.setQueryData(["chats"], context.previousChats);
+      }
+      console.error("Failed to delete chat:", err);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
-      if (activeChatId === chatId) handleNewChat();
     },
   });
 
@@ -698,14 +726,15 @@ const AppLayout = ({ children }) => {
                   }}
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
-                  className={`w-full bg-transparent outline-none border-b border-text-muted/30 text-sm`}
+                  className={`w-full bg-transparent outline-none border-b border-text-muted/30 text-sm text-text-primary`}
                 />
                 <button
                   type="submit"
                   onClick={(e) => e.stopPropagation()}
-                  className="p-1 hover:text-white transition"
+                  title="Confirm rename"
+                  className="p-1 rounded-md text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 hover:bg-emerald-500/10 active:scale-95 transition cursor-pointer shrink-0"
                 >
-                  <FiCheck className="text-xs" />
+                  <FiCheck className="text-sm stroke-[2.5]" />
                 </button>
                 <button
                   type="button"
@@ -713,9 +742,10 @@ const AppLayout = ({ children }) => {
                     e.stopPropagation();
                     setEditingItemId(null);
                   }}
-                  className="p-1 hover:text-white transition"
+                  title="Cancel rename"
+                  className="p-1 rounded-md text-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition cursor-pointer shrink-0"
                 >
-                  <FiX className="text-xs" />
+                  <FiX className="text-sm stroke-[2.5]" />
                 </button>
               </form>
             ) : !collapseUI ? (
@@ -1082,51 +1112,148 @@ const AppLayout = ({ children }) => {
             </div>
           )}
 
-          {activeSidebarTab === "agents" ? (
-            <AgentSidebar
-              isSidebarCollapsed={isSidebarCollapsed}
-              isMobile={isMobile}
-              onExitAgentMode={handleExitAgentMode}
-              navigate={navigate}
-              currentBotId={currentBotId}
-              activeBot={activeBot}
-              bots={bots}
-              pinnedBots={pinnedBots}
-              otherBots={otherBots}
-              isPinnedOpen={isPinnedOpen}
-              setIsPinnedOpen={setIsPinnedOpen}
-              isAgentsOpen={isAgentsOpen}
-              setIsAgentsOpen={setIsAgentsOpen}
-              botConversations={botConversations}
-              searchParams={searchParams}
-              handleCreateBotChat={handleCreateBotChat}
-              handleDeleteBotConv={handleDeleteBotConv}
-              renderSidebarItem={renderSidebarItem}
-              activePopover={activePopover}
-              setActivePopover={setActivePopover}
-              setIsMobileMenuOpen={setIsMobileMenuOpen}
-            />
-          ) : (
-            <ChatSidebar
-              isSidebarCollapsed={isSidebarCollapsed}
-              isMobile={isMobile}
-              handleNewChat={handleNewChat}
-              setIsSearchModalOpen={setIsSearchModalOpen}
-              onEnterAgentMode={handleEnterAgentMode}
-              pinnedChats={pinnedChats}
-              isPinnedOpen={isPinnedOpen}
-              setIsPinnedOpen={setIsPinnedOpen}
-              groupedRecentChats={groupedRecentChats}
-              recentChats={recentChats}
-              renderSidebarItem={renderSidebarItem}
-              activePopover={activePopover}
-              setActivePopover={setActivePopover}
-            />
-          )}
+          {/* Gemini-style Segmented Switcher: [ Chat | Agent ] */}
+          <div
+            className={`pt-2.5 pb-1 shrink-0 ${
+              isSidebarCollapsed && !isMobile ? "px-1" : "px-4"
+            }`}
+          >
+            {isSidebarCollapsed && !isMobile ? (
+              <div className="flex flex-col gap-1.5 w-full items-center">
+                <button
+                  type="button"
+                  onClick={handleExitAgentMode}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer group relative ${
+                    activeSidebarTab !== "agents"
+                      ? "bg-accent-primary text-white shadow-sm font-semibold"
+                      : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
+                  }`}
+                  title="Chat Mode"
+                >
+                  <FiMessageSquare className="text-base" />
+                  <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
+                    Chat Mode
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleEnterAgentMode}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer group relative ${
+                    activeSidebarTab === "agents"
+                      ? "bg-accent-primary text-white shadow-sm font-semibold"
+                      : "text-text-muted hover:bg-surface-secondary hover:text-text-primary"
+                  }`}
+                  title="Agent Mode"
+                >
+                  <TbRobotFace className="text-base" />
+                  <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
+                    Agent Mode
+                  </div>
+                </button>
+              </div>
+            ) : (
+              <div className="w-full bg-black/5 dark:bg-[#131520] p-1 rounded-xl border border-border-primary/60 dark:border-white/[0.08] flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]">
+                {/* Chat Tab */}
+                <button
+                  type="button"
+                  onClick={handleExitAgentMode}
+                  className={`group flex-1 py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
+                    activeSidebarTab !== "agents"
+                      ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] border border-border-primary/50 dark:border-white/10 font-semibold"
+                      : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+                  }`}
+                >
+                  <FiMessageSquare
+                    className={`text-sm shrink-0 transition-colors ${
+                      activeSidebarTab !== "agents"
+                        ? "text-accent-primary"
+                        : "text-text-muted group-hover:text-text-primary"
+                    }`}
+                  />
+                  <span className="tracking-tight">Chat</span>
+                </button>
+
+                {/* Agent Tab */}
+                <button
+                  type="button"
+                  onClick={handleEnterAgentMode}
+                  className={`group flex-1 py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
+                    activeSidebarTab === "agents"
+                      ? "bg-white dark:bg-[#1f2334] text-text-primary shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] border border-accent-primary/30 font-semibold"
+                      : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 font-medium"
+                  }`}
+                >
+                  <TbRobotFace
+                    className={`text-base shrink-0 transition-colors ${
+                      activeSidebarTab === "agents"
+                        ? "text-accent-primary"
+                        : "text-text-muted group-hover:text-accent-primary"
+                    }`}
+                  />
+                  <span className="tracking-tight">Agent</span>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider leading-none shrink-0 transition-all ${
+                      activeSidebarTab === "agents"
+                        ? "bg-gradient-to-r from-accent-primary to-violet-500 text-white shadow-xs"
+                        : "bg-accent-primary/10 text-accent-primary border border-accent-primary/20"
+                    }`}
+                  >
+                    AI
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Main Sidebar Content Area (takes remaining space, enables internal scrolling) */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {activeSidebarTab === "agents" ? (
+              <AgentSidebar
+                isSidebarCollapsed={isSidebarCollapsed}
+                isMobile={isMobile}
+                onExitAgentMode={handleExitAgentMode}
+                navigate={navigate}
+                currentBotId={currentBotId}
+                activeBot={activeBot}
+                bots={bots}
+                pinnedBots={pinnedBots}
+                otherBots={otherBots}
+                isPinnedOpen={isPinnedOpen}
+                setIsPinnedOpen={setIsPinnedOpen}
+                isAgentsOpen={isAgentsOpen}
+                setIsAgentsOpen={setIsAgentsOpen}
+                botConversations={botConversations}
+                searchParams={searchParams}
+                handleCreateBotChat={handleCreateBotChat}
+                handleDeleteBotConv={handleDeleteBotConv}
+                renderSidebarItem={renderSidebarItem}
+                activePopover={activePopover}
+                setActivePopover={setActivePopover}
+                setIsMobileMenuOpen={setIsMobileMenuOpen}
+              />
+            ) : (
+              <ChatSidebar
+                isSidebarCollapsed={isSidebarCollapsed}
+                isMobile={isMobile}
+                handleNewChat={handleNewChat}
+                setIsSearchModalOpen={setIsSearchModalOpen}
+                onEnterAgentMode={handleEnterAgentMode}
+                pinnedChats={pinnedChats}
+                isPinnedOpen={isPinnedOpen}
+                setIsPinnedOpen={setIsPinnedOpen}
+                groupedRecentChats={groupedRecentChats}
+                recentChats={recentChats}
+                renderSidebarItem={renderSidebarItem}
+                activePopover={activePopover}
+                setActivePopover={setActivePopover}
+              />
+            )}
+          </div>
 
           {/* Profile Dropdown at bottom of sidebar (Desktop only) */}
           {!isMobile && (
-            <div className="mt-auto px-2 py-4 border-t border-border-primary/40 relative">
+            <div className="mt-auto px-2 py-3 border-t border-border-primary/40 relative shrink-0 z-30 bg-surface-secondary">
               {isProfileDropdownOpen && (
                 <div
                   ref={profileDropdownRef}
@@ -1563,19 +1690,27 @@ const AppLayout = ({ children }) => {
                   if (target.type === "chat") {
                     deleteChatMutation.mutate(target.id);
                   } else if (target.type === "botConversation") {
+                    // Optimistic instant removal from cache (0ms latency)
+                    queryClient.setQueryData(
+                      ["botConversations", target.botId],
+                      (oldConvs) => {
+                        if (!Array.isArray(oldConvs)) return [];
+                        return oldConvs.filter((c) => c._id !== target.id);
+                      }
+                    );
+                    if (searchParams.get("convId") === target.id) {
+                      navigate(`/bots/${target.botId}`);
+                    }
                     try {
                       await backEndCallObjDel(
                         `/bots/${target.botId}/conversations`,
                         target.id,
                       );
+                    } catch (err) {
+                      console.error("Failed to delete conversation:", err);
                       queryClient.invalidateQueries({
                         queryKey: ["botConversations", target.botId],
                       });
-                      if (searchParams.get("convId") === target.id) {
-                        navigate(`/bots/${target.botId}`);
-                      }
-                    } catch (err) {
-                      console.error("Failed to delete conversation:", err);
                     }
                   }
                 }}

@@ -295,6 +295,91 @@ export function getBestNaturalVoice() {
 }
 
 /**
+ * Resolves the optimal available SpeechSynthesis voice for a specified preset or gender.
+ * Matches Windows Edge, Chrome, Safari, macOS, and Android speech engines across male/female personas.
+ *
+ * @param {Object|string} presetOrGender - Voice preset object or gender string ("male" / "female")
+ * @returns {SpeechSynthesisVoice|null}
+ */
+export function getBestVoiceForPreset(presetOrGender) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    return null;
+  }
+
+  const voices = window.speechSynthesis.getVoices() || [];
+  if (voices.length === 0) return null;
+
+  const englishVoices = voices.filter((v) => v.lang && v.lang.startsWith("en"));
+  const pool = englishVoices.length > 0 ? englishVoices : voices;
+
+  const rawGender = typeof presetOrGender === "string"
+    ? presetOrGender
+    : (presetOrGender?.gender || "");
+  const isMale = rawGender.toLowerCase().includes("male") && !rawGender.toLowerCase().includes("female");
+
+  const name = typeof presetOrGender === "object" ? (presetOrGender.name || "").toLowerCase() : "";
+
+  // 1. Exact or partial name match (e.g. Alex, Michael, Sarah, Emily, David)
+  if (name) {
+    const direct = pool.find((v) => v.name.toLowerCase().includes(name));
+    if (direct) return direct;
+  }
+
+  if (isMale) {
+    // Windows Edge / Windows Chrome / Mac / Android Male Voice signatures
+    const maleSignatures = [
+      "microsoft guy",
+      "microsoft ryan",
+      "microsoft mark",
+      "microsoft david",
+      "google uk english male",
+      "guy online",
+      "ryan online",
+      "mark",
+      "david",
+      "alex",
+      "george",
+      "daniel",
+      "tom",
+      "oliver",
+      "eric",
+      "christopher",
+      "james",
+      "male"
+    ];
+    for (const sig of maleSignatures) {
+      const match = pool.find((v) => v.name.toLowerCase().includes(sig));
+      if (match) return match;
+    }
+  } else {
+    // Female Voice signatures
+    const femaleSignatures = [
+      "microsoft jenny",
+      "microsoft aria",
+      "microsoft zira",
+      "google us english",
+      "google uk english female",
+      "jenny online",
+      "aria online",
+      "samantha",
+      "ava",
+      "zoe",
+      "kate",
+      "serena",
+      "victoria",
+      "allison",
+      "female"
+    ];
+    for (const sig of femaleSignatures) {
+      const match = pool.find((v) => v.name.toLowerCase().includes(sig));
+      if (match) return match;
+    }
+  }
+
+  return getBestNaturalVoice();
+}
+
+/**
  * Stop any ongoing SpeechSynthesis playback and clear queued sentences immediately.
  */
 export function stopSpeech() {
@@ -347,10 +432,12 @@ export function isSpeechSpeaking() {
  * @param {Function} [options.onWordBoundary] - Callback fired with active subtitle text
  * @param {number} [options.rate=0.96] - Natural speech cadence (0.95 - 0.98 recommended for clear human diction)
  * @param {number} [options.pitch=1.0] - Speech pitch
+ * @param {SpeechSynthesisVoice|null} [options.voice=null] - Specific SpeechSynthesisVoice instance
+ * @param {string|null} [options.gender=null] - Target voice persona ("male" / "female")
  */
 export function speakText(
   rawText,
-  { onStart, onEnd, onError, onWordBoundary, rate = 0.96, pitch = 1.0 } = {}
+  { onStart, onEnd, onError, onWordBoundary, rate = 0.96, pitch = 1.0, voice = null, gender = null } = {}
 ) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     console.warn("SpeechSynthesis is not supported in this browser.");
@@ -409,13 +496,24 @@ export function speakText(
     const utterance = new SpeechSynthesisUtterance(currentUnit.text);
     utterance.lang = "en-US";
     utterance.rate = rate;
-    utterance.pitch = pitch;
 
-    // Pick top-tier natural voice
-    const bestVoice = getBestNaturalVoice();
-    if (bestVoice) {
-      utterance.voice = bestVoice;
+    // Pick specified voice or resolve best voice for target persona
+    const isMale = gender === "male" || (typeof gender === "string" && gender.toLowerCase().includes("male"));
+    const pickedVoice = voice || (gender ? getBestVoiceForPreset(gender) : getBestNaturalVoice());
+    if (pickedVoice) {
+      utterance.voice = pickedVoice;
     }
+
+    // Calibrate pitch: If male persona requested but fallback voice is non-male, pitch down into baritone register
+    let calculatedPitch = pitch;
+    if (isMale) {
+      const vName = (pickedVoice?.name || "").toLowerCase();
+      const isKnownMale = ["guy", "ryan", "mark", "david", "male", "alex", "eric", "george", "daniel", "tom", "oliver"].some((m) => vName.includes(m));
+      if (!isKnownMale) {
+        calculatedPitch = Math.min(pitch * 0.82, 0.85);
+      }
+    }
+    utterance.pitch = calculatedPitch;
 
     utterance.onstart = () => {
       if (!isSpeakingActive) return;

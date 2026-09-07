@@ -35,6 +35,9 @@ const AdminServerPage = () => {
   // Modal & Validation State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNode, setEditingNode] = useState(null);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
+  const [updateConfirmTarget, setUpdateConfirmTarget] = useState(null);
+  const [typedConfirmName, setTypedConfirmName] = useState("");
   const [fieldErrors, setFieldErrors] = useState({ name: "", url: "" });
   const [formData, setFormData] = useState({
     name: "",
@@ -75,6 +78,8 @@ const AdminServerPage = () => {
       );
       queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
       setIsModalOpen(false);
+      setUpdateConfirmTarget(null);
+      setTypedConfirmName("");
     },
     onError: (err) => {
       setErrorMsg(err?.error || err?.message || "Failed to save server node.");
@@ -88,6 +93,8 @@ const AdminServerPage = () => {
     onSuccess: () => {
       setSuccessMsg("Server node deleted successfully.");
       queryClient.invalidateQueries({ queryKey: ["admin-nodes"] });
+      setDeleteConfirmTarget(null);
+      setTypedConfirmName("");
     },
     onError: (err) => {
       setErrorMsg(
@@ -221,19 +228,24 @@ const AdminServerPage = () => {
     setFieldErrors(errors);
     if (hasError) return;
 
-    saveNodeMutation.mutate({
-      isEdit: !!editingNode,
-      nodeId: editingNode?._id,
-      data: formData,
-    });
+    if (editingNode) {
+      setTypedConfirmName("");
+      setUpdateConfirmTarget({
+        nodeId: editingNode._id,
+        name: editingNode.name,
+        data: formData,
+      });
+    } else {
+      saveNodeMutation.mutate({
+        isEdit: false,
+        data: formData,
+      });
+    }
   };
 
   const handleDeleteNode = (id, name) => {
-    if (
-      !window.confirm(`Are you sure you want to delete server node "${name}"?`)
-    )
-      return;
-    deleteNodeMutation.mutate(id);
+    setTypedConfirmName("");
+    setDeleteConfirmTarget({ id, name });
   };
 
   const handlePingNode = (id) => {
@@ -750,6 +762,120 @@ const AdminServerPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal (Type server name to confirm) */}
+      {deleteConfirmTarget && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border bg-[#0f1422] border-[#1e2638] text-slate-100 shadow-2xl p-6 relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <FiTrash2 className="text-lg" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Delete Server Node</h3>
+                <p className="text-xs text-slate-400">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 mb-3">
+              Are you sure you want to delete server node{" "}
+              <strong className="text-white">"{deleteConfirmTarget.name}"</strong>?
+            </p>
+            <div className="space-y-1.5 mb-4">
+              <label className="block text-xs font-semibold text-slate-300">
+                Please type <span className="text-white font-mono bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-bold">{deleteConfirmTarget.name}</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={typedConfirmName}
+                onChange={(e) => setTypedConfirmName(e.target.value)}
+                placeholder={`Type "${deleteConfirmTarget.name}"`}
+                className="w-full h-9 px-3 text-xs rounded-xl border bg-[#161f33] text-white border-slate-700 font-mono outline-none focus:border-rose-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirmTarget(null);
+                  setTypedConfirmName("");
+                }}
+                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={typedConfirmName.trim() !== deleteConfirmTarget.name.trim() || deleteNodeMutation.isPending}
+                onClick={() => deleteNodeMutation.mutate(deleteConfirmTarget.id)}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleteNodeMutation.isPending ? "Deleting..." : "Delete Node"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Confirmation Modal (Type server name to confirm) */}
+      {updateConfirmTarget && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border bg-[#0f1422] border-[#1e2638] text-slate-100 shadow-2xl p-6 relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/10 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
+                <FiAlertTriangle className="text-lg" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Confirm Server Update</h3>
+                <p className="text-xs text-slate-400">Configuration changes apply immediately.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 mb-3">
+              You are updating configuration for server{" "}
+              <strong className="text-white">"{updateConfirmTarget.name}"</strong>.
+            </p>
+            <div className="space-y-1.5 mb-4">
+              <label className="block text-xs font-semibold text-slate-300">
+                Please type <span className="text-white font-mono bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-bold">{updateConfirmTarget.name}</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={typedConfirmName}
+                onChange={(e) => setTypedConfirmName(e.target.value)}
+                placeholder={`Type "${updateConfirmTarget.name}"`}
+                className="w-full h-9 px-3 text-xs rounded-xl border bg-[#161f33] text-white border-slate-700 font-mono outline-none focus:border-[#7C3AED]"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setUpdateConfirmTarget(null);
+                  setTypedConfirmName("");
+                }}
+                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={typedConfirmName.trim() !== updateConfirmTarget.name.trim() || saveNodeMutation.isPending}
+                onClick={() => {
+                  saveNodeMutation.mutate({
+                    isEdit: true,
+                    nodeId: updateConfirmTarget.nodeId,
+                    data: updateConfirmTarget.data,
+                  });
+                }}
+                className="px-4 py-2 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {saveNodeMutation.isPending ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       )}

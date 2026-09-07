@@ -17,10 +17,10 @@ const ChatSidebar = ({
   setActivePopover
 }) => {
   return (
-    <div className="flex flex-col h-full">
-      {/* Top Controls: New Chat, Search, Agent Mode Switcher */}
+    <div className="flex flex-col h-full min-h-0 flex-1">
+      {/* Top Controls: New Chat, Search */}
       <div
-        className={`pt-3 pb-3 flex flex-col gap-2.5 shrink-0 ${
+        className={`pt-2 pb-2 flex flex-col gap-2 shrink-0 ${
           isSidebarCollapsed ? "px-1 items-center" : "px-4"
         }`}
       >
@@ -70,46 +70,6 @@ const ChatSidebar = ({
             </div>
           )}
         </div>
-
-        {/* Agent Mode Switcher Button */}
-        <button
-          type="button"
-          onClick={onEnterAgentMode}
-          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer bg-gradient-to-r from-accent-primary/10 via-accent-primary/5 to-transparent border border-accent-primary/30 hover:border-accent-primary hover:bg-accent-primary/15 text-text-primary ${
-            isSidebarCollapsed ? "justify-center px-0!" : ""
-          } group relative shadow-2xs`}
-        >
-          <div className="relative shrink-0 flex items-center justify-center">
-            <TbRobotFace
-              className={`text-accent-primary ${
-                isSidebarCollapsed ? "text-xl" : "text-lg"
-              }`}
-            />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-2 ring-white dark:ring-surface-primary" />
-          </div>
-
-          {!isSidebarCollapsed && (
-            <div className="flex items-center justify-between w-full min-w-0">
-              <div className="text-left min-w-0">
-                <span className="text-xs font-bold text-text-primary block leading-tight">
-                  Agent Mode
-                </span>
-                <span className="text-[10px] text-text-muted block truncate">
-                  Custom Bots & Knowledge
-                </span>
-              </div>
-              <span className="text-[10px] font-semibold text-accent-primary bg-accent-primary/15 border border-accent-primary/20 px-1.5 py-0.5 rounded-full shrink-0 ml-1">
-                Enter →
-              </span>
-            </div>
-          )}
-
-          {isSidebarCollapsed && !isMobile && (
-            <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-              Enter Agent Mode
-            </div>
-          )}
-        </button>
       </div>
 
       {/* Scrollable Chat History List (No My AI Agents & No History 41 v header) */}
@@ -121,7 +81,7 @@ const ChatSidebar = ({
         }`}
       >
         <div
-          className={`pt-1 pb-32 space-y-4 ${
+          className={`pt-1 pb-6 space-y-4 ${
             isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"
           }`}
         >
