@@ -1,8 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layouts/AppLayout";
-// import DashboardPage from "./pages/DashboardPage";
-// import BotDetailPage from "./pages/BotDetailPage";
-// import BotPlaceholderPage from "./pages/BotPlaceholderPage";
+import DashboardPage from "./pages/DashboardPage";
+import AgentStudioPage from "./pages/AgentStudioPage";
 import ChatPage from "./pages/ChatPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import UsagePage from "./pages/UsagePage";
@@ -23,9 +22,10 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
-            {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
-            {/* <Route path="/bots" element={<BotPlaceholderPage />} /> */}
-            {/* <Route path="/bots/:botId" element={<BotDetailPage />} /> */}
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/bots" element={<DashboardPage />} />
+            <Route path="/bots/new" element={<AgentStudioPage />} />
+            <Route path="/bots/:botId" element={<AgentStudioPage />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/share/:chatId" element={<SharedChatPage />} />
             <Route path="/usage" element={<UsagePage />} />

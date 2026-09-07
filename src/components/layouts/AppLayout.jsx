@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Link,
   useLocation,
   useNavigate,
   useSearchParams,
@@ -8,38 +7,24 @@ import {
 } from "react-router-dom";
 import {
   FiGrid,
+  FiServer,
   FiMessageSquare,
   FiPlus,
-  FiBook,
-  FiFileText,
-  FiClock,
-  FiLayers,
-  FiLink,
   FiSun,
   FiMoon,
   FiLogOut,
-  FiUser,
   FiChevronRight,
   FiChevronDown,
   FiChevronUp,
-  FiChevronLeft,
   FiSearch,
-  FiMenu,
   FiX,
   FiCreditCard,
-  FiServer,
   FiMoreHorizontal,
-  FiShare,
   FiEdit2,
-  FiArchive,
   FiTrash2,
   FiCheck,
   FiSidebar,
-  FiEdit,
-  FiSettings,
-  FiLifeBuoy,
   FiZap,
-  FiMessageCircle,
 } from "react-icons/fi";
 import { TbPin, TbPinnedOff, TbRobotFace } from "react-icons/tb";
 import {
@@ -47,14 +32,12 @@ import {
   NobackEndCall,
   backEndCallObjDel,
   NobackEndCallObj,
-  fetchUsageSummary,
+  getJwt,
 } from "../../services/authService";
 import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
-import PlanBadge from "../subscription/PlanBadge";
 import SubscriptionModal from "../subscription/SubscriptionModal";
 import CreditsModal from "../subscription/CreditsModal";
-import FloatingExternalBotWidget from "../global/FloatingExternalBotWidget";
 import UserAvatar from "../common/UserAvatar";
 import { useTheme } from "../../context/ThemeContext";
 import { useSubscription } from "../../context/SubscriptionContext";
@@ -63,9 +46,12 @@ import {
   useTanStackQueryClient,
   useTanStackMutation,
 } from "../../hooks/useTanStackData";
+import ChatSidebar from "../sidebar/ChatSidebar";
+import AgentSidebar from "../sidebar/AgentSidebar";
+import ModeTransitionOverlay from "../sidebar/ModeTransitionOverlay";
 
 const AppLayout = ({ children }) => {
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const {
     isUpgradeModalOpen,
     setIsUpgradeModalOpen,
@@ -73,11 +59,11 @@ const AppLayout = ({ children }) => {
     setIsCreditsModalOpen,
   } = useSubscription();
   const [authToken, setAuthToken] = useState(() =>
-    localStorage.getItem("token"),
+    getJwt() || localStorage.getItem("token"),
   );
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(
-    () => !!localStorage.getItem("token"),
+    () => !!(getJwt() || localStorage.getItem("token")),
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -120,7 +106,6 @@ const AppLayout = ({ children }) => {
     setSidebarWidth(280);
     localStorage.setItem("codegene_sidebar_width", "280");
   };
-  const [tempClosed, setTempClosed] = useState(false);
   const [activePopover, setActivePopover] = useState(null);
 
   useEffect(() => {
@@ -145,30 +130,26 @@ const AppLayout = ({ children }) => {
 
   // Collapsible Sections State
   const [isPinnedOpen, setIsPinnedOpen] = useState(true);
-  const [isRecentsOpen, setIsRecentsOpen] = useState(true);
   const [isAgentsOpen, setIsAgentsOpen] = useState(true);
-  const [activeSidebarTab, setActiveSidebarTab] = useState("chat");
   const [expandedBotId, setExpandedBotId] = useState(null);
 
   // Inline Editing State
   const [editingItemId, setEditingItemId] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState("");
 
+  const activeSidebarTab = location.pathname.startsWith("/bots")
+    ? "agents"
+    : location.pathname.startsWith("/dashboard")
+      ? "dashboard"
+      : location.pathname.startsWith("/subscription")
+        ? "subscription"
+        : location.pathname.startsWith("/admin/servers")
+          ? "servers"
+          : "chat";
+
   useEffect(() => {
     setIsCreditsModalOpen(false);
     setIsUpgradeModalOpen(false);
-
-    if (location.pathname.startsWith("/chat") || location.pathname === "/" || location.pathname.startsWith("/usage")) {
-      setActiveSidebarTab("chat");
-    } else if (location.pathname.startsWith("/bots")) {
-      setActiveSidebarTab("agents");
-    } else if (location.pathname.startsWith("/dashboard")) {
-      setActiveSidebarTab("dashboard");
-    } else if (location.pathname.startsWith("/subscription")) {
-      setActiveSidebarTab("subscription");
-    } else if (location.pathname.startsWith("/admin/servers")) {
-      setActiveSidebarTab("servers");
-    }
 
     if (
       location.pathname !== "/" &&
@@ -180,7 +161,32 @@ const AppLayout = ({ children }) => {
         location.pathname + location.search,
       );
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, setIsCreditsModalOpen, setIsUpgradeModalOpen]);
+
+  const [isModeTransitioning, setIsModeTransitioning] = useState(false);
+  const [transitionTargetMode, setTransitionTargetMode] = useState("agents");
+
+  const handleEnterAgentMode = () => {
+    setTransitionTargetMode("agents");
+    setIsModeTransitioning(true);
+    setTimeout(() => {
+      navigate("/bots");
+      setTimeout(() => {
+        setIsModeTransitioning(false);
+      }, 350);
+    }, 120);
+  };
+
+  const handleExitAgentMode = () => {
+    setTransitionTargetMode("chat");
+    setIsModeTransitioning(true);
+    setTimeout(() => {
+      navigate("/chat");
+      setTimeout(() => {
+        setIsModeTransitioning(false);
+      }, 350);
+    }, 120);
+  };
 
   useEffect(() => {
     const handleToggleMobileSidebar = () => {
@@ -262,7 +268,7 @@ const AppLayout = ({ children }) => {
       if (savedUser) {
         try {
           setUser(JSON.parse(savedUser));
-        } catch (e) {
+        } catch {
           setUser(null);
         }
       } else {
@@ -300,7 +306,7 @@ const AppLayout = ({ children }) => {
     ["bots"],
     async () => {
       const res = await backEndCallGet("/bots");
-      return Array.isArray(res) ? res : res?.data || [];
+      return Array.isArray(res) ? res : res?.data || res?.bots || [];
     },
     { enabled: !!authToken },
   );
@@ -330,25 +336,81 @@ const AppLayout = ({ children }) => {
   );
 
   useEffect(() => {
-    if (usageData?.user?.credits !== undefined && user) {
-      if (user.credits !== usageData.user.credits) {
-        const updatedUser = { ...user, credits: usageData.user.credits };
-        setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-      }
+    if (usageData?.user?.credits !== undefined && user && user.credits !== usageData.user.credits) {
+      const updatedCredits = usageData.user.credits;
+      queueMicrotask(() => {
+        setUser((prev) => {
+          if (!prev || prev.credits === updatedCredits) return prev;
+          const updatedUser = { ...prev, credits: updatedCredits };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          return updatedUser;
+        });
+      });
     }
-  }, [usageData, user]);
+  }, [usageData?.user?.credits, user]);
+
+  const currentBotId = (() => {
+    if (location.pathname.startsWith("/bots/")) {
+      const parts = location.pathname.split("/");
+      const id = parts[2];
+      return id && id !== "new" ? id : null;
+    }
+    return null;
+  })();
+
+  const activeBotId = currentBotId || expandedBotId;
 
   // Fetch Bot Conversations
   const { data: botConversations = [] } = useTanStackData(
-    ["botConversations", expandedBotId],
+    ["botConversations", activeBotId],
     async () => {
-      if (!expandedBotId || !authToken) return [];
-      const res = await NobackEndCall(`/bots/${expandedBotId}/conversations`);
+      if (!activeBotId || !authToken) return [];
+      const res = await NobackEndCall(`/bots/${activeBotId}/conversations`);
       return Array.isArray(res) ? res : res?.data || [];
     },
-    { enabled: !!expandedBotId && !!authToken },
+    { enabled: !!activeBotId && !!authToken },
   );
+
+  const activeBot = bots.find((b) => b._id === currentBotId);
+
+  const handleCreateBotChat = async (targetBotId = currentBotId) => {
+    if (!targetBotId) return;
+    try {
+      const res = await NobackEndCallObj(
+        `/bots/${targetBotId}/conversations`,
+        { title: "New Conversation" },
+        "post",
+      );
+      const newConvId = res?._id || res?.data?._id;
+      queryClient.invalidateQueries({
+        queryKey: ["botConversations", targetBotId],
+      });
+      if (newConvId) {
+        navigate(`/bots/${targetBotId}?convId=${newConvId}`);
+      } else {
+        navigate(`/bots/${targetBotId}`);
+      }
+      setIsMobileMenuOpen(false);
+    } catch (err) {
+      console.error("Failed to create new conversation:", err);
+    }
+  };
+
+  const handleDeleteBotConv = async (e, convId, targetBotId = currentBotId) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this conversation?")) return;
+    try {
+      await backEndCallObjDel(`/bots/${targetBotId}/conversations`, convId);
+      queryClient.invalidateQueries({
+        queryKey: ["botConversations", targetBotId],
+      });
+      if (searchParams.get("convId") === convId) {
+        navigate(`/bots/${targetBotId}`);
+      }
+    } catch (err) {
+      console.error("Failed to delete bot conversation:", err);
+    }
+  };
 
   // Delete Mutation
   const deleteChatMutation = useTanStackMutation({
@@ -456,18 +518,17 @@ const AppLayout = ({ children }) => {
     navigate(`/bots/${newBot._id}`);
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     setIsUpgradeModalOpen(false);
     setIsCreditsModalOpen(false);
-    setActiveSidebarTab("chat");
     setIsMobileMenuOpen(false);
     setIsSearchModalOpen(false);
     setActivePopover(null);
-    setTempClosed(true);
 
+    const navTimestamp = Date.now();
     navigate("/chat", {
       replace: true,
-      state: { newChat: true, resetChat: true, timestamp: Date.now() },
+      state: { newChat: true, resetChat: true, timestamp: navTimestamp },
     });
     window.dispatchEvent(new CustomEvent("new-chat-action"));
     setTimeout(() => {
@@ -476,7 +537,7 @@ const AppLayout = ({ children }) => {
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent("new-chat-action"));
     }, 80);
-  };
+  }, [navigate, setIsCreditsModalOpen, setIsUpgradeModalOpen]);
 
   const handleSelectItem = (id, type) => {
     setIsUpgradeModalOpen(false);
@@ -796,216 +857,7 @@ const AppLayout = ({ children }) => {
     );
   };
 
-  const renderPrimarySidebar = () => (
-    <>
-      <div className="p-3">
-        <div className="flex items-center gap-1.5 mb-6">
-          <img
-            src="/mini-logo2.png"
-            alt="Nexora Logo"
-            className={`w-9 h-9 object-contain shrink-0 ${isDark ? "invert" : ""}`}
-          />
-          <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-            <span className="text-[13px] font-bold text-text-muted leading-tight">
-              NEXORA
-            </span>
-            <span className="text-[10px] font-medium text-text-primary leading-tight">
-              Multi-Tenant AI Agents
-            </span>
-          </div>
-        </div>
 
-        <div className="space-y-1">
-          <button
-            onClick={() => {
-              setIsUpgradeModalOpen(false);
-              setIsCreditsModalOpen(false);
-              setIsSearchModalOpen(true);
-              setTempClosed(true);
-            }}
-            className="w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer text-text-primary hover:bg-black/5 dark:hover:bg-white/10"
-          >
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <FiSearch className="text-lg" />
-            </div>
-            <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              Search
-            </span>
-          </button>
-          <button
-            onClick={handleNewChat}
-            className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "chat" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}
-          >
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <FiMessageSquare className="text-lg" />
-            </div>
-            <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              Chat
-            </span>
-          </button>
-          {/* <button
-            onClick={() => {
-              setIsUpgradeModalOpen(false);
-              setIsCreditsModalOpen(false);
-              setActiveSidebarTab("agents");
-              navigate("/bots");
-              setTempClosed(true);
-            }}
-            className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "agents" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}
-          >
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <TbRobotFace className="text-lg" />
-            </div>
-            <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              AI Agents
-            </span>
-          </button> */}
-        </div>
-
-        <div className="my-4 border-t border-border-primary/30 mx-2"></div>
-
-        <div className="space-y-1">
-          <button
-            onClick={() => {
-              setIsUpgradeModalOpen(false);
-              setIsCreditsModalOpen(false);
-              setActiveSidebarTab("dashboard");
-              navigate("/dashboard");
-              setTempClosed(true);
-            }}
-            className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "dashboard" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}
-          >
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <FiGrid className="text-lg" />
-            </div>
-            <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              Dashboard
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              setIsUpgradeModalOpen(false);
-              setIsCreditsModalOpen(false);
-              setActiveSidebarTab("subscription");
-              navigate("/subscription");
-              setTempClosed(true);
-            }}
-            className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "subscription" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}
-          >
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <FiCreditCard className="text-lg" />
-            </div>
-            <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              Subscription
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              setIsUpgradeModalOpen(false);
-              setIsCreditsModalOpen(false);
-              setActiveSidebarTab("servers");
-              navigate("/admin/servers");
-              setTempClosed(true);
-            }}
-            className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "servers" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"}`}
-          >
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              <FiServer className="text-lg" />
-            </div>
-            <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              AI Servers
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-auto px-2 py-4 border-t border-border-primary/40 relative">
-        {isProfileDropdownOpen && (
-          <div
-            ref={profileDropdownRef}
-            className={`profile-dropdown absolute bottom-full left-4 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[220px]`}
-          >
-            <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
-              <div className="flex items-center gap-3">
-                <UserAvatar
-                  user={user}
-                  className="w-8 h-8 text-[12px]"
-                  borderClassName="border border-border-primary"
-                />
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-bold truncate tracking-wide">
-                    {user?.name || "User Name"}
-                  </span>
-                </div>
-              </div>
-              <FiChevronRight className="text-text-primary/70 text-sm" />
-            </div>
-
-            <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleTheme();
-              }}
-              className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-            >
-              {isDark ? (
-                <FiSun className="text-sm" />
-              ) : (
-                <FiMoon className="text-sm" />
-              )}{" "}
-              Appearance
-            </button>
-
-            <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsProfileDropdownOpen(false);
-                handleLogout();
-              }}
-              className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-            >
-              <FiLogOut className="text-sm" /> Log out
-            </button>
-          </div>
-        )}
-
-        <div
-          onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-          className={`profile-btn p-1.5 rounded-xl transition hover:bg-surface-secondary dark:hover:bg-surface-dropdown bg-transparent flex items-center justify-center group-hover:justify-start cursor-pointer w-full`}
-        >
-          <div className="flex items-center shrink-0">
-            <UserAvatar
-              user={user}
-              className="w-8 h-8 text-[13px]"
-              borderClassName="border border-border-primary/50"
-            />
-          </div>
-
-          <div className="flex-col whitespace-nowrap overflow-hidden ml-3 hidden group-hover:flex transition-opacity duration-300">
-            <p className="text-[13px] font-bold truncate tracking-wide text-text-primary">
-              {user?.name || "User Name"}
-            </p>
-            <p className="text-[12px] text-text-primary/70 truncate">
-              {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
-            </p>
-          </div>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate("/subscription");
-            }}
-            className="ml-auto px-3 py-1 rounded-full border border-border-primary/50 text-[11px] font-bold hover:bg-white/5 transition shadow-sm hidden group-hover:block shrink-0 cursor-pointer"
-          >
-            Upgrade
-          </button>
-        </div>
-      </div>
-    </>
-  );
 
   const renderMobileBottomNav = () => (
     <div className="items-center hidden justify-around w-full h-16 bg-surface-primary border-t border-border-primary/50 shrink-0 px-2 pb-safe">
@@ -1015,24 +867,22 @@ const AppLayout = ({ children }) => {
           icon: FiMessageSquare,
           onClick: handleNewChat,
         },
-        /* {
+        {
           id: "agents",
           icon: TbRobotFace,
           onClick: () => {
             setIsUpgradeModalOpen(false);
             setIsCreditsModalOpen(false);
-            setActiveSidebarTab("agents");
             navigate("/bots");
             setIsMobileMenuOpen(false);
           },
-        }, */
+        },
         {
           id: "dashboard",
           icon: FiGrid,
           onClick: () => {
             setIsUpgradeModalOpen(false);
             setIsCreditsModalOpen(false);
-            setActiveSidebarTab("dashboard");
             navigate("/dashboard");
             setIsMobileMenuOpen(false);
           },
@@ -1043,7 +893,6 @@ const AppLayout = ({ children }) => {
           onClick: () => {
             setIsUpgradeModalOpen(false);
             setIsCreditsModalOpen(false);
-            setActiveSidebarTab("subscription");
             navigate("/subscription");
             setIsMobileMenuOpen(false);
           },
@@ -1054,7 +903,6 @@ const AppLayout = ({ children }) => {
           onClick: () => {
             setIsUpgradeModalOpen(false);
             setIsCreditsModalOpen(false);
-            setActiveSidebarTab("servers");
             navigate("/admin/servers");
             setIsMobileMenuOpen(false);
           },
@@ -1209,7 +1057,6 @@ const AppLayout = ({ children }) => {
                 <button
                   onClick={() => {
                     setIsSidebarCollapsed(!isSidebarCollapsed);
-                    setTempClosed(true);
                   }}
                   className={`rounded-lg hover:bg-surface-secondary text-text-primary transition cursor-pointer group relative flex items-center justify-center ${isSidebarCollapsed ? "w-8 h-8 p-1" : "p-1.5"}`}
                 >
@@ -1235,355 +1082,47 @@ const AppLayout = ({ children }) => {
             </div>
           )}
 
-          <div
-            className={`pt-3 pb-3 flex flex-col gap-3 shrink-0 ${isSidebarCollapsed ? "px-1 items-center" : "px-4"}`}
-          >
-            <button
-              onClick={handleNewChat}
-              className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-medium shadow-sm ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
-            >
-              <div className="w-6 h-6 flex items-center justify-center shrink-0">
-                <FiPlus className="text-lg" />
-              </div>
-              {!isSidebarCollapsed && (
-                <span className="opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                  New Chat
-                </span>
-              )}
-              {isSidebarCollapsed && !isMobile && (
-                <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                  New Chat
-                </div>
-              )}
-            </button>
-            <div
-              onClick={() => {
-                setIsSearchModalOpen(true);
-                setActivePopover(null);
-              }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all cursor-pointer text-text-muted bg-white dark:bg-[#171923] border border-border-primary/50 hover:border-border-primary ${isSidebarCollapsed ? "justify-center px-0!" : ""} group relative`}
-            >
-              <FiSearch
-                className={`shrink-0 ${isSidebarCollapsed ? "text-lg" : "text-sm"}`}
-              />
-              {!isSidebarCollapsed && (
-                <span className="text-[13px] opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                  Search Conversations
-                </span>
-              )}
-              {isSidebarCollapsed && !isMobile && (
-                <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                  Search
-                </div>
-              )}
-            </div>
-            {/* <button
-                onClick={() => {
-                  setActiveSidebarTab("subscription");
-                  navigate("/subscription");
-                  setActivePopover(null);
-                }}
-                className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer ${activeSidebarTab === "subscription" ? "bg-interactive-active text-text-primary dark:text-white font-medium" : "text-text-primary hover:bg-black/5 dark:hover:bg-white/10"} ${isSidebarCollapsed ? "justify-center" : ""} group relative`}
-              >
-                <div className="w-6 h-6 flex items-center justify-center shrink-0">
-                  <FiCreditCard className="text-lg" />
-                </div>
-                {!isSidebarCollapsed && (
-                  <span className="text-sm font-medium opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
-                    Subscription
-                  </span>
-                )}
-                {isSidebarCollapsed && !isMobile && (
-                  <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                    Subscription
-                  </div>
-                )}
-              </button> */}
-          </div>
-
-          <div
-            className={`flex-1 relative ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"}`}
-          >
-            {(activeSidebarTab === "chat" || activeSidebarTab === "agents" || activeSidebarTab === "subscription") && (
-              <>
-                <div
-                  className={`pt-2 pb-32 space-y-6 ${isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"}`}
-                >
-                  {pinnedChats.length > 0 && (
-                    <div>
-                      {(!isSidebarCollapsed || isMobile) && (
-                        <div
-                          className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1 cursor-pointer hover:text-text-muted transition select-none"
-                          onClick={() => setIsPinnedOpen(!isPinnedOpen)}
-                        >
-                          <span>Pinned</span>
-                          {isPinnedOpen ? (
-                            <FiChevronDown className="text-[10px]" />
-                          ) : (
-                            <FiChevronRight className="text-[10px]" />
-                          )}
-                        </div>
-                      )}
-
-                      {isSidebarCollapsed && !isMobile ? (
-                        <div className="relative group flex justify-center">
-                          <button
-                            onClick={() =>
-                              setActivePopover(
-                                activePopover === "pinnedChats"
-                                  ? null
-                                  : "pinnedChats",
-                              )
-                            }
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "pinnedChats" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"} group relative`}
-                          >
-                            <TbPin className="text-xl" />
-                            {isSidebarCollapsed && !isMobile && (
-                              <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                                Pinned Chats
-                              </div>
-                            )}
-                          </button>
-                          {activePopover === "pinnedChats" && (
-                            <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                              <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 shrink-0">
-                                Pinned
-                              </div>
-                              <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                                {pinnedChats.map((c) =>
-                                  renderSidebarItem(c, "chat", true),
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div
-                          className={`grid transition-all duration-300 ease-in-out ${isPinnedOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-                        >
-                          <div className="overflow-hidden">
-                            <div className="space-y-0.5">
-                              {pinnedChats.map((c) =>
-                                renderSidebarItem(c, "chat"),
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* activeSidebarTab === "agents" && pinnedBots.length > 0 && (
-                    <div>
-                      {(!isSidebarCollapsed || isMobile) && (
-                        <div
-                          className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1 cursor-pointer hover:text-text-muted transition select-none"
-                          onClick={() => setIsPinnedOpen(!isPinnedOpen)}
-                        >
-                          <span>Pinned</span>
-                          {isPinnedOpen ? (
-                            <FiChevronDown className="text-[10px]" />
-                          ) : (
-                            <FiChevronRight className="text-[10px]" />
-                          )}
-                        </div>
-                      )}
-
-                      {isSidebarCollapsed && !isMobile ? (
-                        <div className="relative group flex justify-center">
-                          <button
-                            onClick={() =>
-                              setActivePopover(
-                                activePopover === "pinnedBots"
-                                  ? null
-                                  : "pinnedBots",
-                              )
-                            }
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "pinnedBots" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"} group relative`}
-                          >
-                            <TbPin className="text-xl" />
-                            {isSidebarCollapsed && !isMobile && (
-                              <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                                Pinned Agents
-                              </div>
-                            )}
-                          </button>
-                          {activePopover === "pinnedBots" && (
-                            <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                              <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 shrink-0">
-                                Pinned
-                              </div>
-                              <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                                {pinnedBots.map((b) =>
-                                  renderSidebarItem(b, "bot", true),
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div
-                          className={`grid transition-all duration-300 ease-in-out ${isPinnedOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-                        >
-                          <div className="overflow-hidden">
-                            <div className="space-y-0.5">
-                              {pinnedBots.map((b) =>
-                                renderSidebarItem(b, "bot"),
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )} */}
-
-                  {true && (
-                    <div className="mt-2">
-                      {isSidebarCollapsed && !isMobile ? (
-                        <div className="relative group flex justify-center">
-                          <button
-                            onClick={() =>
-                              setActivePopover(
-                                activePopover === "recentChats"
-                                  ? null
-                                  : "recentChats",
-                              )
-                            }
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "recentChats" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"} group relative`}
-                          >
-                            <FiMessageCircle className="text-xl" />
-                            {isSidebarCollapsed && !isMobile && (
-                              <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                                Recent Chats
-                              </div>
-                            )}
-                          </button>
-                          {activePopover === "recentChats" && (
-                            <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                              <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 shrink-0">
-                                Recents
-                              </div>
-                              <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                                {recentChats.length === 0 ? (
-                                  <div className="text-xs text-text-primary px-3 py-2">
-                                    No recent chats
-                                  </div>
-                                ) : (
-                                  recentChats.map((c) =>
-                                    renderSidebarItem(c, "chat", true),
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-3 mt-2">
-                          {recentChats.length === 0 ? (
-                            <div className="text-xs text-text-primary px-3 py-2">
-                              No recent chats
-                            </div>
-                          ) : (
-                            groupedRecentChats.map((group, idx) => (
-                              <div
-                                key={group.key}
-                                className="flex flex-col gap-0.5"
-                              >
-                                <h4
-                                  className={`text-[11.5px] font-sans font-medium text-text-muted/80 px-3 mb-1 ${idx > 0 ? "mt-2.5" : ""}`}
-                                >
-                                  {group.label}
-                                </h4>
-                                {group.items.map((c) =>
-                                  renderSidebarItem(c, "chat"),
-                                )}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* activeSidebarTab === "agents" && (
-                    <div>
-                      {(!isSidebarCollapsed || isMobile) && (
-                        <div
-                          className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1 cursor-pointer hover:text-text-muted transition select-none"
-                          onClick={() => setIsAgentsOpen(!isAgentsOpen)}
-                        >
-                          <span>My AI Agents</span>
-                          {isAgentsOpen ? (
-                            <FiChevronDown className="text-[10px]" />
-                          ) : (
-                            <FiChevronRight className="text-[10px]" />
-                          )}
-                        </div>
-                      )}
-
-                      {isSidebarCollapsed && !isMobile ? (
-                        <div className="relative group flex justify-center">
-                          <button
-                            onClick={() =>
-                              setActivePopover(
-                                activePopover === "otherBots"
-                                  ? null
-                                  : "otherBots",
-                              )
-                            }
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${activePopover === "otherBots" ? "bg-interactive-active text-text-primary dark:text-white" : "hover:bg-surface-secondary text-text-primary"} group relative`}
-                          >
-                            <TbRobotFace className="text-xl" />
-                            {isSidebarCollapsed && !isMobile && (
-                              <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                                My AI Agents
-                              </div>
-                            )}
-                          </button>
-                          {activePopover === "otherBots" && (
-                            <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                              <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 shrink-0">
-                                My AI Agents
-                              </div>
-                              <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                                {otherBots.length === 0 ? (
-                                  <div className="text-xs text-text-primary px-3 py-2">
-                                    No bots created yet
-                                  </div>
-                                ) : (
-                                  otherBots.map((b) =>
-                                    renderSidebarItem(b, "bot", true),
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div
-                          className={`grid transition-all duration-300 ease-in-out ${isAgentsOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-                        >
-                          <div className="overflow-hidden">
-                            <div className="space-y-0.5">
-                              {otherBots.length === 0 ? (
-                                <div className="text-xs text-text-primary px-3 py-2">
-                                  No bots created yet
-                                </div>
-                              ) : (
-                                otherBots.map((b) =>
-                                  renderSidebarItem(b, "bot"),
-                                )
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )} */}
-                </div>
-              </>
-            )}
-          </div>
+          {activeSidebarTab === "agents" ? (
+            <AgentSidebar
+              isSidebarCollapsed={isSidebarCollapsed}
+              isMobile={isMobile}
+              onExitAgentMode={handleExitAgentMode}
+              navigate={navigate}
+              currentBotId={currentBotId}
+              activeBot={activeBot}
+              bots={bots}
+              pinnedBots={pinnedBots}
+              otherBots={otherBots}
+              isPinnedOpen={isPinnedOpen}
+              setIsPinnedOpen={setIsPinnedOpen}
+              isAgentsOpen={isAgentsOpen}
+              setIsAgentsOpen={setIsAgentsOpen}
+              botConversations={botConversations}
+              searchParams={searchParams}
+              handleCreateBotChat={handleCreateBotChat}
+              handleDeleteBotConv={handleDeleteBotConv}
+              renderSidebarItem={renderSidebarItem}
+              activePopover={activePopover}
+              setActivePopover={setActivePopover}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+          ) : (
+            <ChatSidebar
+              isSidebarCollapsed={isSidebarCollapsed}
+              isMobile={isMobile}
+              handleNewChat={handleNewChat}
+              setIsSearchModalOpen={setIsSearchModalOpen}
+              onEnterAgentMode={handleEnterAgentMode}
+              pinnedChats={pinnedChats}
+              isPinnedOpen={isPinnedOpen}
+              setIsPinnedOpen={setIsPinnedOpen}
+              groupedRecentChats={groupedRecentChats}
+              recentChats={recentChats}
+              renderSidebarItem={renderSidebarItem}
+              activePopover={activePopover}
+              setActivePopover={setActivePopover}
+            />
+          )}
 
           {/* Profile Dropdown at bottom of sidebar (Desktop only) */}
           {!isMobile && (
@@ -1663,9 +1202,8 @@ const AppLayout = ({ children }) => {
 
               <div
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className={`profile-btn p-1.5 rounded-xl transition hover:bg-black/5 dark:hover:bg-white/5 bg-transparent flex items-center cursor-pointer w-full group ${
-                  isSidebarCollapsed ? "px-0 justify-center" : "justify-between"
-                }`}
+                className={`profile-btn p-1.5 rounded-xl transition hover:bg-black/5 dark:hover:bg-white/5 bg-transparent flex items-center cursor-pointer w-full group ${isSidebarCollapsed ? "px-0 justify-center" : "justify-between"
+                  }`}
                 title="Profile & Settings"
               >
                 <div className="flex items-center min-w-0">
@@ -1692,9 +1230,8 @@ const AppLayout = ({ children }) => {
                 {!isSidebarCollapsed && (
                   <div className="shrink-0 ml-auto pl-2 text-text-muted">
                     <FiChevronUp
-                      className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${
-                        isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""
-                      }`}
+                      className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""
+                        }`}
                     />
                   </div>
                 )}
@@ -1754,6 +1291,11 @@ const AppLayout = ({ children }) => {
     <div
       className={`flex flex-col md:flex-row h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary`}
     >
+      <ModeTransitionOverlay
+        isVisible={isModeTransitioning}
+        targetMode={transitionTargetMode}
+      />
+
       {/* Main Sidebar (Desktop) */}
       <div className="hidden md:flex h-full z-30 relative">
         {renderSecondarySidebar()}
@@ -1847,7 +1389,7 @@ const AppLayout = ({ children }) => {
                       <div className="w-6 h-6 rounded-md bg-interactive-base flex items-center justify-center text-text-primary dark:text-white shrink-0">
                         <TbRobotFace className="text-sm" />
                       </div>
-                      <span className="text-sm font-medium">{bot.name}</span>
+                      <span className="text-sm font-medium">{bot.name ? (bot.name.charAt(0).toUpperCase() + bot.name.slice(1)) : "Bot"}</span>
                     </div>
                   ))}
                 </div>

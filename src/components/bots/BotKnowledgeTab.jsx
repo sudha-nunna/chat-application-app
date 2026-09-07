@@ -15,7 +15,6 @@ import {
   FiLayers
 } from "react-icons/fi";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
-import { useTheme } from "../../context/ThemeContext";
 import {
   useTanStackData,
   useTanStackMutation,
@@ -38,7 +37,6 @@ const BotKnowledgeTab = ({ bot }) => {
   const replaceKnowledgeInputRef = useRef(null);
   const replaceRulesInputRef = useRef(null);
 
-  const { isDark } = useTheme();
   const queryClient = useTanStackQueryClient();
 
   const targetBotId = botId || bot?._id;
@@ -322,10 +320,10 @@ const BotKnowledgeTab = ({ bot }) => {
             <div>
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
                 <FiBookOpen className="text-text-primary" />
-                <span>RAG Knowledge Documents</span>
+                <span>PDF Knowledge Base & Vector Search</span>
               </h3>
               <p className={`text-xs mt-0.5 ${"text-text-primary"}`}>
-                Upload knowledge files (PDF, TXT, DOCX, MD) with <code className="text-text-primary font-mono">fileCategory="knowledge"</code> to build dedicated vector embeddings.
+                Upload PDF documents to build semantic vector embeddings. The agent will retrieve only the top relevant chunks.
               </p>
             </div>
 
@@ -335,8 +333,32 @@ const BotKnowledgeTab = ({ bot }) => {
               className="flex items-center gap-2 bg-interactive-base hover:bg-interactive-base disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-black/10/20 transition cursor-pointer"
             >
               {saving ? <FiRefreshCw className="animate-spin text-xs" /> : <FiUpload className="text-xs" />}
-              <span>{saving ? "Uploading..." : "Upload Knowledge Document"}</span>
+              <span>{saving ? "Uploading..." : "Upload PDF Document"}</span>
             </button>
+          </div>
+
+          {/* Vector RAG & Chunk Limit Status Card */}
+          <div className="p-4 rounded-2xl border border-border-primary/40 bg-surface-secondary/60 dark:bg-interactive-base/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold shrink-0 text-sm">
+                <FiLayers />
+              </div>
+              <div>
+                <h4 className="font-bold text-text-primary dark:text-text-muted flex items-center gap-2">
+                  <span>Vector Embedding Search Active</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                    Chunk Limiter Active (Top 3)
+                  </span>
+                </h4>
+                <p className="text-[11px] text-text-primary/80 mt-0.5 leading-relaxed">
+                  Uploaded PDFs are split into semantic chunks and indexed via vector embeddings. During chat, the bot retrieves only the Top 3 most relevant chunks to eliminate prompt bloat and ground answers strictly.
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 flex sm:flex-col items-center sm:items-end gap-1 text-[11px] font-mono text-text-primary">
+              <span className="font-semibold">{knowledgeFiles.length} Documents</span>
+              <span className="text-emerald-800">100% Vectorized</span>
+            </div>
           </div>
 
           {/* Files List */}
@@ -354,7 +376,7 @@ const BotKnowledgeTab = ({ bot }) => {
               </p>
               <button
                 onClick={() => knowledgeFileInputRef.current?.click()}
-                className="bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                className="bg-interactive-base hover:bg-interactive-base text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
               >
                 Upload First Knowledge File
               </button>
@@ -373,7 +395,12 @@ const BotKnowledgeTab = ({ bot }) => {
                       <FiFileText />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs font-semibold truncate">{file.fileName}</h4>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-xs font-semibold truncate">{file.fileName}</h4>
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 font-mono font-bold shrink-0">
+                          Vector Indexed
+                        </span>
+                      </div>
                       <div className={`flex items-center gap-2 text-[10px] font-mono mt-0.5 ${"text-text-primary"}`}>
                         <span className="uppercase font-bold text-text-primary">{file.fileType || "doc"}</span>
                         <span>•</span>

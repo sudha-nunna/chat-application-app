@@ -935,8 +935,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               } else if (parsed.type === "search_guidance") {
                 isSearchGuidanceRef.current = true;
                 setIsSearchGuidanceActive(true);
-              } else if (parsed.type === "chunk") {
-                let textBit = parsed.text || "";
+              } else if (parsed.type === "chunk" || parsed.chunk || parsed.token) {
+                let textBit = parsed.text || parsed.chunk || parsed.token || "";
                 if (textBit) {
                   if (isFirstContinuationChunk) {
                     const stripped = textBit.replace(/^```[a-zA-Z0-9_.-]*\s*\n?/, "");

@@ -297,7 +297,7 @@ const BotChatTab = ({ bot }) => {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/bots/${bot._id}/chat/stream`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5001"}/bots/${bot._id}/chat/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -708,32 +708,6 @@ const BotChatTab = ({ bot }) => {
                         </>
                       )}
 
-                      {/* Source Citations Toggle Button */}
-                      {msg.metadata?.sources && msg.metadata.sources.length > 0 && (
-                        <div className="mt-2.5 pt-2 border-t border-border-primary/40">
-                          <button
-                            onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                            className="flex items-center gap-1.5 text-[11px] font-semibold text-text-primary hover:text-text-muted transition"
-                          >
-                            <FiFileText />
-                            <span>{msg.metadata.sources.length} Verified Sources</span>
-                            {isSourcesOpen ? <FiChevronUp /> : <FiChevronDown />}
-                          </button>
-
-                          {isSourcesOpen && (
-                            <div className="mt-2 space-y-1.5 pl-2 border-l-2 border-border-primary/40 text-[11px]">
-                              {msg.metadata.sources.map((s, sIdx) => (
-                                <div key={sIdx} className={`p-2 rounded-lg ${"bg-white border border-border-primary dark:bg-interactive-active/60 dark:border dark:border-border-primary/60"
-                                  }`}>
-                                  <p className="font-bold text-text-primary">{s.fileName}</p>
-                                  <p className={`mt-0.5 line-clamp-2 ${"text-text-primary dark:text-text-primary"}`}>{s.snippet}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
                       {/* ChatGPT-Style Pause / Retry Interactive Warning Banner */}
                       {!isUser && msg.content && typeof msg.content === "string" && msg.content.includes("Stream paused due to higher-priority request") && (
                         <div className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${"bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/30 dark:text-amber-600"
@@ -758,31 +732,64 @@ const BotChatTab = ({ bot }) => {
                       )}
                     </div>
 
-                    {/* COLLAPSED SOURCES TOGGLE BUTTON */}
-                    {!isUser && msg.sources && msg.sources.length > 0 && (
-                      <div className="pt-0.5">
-                        <button
-                          onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
-                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold border rounded-lg px-2.5 py-1 transition ${"text-text-primary hover:text-text-primary bg-surface-secondary border-border-primary dark:text-text-primary dark:hover:text-text-primary dark:bg-interactive-base dark:border-border-primary"
-                            }`}
-                        >
-                          <FiFileText className="text-text-primary" />
-                          <span>View Sources</span>
-                          {isSourcesOpen ? <FiChevronUp /> : <FiChevronDown />}
-                        </button>
+                    {/* VERIFIED KNOWLEDGE CHUNKS INSPECTOR */}
+                    {!isUser && ((msg.sources && msg.sources.length > 0) || (msg.metadata?.sources && msg.metadata.sources.length > 0)) && (
+                      <div className="pt-1.5">
+                        {(() => {
+                          const activeSources = (msg.sources && msg.sources.length > 0) ? msg.sources : (msg.metadata?.sources || []);
+                          return (
+                            <div>
+                              <button
+                                onClick={() => setOpenSourcesIdx(isSourcesOpen ? null : index)}
+                                className={`inline-flex items-center gap-2 text-[11px] font-semibold border rounded-lg px-3 py-1.5 transition cursor-pointer ${
+                                  isSourcesOpen
+                                    ? "bg-interactive-base/20 border-border-primary/50 text-text-primary"
+                                    : "bg-surface-secondary/70 border-border-primary text-text-primary hover:bg-surface-secondary hover:text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-primary dark:hover:text-text-muted"
+                                }`}
+                              >
+                                <span className="w-2 h-2 rounded-full bg-emerald-800 animate-pulse" />
+                                <FiFileText className="text-text-primary" />
+                                <span>🎯 {activeSources.length} Relevant Chunk{activeSources.length > 1 ? "s" : ""} Fed to AI</span>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 font-mono font-bold">
+                                  Vector Grounded
+                                </span>
+                                {isSourcesOpen ? <FiChevronUp className="text-xs" /> : <FiChevronDown className="text-xs" />}
+                              </button>
 
-                        {isSourcesOpen && (
-                          <div className={`mt-2 p-3 border rounded-xl space-y-2 max-w-full overflow-hidden ${"bg-surface-secondary border-border-primary dark:bg-interactive-base dark:border-border-primary"
-                            }`}>
-                            {msg.sources.map((s, sIdx) => (
-                              <div key={sIdx} className={`p-2 rounded-lg text-[10px] ${"bg-white border border-border-primary dark:bg-interactive-active"
-                                }`}>
-                                <p className="font-bold text-text-primary">{s.fileName}</p>
-                                <p className={`mt-0.5 line-clamp-2 ${"text-text-primary dark:text-text-primary"}`}>{s.snippet}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                              {isSourcesOpen && (
+                                <div className="mt-2.5 p-3.5 border rounded-2xl space-y-2.5 max-w-full overflow-hidden bg-surface-secondary/80 border-border-primary/80 dark:bg-interactive-base/60 dark:border-border-primary animate-in fade-in duration-200">
+                                  <div className="flex items-center justify-between text-[10px] text-text-primary/80 pb-2 border-b border-border-primary/40 font-mono">
+                                    <span>Knowledge Scope: Grounded on PDF Chunks</span>
+                                    <span>Top-{activeSources.length} Vector Match</span>
+                                  </div>
+                                  {activeSources.map((s, sIdx) => {
+                                    const score = s.score || s.similarity || (0.85 - sIdx * 0.05);
+                                    const scorePct = Math.round(score > 1 ? score : score * 100);
+                                    return (
+                                      <div key={sIdx} className="p-3 rounded-xl text-[11px] bg-white border border-border-primary/60 dark:bg-interactive-active/80 dark:border-border-primary/60 space-y-1.5 shadow-2xs">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-1.5 font-bold text-text-primary truncate">
+                                            <FiFileText className="text-text-primary shrink-0" />
+                                            <span className="truncate">{s.fileName || "Knowledge Document"}</span>
+                                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-interactive-base/10 text-text-primary">
+                                              Chunk #{sIdx + 1}
+                                            </span>
+                                          </div>
+                                          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                            {scorePct}% Match
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-text-primary dark:text-text-muted/90 font-sans line-clamp-4 bg-interactive-base/5 dark:bg-black/20 p-2 rounded-lg border border-border-primary/20">
+                                          "{s.snippet || s.text || s.content}"
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>

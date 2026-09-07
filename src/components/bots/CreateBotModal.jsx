@@ -4,38 +4,62 @@ import {
   FiCpu,
   FiUpload,
   FiCode,
-  FiCheck,
   FiFileText,
-  FiPlus,
   FiTrash2,
   FiArrowRight,
   FiArrowLeft,
-  FiPlay,
   FiCheckCircle,
   FiAlertCircle,
-  FiUploadCloud,
-  FiDatabase,
-  FiLayers,
   FiUser,
   FiVolume2,
-  FiZap,
-  FiSliders,
-  FiGlobe
+  FiShield
 } from "react-icons/fi";
 import { NobackEndCall, NobackEndCallObj } from "../../services/authService";
-import { useTheme } from "../../context/ThemeContext";
 import { useTanStackMutation, useTanStackQueryClient } from "../../hooks/useTanStackData";
-import VisemeAvatarPlayer from "../global/VisemeAvatarPlayer";
 import ThreeVisemeAvatar from "../global/ThreeVisemeAvatar";
 
-const MODELS = [
-  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", badge: "Recommended" },
-  { id: "gpt-4.1", name: "GPT-4.1", provider: "OpenAI", badge: "Flagship" },
-  { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "OpenAI", badge: "Fast" },
-  { id: "claude-3.5-sonnet", name: "Claude", provider: "Anthropic", badge: "Reasoning" },
-  { id: "gemini-1.5-pro", name: "Gemini", provider: "Google", badge: "Long Context" },
-  { id: "qwen-2.5", name: "Qwen", provider: "Alibaba AI", badge: "Open Source" },
-  { id: "custom-model", name: "Custom Model", provider: "Enterprise", badge: "Self-Hosted" }
+const SERVER_MODELS = [
+  {
+    id: "glm-5.3-flash:cloud",
+    name: "Glm 5.3 Flash Cloud",
+    provider: "codegene",
+    tier: "FAST",
+    creditCost: 0.5,
+    badge: "Recommended",
+    recommended: true
+  },
+  {
+    id: "deepseek-v4-flash:cloud",
+    name: "Deepseek V4 Flash Cloud",
+    provider: "codegene",
+    tier: "FAST",
+    creditCost: 0.5,
+    badge: "Fast"
+  },
+  {
+    id: "gemma4:cloud",
+    name: "Gemma4 Cloud",
+    provider: "codegene",
+    tier: "BALANCED",
+    creditCost: 1.0,
+    badge: "Balanced"
+  },
+  {
+    id: "kimi-k2.7-code:cloud",
+    name: "Kimi K2.7 Code Cloud",
+    provider: "codegene",
+    tier: "BALANCED",
+    creditCost: 1.0,
+    badge: "Code & Logic"
+  },
+  {
+    id: "qwen3.5:2b-q4_K_M",
+    name: "Qwen3.5 2b Q4 K M",
+    provider: "codegene",
+    tier: "BALANCED",
+    creditCost: 1.0,
+    badge: "Local Quant"
+  }
 ];
 
 const BOT_PURPOSES = [
@@ -129,18 +153,27 @@ const PRESET_3D_MODELS = [
   { id: "viverse-vrm", name: "Enterprise Viverse VRM AI Agent", presetKey: "/models/viverse_avatar_model_210287.vrm" }
 ];
 
+const STRICT_KNOWLEDGE_PROMPT = `You are a specialized Knowledge Base AI Assistant.
+Your single source of truth is the provided PDF document knowledge.
+
+STRICT OPERATIONAL RULES:
+1. ONLY answer questions using facts directly mentioned in the retrieved context chunks.
+2. If the user's question cannot be answered using the provided knowledge, you MUST politely refuse by stating:
+   "I can only answer questions based on the provided PDF knowledge document. This information is not found in the uploaded document."
+3. NEVER use outside general knowledge, speculate, or make assumptions beyond the text.
+4. Always cite or refer to the relevant section or topic from the document when answering.`;
+
 const DEFAULT_AVATAR_PRESET = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
 
 const CreateBotModal = ({ onClose, onBotCreated }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState("");
-  const { isDark } = useTheme();
   const queryClient = useTanStackQueryClient();
 
-  // Basic Info & Purpose
+  // Basic Info & Purpose (Defaulted to CHAT for Version 1)
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [botType, setBotType] = useState("AVATAR");
+  const [botType, setBotType] = useState("CHAT");
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [projectsList, setProjectsList] = useState([]);
 
@@ -152,27 +185,51 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(DEFAULT_AVATAR_PRESET);
   const [selectedVoiceId, setSelectedVoiceId] = useState("default-en");
 
-  // Model State
-  const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  // Model State (Active Server Models Only)
+  const [modelsList, setModelsList] = useState(SERVER_MODELS);
+  const [selectedModel, setSelectedModel] = useState("glm-5.3-flash:cloud");
 
-  // Knowledge Base State
+  useEffect(() => {
+    NobackEndCall("/models/available")
+      .then((res) => {
+        const list = res?.models || (Array.isArray(res) ? res : []);
+        const active = list.filter((m) => m.enabled !== false && m.modelId !== "auto");
+        if (active.length > 0) {
+          const formatted = active.map((m) => ({
+            id: m.modelId,
+            name: m.displayName || m.name || m.modelId,
+            provider: m.provider || "codegene",
+            tier: m.tier || "FAST",
+            creditCost: m.creditCost ?? 0.5,
+            badge: m.recommended ? "Recommended" : (m.tier || "Active"),
+            recommended: !!m.recommended
+          }));
+          setModelsList(formatted);
+          setSelectedModel((prev) => {
+            if (formatted.some((m) => m.id === prev)) return prev;
+            const def = formatted.find((m) => m.recommended) || formatted[0];
+            return def?.id || prev;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("Using fallback server models list:", err);
+      });
+  }, []);
+
+  // Knowledge Base & Chunk Protection State (Version 1 RAG)
   const [stagedFiles, setStagedFiles] = useState([]);
+  const [maxChunksPerQuery, setMaxChunksPerQuery] = useState(3);
 
-  // Rules State
-  const [rulesInnerTab, setRulesInnerTab] = useState("editor");
-  const [rulesEditorContent, setRulesEditorContent] = useState("");
+  // Rules State (Strict Knowledge Scope)
+  const [rulesEditorContent, setRulesEditorContent] = useState(STRICT_KNOWLEDGE_PROMPT);
 
   // API Integrations State
   const [stagedApis, setStagedApis] = useState([]);
-  const [apiOptionTab, setApiOptionTab] = useState("manual");
   const [apiName, setApiName] = useState("");
   const [apiUrl, setApiUrl] = useState("");
   const [apiMethod, setApiMethod] = useState("GET");
-  const [apiActionType, setApiActionType] = useState("GENERIC");
-  const [apiAuthType, setApiAuthType] = useState("none");
   const [apiKey, setApiKey] = useState("");
-  const [postmanJsonText, setPostmanJsonText] = useState("");
-  const [postmanFileName, setPostmanFileName] = useState("");
 
   useEffect(() => {
     NobackEndCall("/projects")
@@ -291,7 +348,6 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setPostmanFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -335,7 +391,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
         } else {
           alert("No valid request endpoints found in the provided Postman collection JSON file.");
         }
-      } catch (err) {
+      } catch {
         alert("Failed to parse Postman JSON file. Please ensure it is a valid Postman v2/v2.1 collection file.");
       }
     };
@@ -479,37 +535,59 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                   1. Choose Bot Purpose & Primary Capability <span className="text-text-primary">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {BOT_PURPOSES.map((purpose) => (
-                    <div
-                      key={purpose.id}
-                      onClick={() => handlePurposeChange(purpose.id)}
-                      className={`p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${botType === purpose.id
-                        ? "bg-interactive-base/15 border-border-primary text-text-primary ring-2 ring-border-focus/30 shadow-lg shadow-black/10/10 font-semibold"
-                        : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary hover:bg-white dark:bg-interactive-base/70 dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary dark:hover:bg-interactive-active/50"
-                        }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold">{purpose.title}</span>
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-interactive-base/10 text-text-primary font-mono border border-border-primary/20 shrink-0 font-semibold">
-                            {purpose.badge}
-                          </span>
+                  {BOT_PURPOSES.map((purpose) => {
+                    const isV1Active = purpose.id === "CHAT";
+                    return (
+                      <div
+                        key={purpose.id}
+                        onClick={() => {
+                          if (isV1Active) {
+                            handlePurposeChange(purpose.id);
+                          }
+                        }}
+                        className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
+                          !isV1Active
+                            ? "opacity-65 cursor-not-allowed bg-surface-secondary/40 border-border-primary/50"
+                            : "cursor-pointer"
+                        } ${botType === purpose.id
+                          ? "bg-interactive-base/15 border-border-primary text-text-primary ring-2 ring-border-focus/30 shadow-lg shadow-black/10/10 font-semibold"
+                          : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary hover:bg-white dark:bg-interactive-base/70 dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary dark:hover:bg-interactive-active/50"
+                          }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold flex items-center gap-1.5">
+                              {purpose.title}
+                              {isV1Active && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+                                  V1 Active
+                                </span>
+                              )}
+                            </span>
+                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-mono border shrink-0 font-semibold ${
+                              !isV1Active
+                                ? "bg-black/5 dark:bg-white/5 border-border-primary/30 text-text-muted"
+                                : "bg-interactive-base/10 text-text-primary border-border-primary/20"
+                            }`}>
+                              {!isV1Active ? "V2 Roadmap" : purpose.badge}
+                            </span>
+                          </div>
+                          <p className="text-[11px] opacity-80 mt-1.5 leading-relaxed">{purpose.subtitle}</p>
                         </div>
-                        <p className="text-[11px] opacity-80 mt-1.5 leading-relaxed">{purpose.subtitle}</p>
-                      </div>
 
-                      <div className="mt-3.5 pt-2.5 border-t border-border-primary/40 text-[10px] space-y-1.5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-text-primary font-medium">Required Setup:</span>
-                          <span className="font-semibold text-amber-800">{purpose.requiredFields.join(", ")}</span>
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-text-primary font-medium">Supported Formats:</span>
-                          <span className="font-mono text-text-primary">{purpose.recommendedFiles}</span>
+                        <div className="mt-3.5 pt-2.5 border-t border-border-primary/40 text-[10px] space-y-1.5">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-text-primary font-medium">Required Setup:</span>
+                            <span className="font-semibold text-amber-800">{purpose.requiredFields.join(", ")}</span>
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-text-primary font-medium">Supported Formats:</span>
+                            <span className="font-mono text-text-primary">{purpose.recommendedFiles}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -695,52 +773,105 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
           {/* STEP: AI MODEL SELECTION */}
           {currentStepObj.id === "model" && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between pb-1 border-b border-border-primary/30">
+                <p className="text-xs text-text-muted">
+                  Choose an active model connected to our backend server.
+                </p>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {modelsList.length} Connected Models
+                </span>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {MODELS.map((m) => (
+                {modelsList.map((m) => (
                   <div
                     key={m.id}
                     onClick={() => setSelectedModel(m.id)}
                     className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${selectedModel === m.id
-                      ? "bg-interactive-base/15 border-border-primary text-text-primary ring-2 ring-border-focus/20 font-semibold"
-                      : "bg-interactive-base border-border-primary text-text-primary hover:border-border-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted dark:hover:border-border-primary"
+                      ? "bg-accent-primary/10 border-accent-primary text-text-primary ring-2 ring-accent-primary/20 font-semibold"
+                      : "bg-surface-primary border-border-primary/50 text-text-primary hover:border-border-primary/80"
                       }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold">{m.name}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-interactive-base/10 text-text-primary font-mono border border-border-primary/20">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold truncate">{m.name}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono border ${
+                        m.recommended
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                          : "bg-surface-secondary text-text-muted border-border-primary/30"
+                      }`}>
                         {m.badge}
                       </span>
                     </div>
-                    <p className="text-[10px] opacity-75 mt-2 font-mono">Provider: {m.provider}</p>
+                    <div className="flex items-center justify-between mt-2.5 text-[10px] text-text-muted font-mono">
+                      <span>Server: {m.provider}</span>
+                      <span>{m.creditCost} credits</span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* STEP: KNOWLEDGE BASE UPLOAD */}
+          {/* STEP: KNOWLEDGE BASE UPLOAD (PDF & VECTOR SEARCH) */}
           {currentStepObj.id === "knowledge" && (
             <div className="space-y-4">
-              <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
-                botType === "CHAT"
-                  ? "bg-interactive-base/15 border-border-primary/40 text-text-muted"
-                  : "bg-interactive-active/40 border-border-primary text-text-primary"
-              }`}>
-                <span>
-                  {botType === "CHAT" ? "📘 REQUIRED / HIGHLY RECOMMENDED FOR RAG SEARCH:" : "ℹ️ OPTIONAL KNOWLEDGE DOCUMENTS:"}{" "}
-                  Upload files to build your bot's custom memory bank.
+              <div className="p-3.5 rounded-xl border text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-interactive-base/15 border-border-primary/40 text-text-primary dark:text-text-muted">
+                <div className="flex items-center gap-2">
+                  <FiFileText className="text-base text-text-primary shrink-0" />
+                  <span>
+                    <strong>PDF Document Knowledge Base:</strong> Upload PDF files to build vector embeddings for semantic search.
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30 shrink-0 self-start sm:self-auto">
+                  Vector Search RAG
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-interactive-base/20 text-text-muted">
-                  PDF, DOCX, TXT, JSON, MD
-                </span>
+              </div>
+
+              {/* Chunk Protection Selector (Prevents Giving Too Many Chunks to AI) */}
+              <div className="p-3 rounded-xl border border-border-primary/40 bg-surface-secondary/60 dark:bg-interactive-base/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-text-primary dark:text-text-muted flex items-center gap-1.5">
+                    <span>🎯 Max Context Chunks Fed to AI:</span>
+                    <span className="text-amber-800 font-bold">Top {maxChunksPerQuery} Chunks</span>
+                  </label>
+                  <span className="text-[10px] text-text-primary/70 font-mono">
+                    Token & Context Guardrail
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-primary/80 leading-relaxed">
+                  Prevents prompt flooding by retrieving only the highest-scoring vector matches instead of entire documents.
+                </p>
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  {[
+                    { count: 2, label: "2 Chunks", desc: "Strict & Focused" },
+                    { count: 3, label: "3 Chunks", desc: "Balanced (Recommended)" },
+                    { count: 5, label: "5 Chunks", desc: "Broader Coverage" }
+                  ].map((opt) => (
+                    <button
+                      key={opt.count}
+                      type="button"
+                      onClick={() => setMaxChunksPerQuery(opt.count)}
+                      className={`p-2 rounded-lg border text-center transition cursor-pointer text-xs ${
+                        maxChunksPerQuery === opt.count
+                          ? "bg-interactive-base text-white border-border-primary font-bold shadow-xs"
+                          : "bg-interactive-base border-border-primary text-text-primary hover:bg-surface-secondary dark:text-text-muted dark:hover:bg-interactive-active"
+                      }`}
+                    >
+                      <div className="font-semibold">{opt.label}</div>
+                      <div className="text-[9px] opacity-75 mt-0.5">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${"border-border-primary bg-interactive-base hover:border-border-primary/50 dark:border-border-primary dark:bg-interactive-base/40 dark:hover:border-border-primary/50"}`}>
                 <FiUpload className="text-3xl text-text-primary mx-auto mb-2" />
                 <p className={`text-xs font-semibold ${"text-text-primary dark:text-text-muted"}`}>
-                  Upload Knowledge Base Documents
+                  Upload PDF Knowledge Documents
                 </p>
-                <p className="text-[11px] text-text-primary mt-1">PDF, DOCX, TXT, JSON, or Markdown (.md)</p>
+                <p className="text-[11px] text-text-primary mt-1">
+                  Supported formats: <strong>.pdf</strong> (primary), .txt, .docx, .md, .json
+                </p>
                 <input
                   type="file"
                   multiple
@@ -751,9 +882,9 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                 />
                 <label
                   htmlFor="modal-knowledge-file-upload"
-                  className="mt-3 inline-block bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-black/10/20"
+                  className="mt-3 inline-block bg-interactive-base hover:bg-interactive-base text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-black/10/20"
                 >
-                  Browse Knowledge Files
+                  Browse PDF / Knowledge Files
                 </label>
               </div>
 
@@ -765,6 +896,9 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                       <div className="flex items-center gap-2">
                         <FiFileText className="text-text-primary" />
                         <span className="font-medium">{file.fileName}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 uppercase">
+                          {file.fileType || "doc"}
+                        </span>
                       </div>
                       <button onClick={() => removeStagedFile(idx)} className="text-text-primary hover:text-text-muted">
                         <FiTrash2 />
@@ -859,8 +993,8 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                         name: apiName.trim(),
                         url: apiUrl.trim(),
                         method: apiMethod,
-                        actionType: apiActionType,
-                        authType: apiAuthType,
+                        actionType: "GENERIC",
+                        authType: "none",
                         apiKey: apiKey.trim()
                       }
                     ]);
@@ -883,7 +1017,7 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
                           <span className="font-medium">{api.name}</span>
                           <div className="text-[10px] opacity-75 font-mono">{api.url}</div>
                         </div>
-                        <button onClick={() => removeStagedApi(idx)} className="text-text-primary hover:text-text-muted">
+                        <button onClick={() => setStagedApis((prev) => prev.filter((_, i) => i !== idx))} className="text-text-primary hover:text-text-muted">
                           <FiTrash2 />
                         </button>
                       </div>
@@ -894,20 +1028,38 @@ const CreateBotModal = ({ onClose, onBotCreated }) => {
             </div>
           )}
 
-          {/* STEP: RULES & POLICIES */}
+          {/* STEP: RULES & POLICIES (STRICT KNOWLEDGE SCOPE) */}
           {currentStepObj.id === "rules" && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-interactive-base/10 border border-border-primary/30 text-text-primary text-xs">
-                📜 <strong>System Rules</strong>: Enter specific system instructions & policy constraints. Optional at creation time!
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-text-primary text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-amber-800">
+                  <FiShield />
+                  <span>Strict Knowledge Scope Enabled (Version 1 Guardrail)</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-text-primary/90">
+                  This system prompt ensures the AI answers <strong>only using facts from your uploaded PDF</strong>. If a user asks something outside the PDF, the bot will politely decline rather than guessing or hallucinating.
+                </p>
               </div>
 
-              <textarea
-                rows={5}
-                placeholder="e.g. Speak politely, answer concisely, never hallucinate pricing info..."
-                value={rulesEditorContent}
-                onChange={(e) => setRulesEditorContent(e.target.value)}
-                className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-border-focus transition font-mono ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-primary dark:text-text-muted flex items-center justify-between">
+                  <span>System Instructions & Prompt Grounding</span>
+                  <button
+                    type="button"
+                    onClick={() => setRulesEditorContent(STRICT_KNOWLEDGE_PROMPT)}
+                    className="text-[10px] text-text-primary hover:underline font-mono"
+                  >
+                    Reset to Strict PDF Scope Template
+                  </button>
+                </label>
+                <textarea
+                  rows={8}
+                  placeholder="e.g. You are a specialized Knowledge Base AI Assistant..."
+                  value={rulesEditorContent}
+                  onChange={(e) => setRulesEditorContent(e.target.value)}
+                  className={`w-full border rounded-xl p-3 text-xs focus:outline-none focus:border-border-focus transition font-mono leading-relaxed ${"bg-interactive-base border-border-primary text-text-primary dark:bg-interactive-base dark:border-border-primary dark:text-text-muted"}`}
+                />
+              </div>
             </div>
           )}
 

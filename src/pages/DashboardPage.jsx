@@ -5,12 +5,11 @@ import {
   FiPlus,
   FiFileText,
   FiCode,
-  FiArrowRight,
   FiTrash2,
   FiEdit2,
   FiLayers
 } from "react-icons/fi";
-import { NobackEndCall, backEndCallGet, backEndCallObjDel } from "../services/authService";
+import { backEndCallGet, backEndCallObjDel } from "../services/authService";
 import CreateBotModal from "../components/bots/CreateBotModal";
 import EditBotModal from "../components/bots/EditBotModal";
 import ApiModal from "../components/bots/ApiModal";
@@ -30,11 +29,10 @@ const DashboardPage = () => {
   const { isDark } = useTheme();
   const queryClient = useTanStackQueryClient();
 
-  // 1. GET Route: Fetch bots using authService's NobackEndCall & useTanStackData hook
+  // 1. GET Route: Fetch bots using authService's backEndCallGet & useTanStackData hook
   const {
     data: bots = [],
-    isLoading: loading,
-    refetch: fetchBots
+    isLoading: loading
   } = useTanStackData(
     ["bots"],
     async () => {
@@ -87,7 +85,7 @@ const DashboardPage = () => {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => navigate("/bots/new")}
             className="flex items-center gap-2 bg-gradient-to-r from-interactive-base to-interactive-hover hover:from-interactive-base hover:to-interactive-hover text-text-primary dark:text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-lg shadow-black/10/20 transition active:scale-[0.98] cursor-pointer"
           >
             <FiPlus className="text-sm" />
@@ -137,7 +135,7 @@ const DashboardPage = () => {
             Create your first application workspace with shared knowledge bases, REST API tools, and specialized AI agents.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => navigate("/bots/new")}
             className="flex items-center gap-2 bg-interactive-base hover:bg-interactive-base text-text-primary dark:text-white text-xs font-semibold px-5 py-3 rounded-xl shadow-lg shadow-black/10/20 transition cursor-pointer"
           >
             <FiPlus className="text-base" />
@@ -165,7 +163,7 @@ const DashboardPage = () => {
                     <div>
                       <h3 className={`font-bold text-sm transition truncate max-w-[150px] ${isDark ? "text-text-muted group-hover:text-text-primary" : "text-text-primary group-hover:text-text-primary"
                         }`}>
-                        {bot.name}
+                        {bot.name ? (bot.name.charAt(0).toUpperCase() + bot.name.slice(1)) : "Bot"}
                       </h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`text-[10px] px-2 py-0.5 rounded font-mono uppercase ${isDark ? "bg-interactive-active text-text-primary" : "bg-surface-secondary text-text-primary"

@@ -131,13 +131,13 @@ const BotDetailPage = () => {
                 currentBotType === "VOICE" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
                 currentBotType === "ACTION" ? "bg-amber-900/10 text-amber-800 border-amber-800/30" :
                 currentBotType === "AVATAR" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
-                currentBotType === "CHAT" ? "bg-interactive-base/10 text-text-primary border-border-primary/30" :
+                currentBotType === "CHAT" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border-emerald-500/30 font-bold" :
                 "bg-interactive-base/10 text-text-primary border-border-primary/30"
               }`}>
                 {currentBotType === "VOICE" ? "🎙️ Voice Agent" :
                  currentBotType === "ACTION" ? "⚡ Action Agent" :
                  currentBotType === "AVATAR" ? "🎭 Avatar Agent" :
-                 currentBotType === "CHAT" ? "💬 Knowledge Chatbot" : "🌐 Hybrid Assistant"}
+                 currentBotType === "CHAT" ? "💬 Knowledge Chatbot (V1)" : "🌐 Hybrid Assistant"}
               </span>
             </div>
             <p className={`text-xs truncate max-w-full mt-0.5 ${isDark ? "text-text-primary" : "text-text-primary"}`}>
@@ -253,7 +253,7 @@ const BotDetailPage = () => {
               }`}
           >
             <FiFileText />
-            <span>Knowledge Base ({bot.fileCount || 0})</span>
+            <span>PDF Knowledge Base ({bot.fileCount || 0})</span>
           </button>
         )}
 
