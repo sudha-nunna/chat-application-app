@@ -1,11 +1,12 @@
-import { FiCpu, FiMessageSquare, FiTrendingUp, FiBook, FiBriefcase } from "react-icons/fi";
-import { useEffect } from "react";
+import { FiMessageSquare, FiTrendingUp, FiBook, FiBriefcase } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 
 const BotPlaceholderPage = () => {
-  const { isDark } = useTheme()
+  const { isDark } = useTheme();
+  const navigate = useNavigate();
   const openCreateModal = () => {
-    window.dispatchEvent(new Event("open-create-bot-modal"));
+    navigate("/agents/new");
   };
 
   return (

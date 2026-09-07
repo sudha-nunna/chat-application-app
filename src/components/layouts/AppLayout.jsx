@@ -137,15 +137,30 @@ const AppLayout = ({ children }) => {
   const [editingItemId, setEditingItemId] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState("");
 
-  const activeSidebarTab =
+  const isAgentRoute =
+    location.pathname.startsWith("/agents") ||
     location.pathname.startsWith("/bots") ||
-    location.pathname.startsWith("/dashboard")
-      ? "agents"
-      : location.pathname.startsWith("/subscription")
-        ? "subscription"
-        : location.pathname.startsWith("/admin/servers")
-          ? "servers"
-          : "chat";
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/home") ||
+    location.pathname.startsWith("/knowledge-base") ||
+    location.pathname.startsWith("/phone-numbers") ||
+    location.pathname.startsWith("/batch-call") ||
+    location.pathname.startsWith("/call-history") ||
+    location.pathname.startsWith("/contacts") ||
+    location.pathname.startsWith("/analytics") ||
+    location.pathname.startsWith("/live-monitoring") ||
+    location.pathname.startsWith("/ai-qa") ||
+    location.pathname.startsWith("/alerting") ||
+    location.pathname.startsWith("/integrations") ||
+    location.pathname.startsWith("/settings");
+
+  const activeSidebarTab = isAgentRoute
+    ? "agents"
+    : location.pathname.startsWith("/subscription")
+      ? "subscription"
+      : location.pathname.startsWith("/admin/servers")
+        ? "servers"
+        : "chat";
 
   useEffect(() => {
     setIsCreditsModalOpen(false);
@@ -170,7 +185,7 @@ const AppLayout = ({ children }) => {
     setTransitionTargetMode("agents");
     setIsModeTransitioning(true);
     setTimeout(() => {
-      navigate("/bots");
+      navigate("/agents");
       setTimeout(() => {
         setIsModeTransitioning(false);
       }, 350);
@@ -211,6 +226,22 @@ const AppLayout = ({ children }) => {
     window.addEventListener("setSidebarCollapsed", handleSetSidebarCollapsed);
     return () => window.removeEventListener("setSidebarCollapsed", handleSetSidebarCollapsed);
   }, []);
+
+  // Auto-collapse sidebar on Agent Studio flow editor routes to maximize canvas space
+  const isStudioRoute = Boolean(
+    location.pathname.match(/^\/(agents|bots)\/[^/]+/) ||
+    location.pathname === "/agents/new" ||
+    location.pathname === "/bots/new"
+  );
+
+  useEffect(() => {
+    if (isStudioRoute) {
+      const timer = setTimeout(() => {
+        setIsSidebarCollapsed(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isStudioRoute]);
 
   const [pinnedItemIds, setPinnedItemIds] = useState(() => {
     try {
@@ -350,7 +381,10 @@ const AppLayout = ({ children }) => {
   }, [usageData?.user?.credits, user]);
 
   const currentBotId = (() => {
-    if (location.pathname.startsWith("/bots/")) {
+    if (
+      location.pathname.startsWith("/agents/") ||
+      location.pathname.startsWith("/bots/")
+    ) {
       const parts = location.pathname.split("/");
       const id = parts[2];
       return id && id !== "new" ? id : null;
@@ -903,7 +937,7 @@ const AppLayout = ({ children }) => {
           onClick: () => {
             setIsUpgradeModalOpen(false);
             setIsCreditsModalOpen(false);
-            navigate("/bots");
+            navigate("/agents");
             setIsMobileMenuOpen(false);
           },
         },

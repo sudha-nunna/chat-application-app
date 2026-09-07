@@ -74,11 +74,7 @@ export function cleanMarkdownForSpeech(text) {
   cleaned = cleaned.replace(/^\s*\|.*?\|\s*$/gm, " ");
 
   // 3. Remove all emojis, pictographs, symbols, and dingbats
-  cleaned = cleaned.replace(/\p{Extended_Pictographic}/gu, "");
-  cleaned = cleaned.replace(
-    /[\u{1F300}-\u{1FAD6}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu,
-    ""
-  );
+  cleaned = cleaned.replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}/gu, "");
 
   // 4. Handle inline code `...`
   cleaned = cleaned.replace(/`([^`]+)`/g, (match, inner) => {
@@ -596,6 +592,9 @@ export function speakText(
       }
       activeUtterance = null;
       if (event.error === "canceled" || event.error === "interrupted") {
+        isSpeakingActive = false;
+        if (onWordBoundary) onWordBoundary("");
+        if (onEnd) onEnd();
         return;
       }
       console.warn("SpeechSynthesis sentence error:", event.error);
@@ -624,18 +623,30 @@ export function speakText(
     }
   };
 
-  // If voices haven't loaded yet on first page load in Chromium, listen for onvoiceschanged
-  if (window.speechSynthesis.getVoices().length === 0) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.onvoiceschanged = null;
-      if (isSpeakingActive && !activeUtterance) {
-        playNextSentence();
-      }
-    };
-  }
-
-  // Begin playback
-  playNextSentence();
+  // Safe delayed startup to ensure previous cancel() completed in browser audio thread
+  setTimeout(() => {
+    if (!isSpeakingActive) return;
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+    // If voices haven't loaded yet on first page load in Chromium, listen for onvoiceschanged
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        if (isSpeakingActive && !activeUtterance) {
+          playNextSentence();
+        }
+      };
+      // Fallback in case voiceschanged never fires
+      setTimeout(() => {
+        if (isSpeakingActive && !activeUtterance) {
+          playNextSentence();
+        }
+      }, 250);
+    } else {
+      playNextSentence();
+    }
+  }, 50);
 
   return {
     stop: stopSpeech,

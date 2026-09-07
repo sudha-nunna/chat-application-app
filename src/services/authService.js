@@ -164,9 +164,20 @@ export async function backEndCallGet(route) {
   }
 }
 
-export async function NobackEndCallObj(route, obj, method = "post") {
+export async function NobackEndCallObj(route, arg2, arg3 = "post") {
   try {
-    const lowerMethod = method.toLowerCase();
+    let obj = arg2;
+    let method = arg3;
+
+    // Support both signatures: (route, obj, method) and (route, method, obj)
+    if (typeof arg2 === "string" && (typeof arg3 === "object" || !arg3)) {
+      method = arg2;
+      obj = arg3 || {};
+    } else if (typeof method !== "string") {
+      method = "post";
+    }
+
+    const lowerMethod = (method || "post").toLowerCase();
     let res;
     if (lowerMethod === "get") {
       res = await http.get(apiUrl + route, { params: obj });
@@ -382,14 +393,10 @@ export async function uploadFileCall(route, formData, method = "post") {
 }
 
 export async function fetchFileBlob(route) {
-  try {
-    const isFullUrl = route.startsWith("http");
-    const fullUrl = isFullUrl ? route : apiUrl + route;
-    const response = await http.get(fullUrl, { responseType: "blob" });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const isFullUrl = route.startsWith("http");
+  const fullUrl = isFullUrl ? route : apiUrl + route;
+  const response = await http.get(fullUrl, { responseType: "blob" });
+  return response.data;
 }
 
 export async function postFileBlob(route, body = {}) {

@@ -60,6 +60,7 @@ export class VoiceConversationManager {
     this.onTranscriptComplete = options.onTranscriptComplete || (() => {});
     this.onBargeIn = options.onBargeIn || (() => {});
     this.onError = options.onError || (() => {});
+    this.silenceTimeoutMs = options.silenceTimeoutMs || 2000; // 2s pause detection by default
 
     this.recognition = null;
     this.mediaStream = null;
@@ -73,6 +74,7 @@ export class VoiceConversationManager {
     this.accumulatedTranscript = "";
     this.permissionGranted = false;
     this.lastSpeechCallbackTime = 0;
+    this.lang = options.lang || "en-US";
 
     this.initSpeechRecognition();
   }
@@ -90,7 +92,7 @@ export class VoiceConversationManager {
     const rec = new SpeechRecognition();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = "en-US";
+    rec.lang = this.lang || "en-US";
 
     rec.onstart = () => {
       this.isListening = true;
@@ -98,9 +100,19 @@ export class VoiceConversationManager {
     };
 
     rec.onresult = (event) => {
-      // Hardware Mute Guard: If the assistant is currently speaking aloud, immediately discard all audio!
+      // Barge-in check: If assistant is speaking and user begins talking, trigger barge-in!
       if (this.isAssistantSpeaking) {
-        return;
+        let detected = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          detected += event.results[i][0].transcript;
+        }
+        const trimmed = detected.trim();
+        if (trimmed.length > 2 && !isSelfEcho(trimmed, this.lastAssistantSpokenText)) {
+          this.isAssistantSpeaking = false;
+          this.onBargeIn(trimmed);
+        } else {
+          return;
+        }
       }
 
       let interim = "";
@@ -131,11 +143,11 @@ export class VoiceConversationManager {
           this.onSpeechDetected(currentText);
         }
 
-        // Reset VAD silence timer (1.2s silence triggers transcript completion)
+        // Reset VAD silence timer (2.0s silence triggers transcript completion)
         if (this.silenceTimer) clearTimeout(this.silenceTimer);
         this.silenceTimer = setTimeout(() => {
           this.handleSilenceDetected();
-        }, 1200);
+        }, this.silenceTimeoutMs);
       }
     };
 
@@ -154,7 +166,7 @@ export class VoiceConversationManager {
       if (this.isVoiceModeActive && !this.isPushToTalk && !this.isAssistantSpeaking) {
         try {
           rec.start();
-        } catch (e) {
+        } catch {
           // Ignore if already started or temporarily busy
         }
       }
@@ -165,7 +177,8 @@ export class VoiceConversationManager {
 
   /**
    * Informs the manager whether the AI assistant is currently speaking audio through the speakers.
-   * While the assistant is speaking, microphone input is stopped/ignored so the AI doesn't hear itself.
+   * Keeps microphone recognition active to enable instant barge-in detection,
+   * while discarding speech that matches the assistant's own voice (anti-echo).
    *
    * @param {boolean} isSpeaking - True if assistant audio is playing
    * @param {string} [spokenText=""] - Text being spoken by assistant for echo filtering
@@ -183,26 +196,28 @@ export class VoiceConversationManager {
     }
 
     if (isSpeaking) {
-      // Discard current buffers and stop microphone immediately
+      // Clear user transcript buffers so AI speech doesn't accumulate
       this.accumulatedTranscript = "";
       if (this.silenceTimer) {
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
       }
-      if (this.recognition) {
+      // Ensure microphone stays running in background for barge-in detection
+      if (this.isVoiceModeActive && this.recognition && !this.isListening) {
         try {
-          this.recognition.abort();
-        } catch (e) {}
+          this.recognition.start();
+        } catch {
+          // Ignore if already started
+        }
       }
-      this.isListening = false;
     } else {
-      // Assistant finished speaking: Apply a 450ms acoustic dissipation cooldown before resuming hands-free listening
+      // Assistant finished speaking: Apply a 300ms acoustic cooldown before accepting new user turns
       this.accumulatedTranscript = "";
       this.echoCooldownTimer = setTimeout(() => {
         if (this.isVoiceModeActive && !this.isAssistantSpeaking && !this.isPushToTalk) {
           this.startListening("HANDS_FREE");
         }
-      }, 450);
+      }, 300);
     }
   }
 
@@ -222,11 +237,6 @@ export class VoiceConversationManager {
   }
 
   startListening(mode = "HANDS_FREE") {
-    // If assistant is currently speaking, do not start microphone until speech completes
-    if (this.isAssistantSpeaking) {
-      return;
-    }
-
     this.isVoiceModeActive = true;
     this.isPushToTalk = mode === "PUSH_TO_TALK";
     this.accumulatedTranscript = "";
@@ -236,9 +246,22 @@ export class VoiceConversationManager {
     if (this.recognition && !this.isListening) {
       try {
         this.recognition.start();
-      } catch (e) {
+      } catch {
         // Recognition already active
       }
+    }
+  }
+
+  /**
+   * Immediately commit the currently detected speech without waiting for 2.0s silence timeout.
+   */
+  commitImmediate() {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+    if (this.accumulatedTranscript) {
+      this.handleSilenceDetected();
     }
   }
 
@@ -259,7 +282,9 @@ export class VoiceConversationManager {
     if (this.recognition) {
       try {
         this.recognition.stop();
-      } catch (e) {}
+      } catch {
+        // Ignore stop error
+      }
     }
 
     if (this.mediaStream) {
@@ -289,7 +314,9 @@ export class VoiceConversationManager {
     if (this.recognition) {
       try {
         this.recognition.stop();
-      } catch (e) {}
+      } catch {
+        // Ignore stop error
+      }
     }
 
     this.onTranscriptComplete(finalText);

@@ -1,75 +1,115 @@
+import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  FiPlus,
-  FiArrowLeft,
-  FiChevronDown,
-  FiChevronRight,
-  FiMessageSquare,
-  FiTrash2,
-  FiChevronLeft
-} from "react-icons/fi";
-import { TbPin, TbRobotFace } from "react-icons/tb";
+  Home,
+  Bot,
+  BookOpen,
+  Phone,
+  PhoneCall,
+  History,
+  MessageSquare,
+  Users,
+  BarChart2,
+  Headphones,
+  ShieldCheck,
+  Bell,
+  Link2,
+  CreditCard,
+  Settings,
+  Plus
+} from "lucide-react";
+
+const SIDEBAR_SECTIONS = [
+  {
+    header: null,
+    items: [
+      { id: "home", label: "Home", icon: Home, path: "/dashboard" }
+    ]
+  },
+  {
+    header: "BUILD",
+    items: [
+      { id: "agents", label: "Agents", icon: Bot, path: "/agents", hasAddAction: true },
+      { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen, path: "/knowledge-base" }
+    ]
+  },
+  {
+    header: "DEPLOY",
+    items: [
+      { id: "phone-numbers", label: "Phone Numbers", icon: Phone, path: "/phone-numbers" },
+      { id: "batch-call", label: "Batch Call", icon: PhoneCall, path: "/batch-call" }
+    ]
+  },
+  {
+    header: "DATA",
+    items: [
+      { id: "call-history", label: "Call History", icon: History, path: "/call-history" },
+      { id: "chat-history", label: "Chat History", icon: MessageSquare, path: "/chat" },
+      { id: "contacts", label: "Contacts", icon: Users, path: "/contacts" }
+    ]
+  },
+  {
+    header: "MONITOR",
+    items: [
+      { id: "analytics", label: "Analytics", icon: BarChart2, path: "/analytics" },
+      { id: "live-monitoring", label: "Live Monitoring", icon: Headphones, path: "/live-monitoring" },
+      { id: "ai-qa", label: "AI Quality Assurance", icon: ShieldCheck, path: "/ai-qa" },
+      { id: "alerting", label: "Alerting", icon: Bell, path: "/alerting" }
+    ]
+  },
+  {
+    header: "SYSTEM",
+    items: [
+      { id: "integrations", label: "Integrations", icon: Link2, path: "/integrations" },
+      { id: "billing", label: "Billing", icon: CreditCard, path: "/subscription" },
+      { id: "settings", label: "Settings", icon: Settings, path: "/settings" }
+    ]
+  }
+];
 
 const AgentSidebar = ({
   isSidebarCollapsed,
   isMobile,
-  onExitAgentMode,
-  navigate,
-  currentBotId,
-  activeBot,
-  bots,
-  pinnedBots,
-  otherBots,
-  isPinnedOpen,
-  setIsPinnedOpen,
-  isAgentsOpen,
-  setIsAgentsOpen,
-  botConversations = [],
-  searchParams,
-  handleCreateBotChat,
-  handleDeleteBotConv,
-  renderSidebarItem,
-  activePopover,
-  setActivePopover,
+  navigate: propNavigate,
   setIsMobileMenuOpen
 }) => {
-  const currentConvId = searchParams.get("convId");
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const navigate = propNavigate || routerNavigate;
+
+  const currentPath = location.pathname;
+
+  const isItemActive = (item) => {
+    if (item.id === "home") {
+      return currentPath === "/dashboard" || currentPath === "/";
+    }
+    if (item.id === "agents") {
+      return currentPath.startsWith("/agents") || currentPath.startsWith("/bots");
+    }
+    if (item.id === "billing") {
+      return currentPath.startsWith("/subscription");
+    }
+    if (item.id === "chat-history") {
+      return currentPath.startsWith("/chat");
+    }
+    return currentPath === item.path;
+  };
+
+  const handleItemClick = (e, item) => {
+    e.preventDefault();
+    navigate(item.path);
+    if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+  };
+
+  const handleCreateAgent = (e) => {
+    e.stopPropagation();
+    navigate("/agents/new");
+    if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+  };
 
   return (
-    <div className="flex flex-col h-full min-h-0 flex-1">
-      {/* Top Controls: New Agent */}
-      <div
-        className={`pt-2 pb-2 flex flex-col gap-2 shrink-0 ${
-          isSidebarCollapsed ? "px-1 items-center" : "px-4"
-        }`}
-      >
-        {/* New Agent Button (Studio Builder) */}
-        <button
-          onClick={() => {
-            navigate("/bots/new");
-            setActivePopover(null);
-            if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-semibold shadow-sm ${
-            isSidebarCollapsed ? "justify-center px-0!" : ""
-          } group relative`}
-        >
-          <FiPlus
-            className={`shrink-0 ${isSidebarCollapsed ? "text-lg" : "text-base"}`}
-          />
-          {!isSidebarCollapsed && (
-            <span className="text-xs font-semibold whitespace-nowrap overflow-hidden">
-              New Agent
-            </span>
-          )}
-          {isSidebarCollapsed && !isMobile && (
-            <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-              Create New Agent
-            </div>
-          )}
-        </button>
-      </div>
-
-      {/* Main Agent Area */}
+    <div className="flex flex-col h-full min-h-0 flex-1 select-none">
+      {/* Scrollable Navigation Area */}
       <div
         className={`flex-1 relative ${
           isSidebarCollapsed && !isMobile
@@ -78,332 +118,90 @@ const AgentSidebar = ({
         }`}
       >
         <div
-          className={`pt-1 pb-6 space-y-4 ${
-            isSidebarCollapsed && !isMobile ? "px-1 overflow-visible space-y-3!" : "px-3"
+          className={`py-2 space-y-3.5 ${
+            isSidebarCollapsed && !isMobile ? "px-1 space-y-2.5!" : "px-3"
           }`}
         >
-          {/* CASE 1: USER IS IN SPECIFIC BOT MODE (SHOW THAT BOT'S HISTORY ONLY) */}
-          {currentBotId && activeBot ? (
-            <div className="space-y-3">
-              {!isSidebarCollapsed || isMobile ? (
-                <>
-                  {/* Back to All Agents overview button */}
-                  <button
-                    type="button"
-                    onClick={() => navigate("/bots")}
-                    className="text-xs text-text-muted hover:text-text-primary transition flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer font-medium w-full"
-                  >
-                    <FiChevronLeft className="text-sm shrink-0" />
-                    <span>All My Agents</span>
-                  </button>
+          {SIDEBAR_SECTIONS.map((section, sIndex) => (
+            <div key={sIndex} className="space-y-0.5">
+              {/* Section Header */}
+              {section.header && (!isSidebarCollapsed || isMobile) && (
+                <div className="text-[11px] font-bold text-text-muted/80 dark:text-text-muted px-3 pt-2 pb-1 tracking-wider uppercase">
+                  {section.header}
+                </div>
+              )}
 
-                  {/* Active Bot Card with New Chat Button */}
-                  <div className="p-3 rounded-2xl bg-white dark:bg-[#191A24] border border-border-primary/60 dark:border-white/5 shadow-xs flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center text-sm font-semibold shrink-0 shadow-2xs">
-                        {activeBot.avatarEmoji || <TbRobotFace className="text-base" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-text-primary truncate">
-                          {activeBot.name}
-                        </p>
-                        <p className="text-[10px] text-emerald-500 font-medium">
-                          Active Agent
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCreateBotChat(currentBotId)}
-                      className="p-1.5 rounded-lg bg-accent-primary text-white hover:opacity-90 transition cursor-pointer shrink-0 shadow-xs"
-                      title="Start New Conversation with this Agent"
-                    >
-                      <FiPlus className="text-xs" />
-                    </button>
-                  </div>
+              {/* Section Divider when Collapsed */}
+              {section.header && isSidebarCollapsed && !isMobile && (
+                <div className="my-1.5 mx-auto w-6 h-[1px] bg-border-primary/50" />
+              )}
 
-                  {/* That Bot's Chat History */}
-                  <div className="space-y-1">
-                    <div className="text-[10.5px] font-bold text-text-muted px-2 py-1 uppercase tracking-wider">
-                      Agent Chat History ({botConversations.length})
-                    </div>
+              {/* Section Items */}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = isItemActive(item);
+                  const Icon = item.icon;
 
-                    {botConversations.length === 0 ? (
-                      <div className="p-4 rounded-xl border border-dashed border-border-primary/60 text-center">
-                        <p className="text-xs font-medium text-text-primary">
-                          No previous chats
-                        </p>
-                        <p className="text-[11px] text-text-muted mt-0.5 mb-2">
-                          Start a new session with {activeBot.name}
-                        </p>
+                  if (isSidebarCollapsed && !isMobile) {
+                    return (
+                      <div key={item.id} className="relative group flex justify-center">
                         <button
                           type="button"
-                          onClick={() => handleCreateBotChat(currentBotId)}
-                          className="px-2.5 py-1 rounded-lg bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20 text-xs font-semibold cursor-pointer transition inline-flex items-center gap-1"
+                          onClick={(e) => handleItemClick(e, item)}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                            active
+                              ? "bg-black/8 text-text-primary dark:bg-white/10 dark:text-white font-semibold"
+                              : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5"
+                          }`}
                         >
-                          <FiPlus className="text-[11px]" />
-                          <span>New Chat</span>
+                          <Icon className={`w-5 h-5 ${active ? "text-accent-primary" : ""}`} />
                         </button>
-                      </div>
-                    ) : (
-                      botConversations.map((conv) => {
-                        const isConvActive = currentConvId === conv._id;
-                        return (
-                          <div
-                            key={conv._id}
-                            onClick={() => {
-                              navigate(`/bots/${currentBotId}?convId=${conv._id}`);
-                              if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
-                            }}
-                            className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition ${
-                              isConvActive
-                                ? "bg-accent-primary/10 text-text-primary font-semibold border border-accent-primary/30"
-                                : "hover:bg-black/5 dark:hover:bg-white/5 text-text-primary/80 hover:text-text-primary"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <FiMessageSquare
-                                className={`text-xs shrink-0 ${
-                                  isConvActive
-                                    ? "text-accent-primary"
-                                    : "text-text-muted"
-                                }`}
-                              />
-                              <span className="truncate">
-                                {conv.title || "Conversation"}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) =>
-                                handleDeleteBotConv(e, conv._id, currentBotId)
-                              }
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 rounded transition shrink-0 ml-1 cursor-pointer"
-                              title="Delete conversation"
-                            >
-                              <FiTrash2 className="text-[11px]" />
-                            </button>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </>
-              ) : (
-                /* Collapsed View for Active Bot */
-                <div className="relative group flex justify-center">
-                  <button
-                    onClick={() =>
-                      setActivePopover(
-                        activePopover === "activeBotConvs" ? null : "activeBotConvs"
-                      )
-                    }
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                      activePopover === "activeBotConvs"
-                        ? "bg-interactive-active text-text-primary dark:text-white"
-                        : "hover:bg-surface-secondary text-text-primary"
-                    } group relative`}
-                  >
-                    <TbRobotFace className="text-xl text-accent-primary" />
-                    <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                      {activeBot.name}
-                    </div>
-                  </button>
-
-                  {activePopover === "activeBotConvs" && (
-                    <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                      <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 flex items-center justify-between shrink-0">
-                        <span className="truncate">{activeBot.name}</span>
-                        <button
-                          onClick={() => handleCreateBotChat(currentBotId)}
-                          className="text-xs font-semibold text-accent-primary hover:underline flex items-center gap-1"
-                        >
-                          <FiPlus className="text-xs" /> New
-                        </button>
-                      </div>
-                      <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                        {botConversations.length === 0 ? (
-                          <div className="text-xs text-text-muted px-3 py-2 text-center">
-                            No chats yet
-                          </div>
-                        ) : (
-                          botConversations.map((conv) => (
-                            <div
-                              key={conv._id}
-                              onClick={() => {
-                                setActivePopover(null);
-                                navigate(
-                                  `/bots/${currentBotId}?convId=${conv._id}`
-                                );
-                              }}
-                              className="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-text-primary"
-                            >
-                              <span className="truncate flex-1">
-                                {conv.title || "Conversation"}
-                              </span>
-                              <button
-                                onClick={(e) =>
-                                  handleDeleteBotConv(
-                                    e,
-                                    conv._id,
-                                    currentBotId
-                                  )
-                                }
-                                className="p-1 hover:text-red-500 rounded transition ml-1"
-                              >
-                                <FiTrash2 className="text-[10px]" />
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            /* CASE 2: ALL AGENTS OVERVIEW (NO SPECIFIC BOT SELECTED YET) */
-            <div className="space-y-4">
-              {/* Pinned Agents */}
-              {pinnedBots.length > 0 && (
-                <div>
-                  {(!isSidebarCollapsed || isMobile) && (
-                    <div
-                      className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1 cursor-pointer hover:text-text-muted transition select-none"
-                      onClick={() => setIsPinnedOpen(!isPinnedOpen)}
-                    >
-                      <span>Pinned Agents</span>
-                      {isPinnedOpen ? (
-                        <FiChevronDown className="text-[10px]" />
-                      ) : (
-                        <FiChevronRight className="text-[10px]" />
-                      )}
-                    </div>
-                  )}
-
-                  {isSidebarCollapsed && !isMobile ? (
-                    <div className="relative group flex justify-center">
-                      <button
-                        onClick={() =>
-                          setActivePopover(
-                            activePopover === "pinnedBots"
-                              ? null
-                              : "pinnedBots"
-                          )
-                        }
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                          activePopover === "pinnedBots"
-                            ? "bg-interactive-active text-text-primary dark:text-white"
-                            : "hover:bg-surface-secondary text-text-primary"
-                        } group relative`}
-                      >
-                        <TbPin className="text-xl" />
-                        <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                          Pinned Agents
+                        {/* Hover Tooltip Popover */}
+                        <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-xs font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
+                          {item.label}
                         </div>
-                      </button>
-                      {activePopover === "pinnedBots" && (
-                        <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                          <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 shrink-0">
-                            Pinned Agents
-                          </div>
-                          <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                            {pinnedBots.map((b) =>
-                              renderSidebarItem(b, "bot", true)
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                      </div>
+                    );
+                  }
+
+                  return (
                     <div
-                      className={`grid transition-all duration-300 ease-in-out ${
-                        isPinnedOpen
-                          ? "grid-rows-[1fr] opacity-100"
-                          : "grid-rows-[0fr] opacity-0"
+                      key={item.id}
+                      onClick={(e) => handleItemClick(e, item)}
+                      className={`group flex items-center justify-between px-3 py-2 rounded-xl text-[13.5px] cursor-pointer transition-colors ${
+                        active
+                          ? "bg-[#EAECEF] text-[#111318] dark:bg-[#1E202B] dark:text-white font-semibold"
+                          : "text-[#4B5262] dark:text-[#9CA3AF] hover:text-[#111318] dark:hover:text-white hover:bg-black/4 dark:hover:bg-white/4 font-medium"
                       }`}
                     >
-                      <div className="overflow-hidden">
-                        <div className="space-y-0.5">
-                          {pinnedBots.map((b) => renderSidebarItem(b, "bot"))}
-                        </div>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Icon
+                          className={`w-[18px] h-[18px] shrink-0 transition-colors ${
+                            active
+                              ? "text-accent-primary"
+                              : "text-[#6E7687] dark:text-[#9CA3AF] group-hover:text-text-primary"
+                          }`}
+                        />
+                        <span className="truncate">{item.label}</span>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
-              {/* Agents List (Direct list under New Agent) */}
-              <div>
-                {isSidebarCollapsed && !isMobile ? (
-                  <div className="relative group flex justify-center">
-                    <button
-                      onClick={() =>
-                        setActivePopover(
-                          activePopover === "otherBots" ? null : "otherBots"
-                        )
-                      }
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                        activePopover === "otherBots"
-                          ? "bg-interactive-active text-text-primary dark:text-white"
-                          : "hover:bg-surface-secondary text-text-primary"
-                      } group relative`}
-                    >
-                      <TbRobotFace className="text-xl" />
-                      <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                        Agents
-                      </div>
-                    </button>
-                    {activePopover === "otherBots" && (
-                      <div className="absolute left-14 top-0 w-64 bg-surface-dropdown border border-border-primary shadow-2xl rounded-2xl z-[100] py-2 flex flex-col max-h-[60vh]">
-                        <div className="px-4 py-2 text-sm font-semibold text-text-primary border-b border-border-primary/30 flex items-center justify-between shrink-0">
-                          <span>Agents</span>
-                          <button
-                            onClick={() => {
-                              setActivePopover(null);
-                              navigate("/bots/new");
-                            }}
-                            className="text-xs font-semibold text-text-primary hover:underline flex items-center gap-1"
-                          >
-                            <FiPlus className="text-xs" /> New
-                          </button>
-                        </div>
-                        <div className="overflow-y-auto custom-scrollbar p-1 space-y-1">
-                          {otherBots.length === 0 ? (
-                            <div className="text-xs text-text-primary px-3 py-2 text-center">
-                              No bots created yet
-                            </div>
-                          ) : (
-                            otherBots.map((b) =>
-                              renderSidebarItem(b, "bot", true)
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-0.5">
-                    {otherBots.length === 0 ? (
-                      <button
-                        onClick={() => {
-                          navigate("/bots/new");
-                          if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full text-left text-xs px-3 py-2 rounded-lg text-text-primary/70 hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center gap-2 cursor-pointer"
-                      >
-                        <FiPlus className="text-xs shrink-0" />
-                        <span>Create your first agent</span>
-                      </button>
-                    ) : (
-                      otherBots.map((b) => renderSidebarItem(b, "bot"))
-                    )}
-                  </div>
-                )}
+                      {/* Optional inline + action for Agents */}
+                      {item.hasAddAction && (
+                        <button
+                          type="button"
+                          onClick={handleCreateAgent}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-accent-primary transition cursor-pointer shrink-0"
+                          title="Create an Agent"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
