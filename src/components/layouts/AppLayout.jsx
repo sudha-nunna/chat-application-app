@@ -307,28 +307,45 @@ const AppLayout = ({ children }) => {
       }
 
       if (currentToken) {
+        // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ["bots"] });
         queryClient.invalidateQueries({ queryKey: ["chats"] });
         queryClient.invalidateQueries({ queryKey: ["usage"] });
+        
         backEndCallGet("/auth/me")
           .then((res) => {
             if (res?.success && res?.user) {
               setUser(res.user);
-              localStorage.setItem("user", JSON.stringify(res.user));
+              const newUserStr = JSON.stringify(res.user);
+              if (localStorage.getItem("user") !== newUserStr) {
+                localStorage.setItem("user", newUserStr);
+              }
             }
           })
           .catch(() => { });
       }
     };
 
+    const handleStorageChange = (e) => {
+      if (e.key === "user" && e.newValue) {
+        try {
+          setUser(JSON.parse(e.newValue));
+        } catch {
+          // ignore parse error
+        }
+      } else if (e.key === "token") {
+        syncAuth();
+      }
+    };
+
     syncAuth();
 
     window.addEventListener("auth-change", syncAuth);
-    window.addEventListener("storage", syncAuth);
+    window.addEventListener("storage", handleStorageChange);
 
     return () => {
       window.removeEventListener("auth-change", syncAuth);
-      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, [location.pathname, queryClient]);
 
