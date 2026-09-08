@@ -32,6 +32,27 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+const sanitizeUserFacingMessage = (text) => {
+  if (!text || typeof text !== "string") return text;
+  if (
+    text.includes("Provider API Rate Limit Exceeded") ||
+    text.includes("reached your session usage limit") ||
+    text.includes("upgrade for higher limits") ||
+    text.includes("The AI service is currently experiencing high usage limits") ||
+    text.includes("Unable to connect to the server at this time") ||
+    (text.includes('"error"') && (text.includes("429") || text.includes("usage limit") || text.includes("rate_limit") || text.includes("api_error"))) ||
+    text.includes("ECONNREFUSED") ||
+    text.includes("Network connection error") ||
+    text.includes("check that Ollama is running") ||
+    text.includes("check that your server node is running") ||
+    text.includes("Unable to process request") ||
+    text.includes("Stream connection error")
+  ) {
+    return "I'm sorry, I am experiencing difficulty connecting at the moment due to high traffic. Please try again in a few minutes.";
+  }
+  return text;
+};
+
 const formatMarkdownBreaks = (text) => {
   if (!text || typeof text !== "string") return text;
   return text.replace(/([^\n])\n([^\n])/g, "$1  \n$2");
@@ -353,7 +374,9 @@ const MessageBubble = ({
         .trim() || "*(Response paused)*"
     : content;
 
-  const displayContent = formatMarkdownBreaks(rawDisplayContent);
+  const displayContent = formatMarkdownBreaks(
+    isUser ? rawDisplayContent : sanitizeUserFacingMessage(rawDisplayContent)
+  );
   const displayContentWithCursor =
     isStreaming && !isThinking && displayContent
       ? typeof displayContent === "string" && displayContent.endsWith(" ")

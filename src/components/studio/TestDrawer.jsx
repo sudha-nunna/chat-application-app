@@ -16,10 +16,32 @@ import VoiceConversationManager from "../avatar/VoiceConversationManager";
 import { speakText, stopSpeech } from "../../utils/speechUtils";
 import { NobackEndCallObj, getJwt } from "../../services/authService";
 
+function sanitizeUserFacingMessage(text) {
+  if (!text || typeof text !== "string") return "";
+  if (
+    text.includes("Provider API Rate Limit Exceeded") ||
+    text.includes("reached your session usage limit") ||
+    text.includes("upgrade for higher limits") ||
+    text.includes("The AI service is currently experiencing high usage limits") ||
+    text.includes("Unable to connect to the server at this time") ||
+    (text.includes('"error"') && (text.includes("429") || text.includes("usage limit") || text.includes("rate_limit") || text.includes("api_error"))) ||
+    text.includes("ECONNREFUSED") ||
+    text.includes("Network connection error") ||
+    text.includes("check that Ollama is running") ||
+    text.includes("check that your server node is running") ||
+    text.includes("Unable to process request") ||
+    text.includes("Stream connection error")
+  ) {
+    return "I'm sorry, I am experiencing difficulty connecting at the moment due to high traffic. Please try again in a few minutes.";
+  }
+  return text;
+}
+
 function prepareMarkdownContent(text) {
   if (!text || typeof text !== "string") return "";
+  const clean = sanitizeUserFacingMessage(text);
   // Ensure markdown headings preceded by text have proper newlines
-  let formatted = text.replace(/([^\n])\s*(#{1,4}\s)/g, "$1\n\n$2");
+  let formatted = clean.replace(/([^\n])\s*(#{1,4}\s)/g, "$1\n\n$2");
   // Normalize bullet dots (•) to markdown bullet dash (- )
   formatted = formatted.replace(/^[ \t]*•[ \t]*/gm, "- ");
   // Ensure bullets preceded by inline text have newlines

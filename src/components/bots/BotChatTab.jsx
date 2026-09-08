@@ -398,6 +398,17 @@ const BotChatTab = ({ bot }) => {
         });
       } else {
         console.error("Stream error:", err);
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          const errMsg = "I'm sorry, I am experiencing difficulty connecting at the moment due to high traffic. Please try again in a few minutes.";
+          if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+            updated[lastIdx] = { ...updated[lastIdx], content: errMsg };
+          } else {
+            updated.push({ role: "assistant", content: errMsg });
+          }
+          return updated;
+        });
       }
     } finally {
       isStreamingRef.current = false;

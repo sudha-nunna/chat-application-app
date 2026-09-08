@@ -931,16 +931,16 @@ const AppLayout = ({ children }) => {
           icon: FiMessageSquare,
           onClick: handleNewChat,
         },
-        {
-          id: "agents",
-          icon: TbRobotFace,
-          onClick: () => {
-            setIsUpgradeModalOpen(false);
-            setIsCreditsModalOpen(false);
-            navigate("/agents");
-            setIsMobileMenuOpen(false);
-          },
-        },
+        // {
+        //   id: "agents",
+        //   icon: TbRobotFace,
+        //   onClick: () => {
+        //     setIsUpgradeModalOpen(false);
+        //     setIsCreditsModalOpen(false);
+        //     navigate("/agents");
+        //     setIsMobileMenuOpen(false);
+        //   },
+        // },
         {
           id: "dashboard",
           icon: FiGrid,
@@ -1147,7 +1147,7 @@ const AppLayout = ({ children }) => {
           )}
 
           {/* Gemini-style Segmented Switcher: [ Chat | Agent ] */}
-          <div
+          {/* <div
             className={`pt-2.5 pb-1 shrink-0 ${
               isSidebarCollapsed && !isMobile ? "px-1" : "px-4"
             }`}
@@ -1168,9 +1168,9 @@ const AppLayout = ({ children }) => {
                   <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
                     Chat Mode
                   </div>
-                </button>
+                </button> */}
 
-                <button
+                {/* <button
                   type="button"
                   onClick={handleEnterAgentMode}
                   className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer group relative ${
@@ -1184,12 +1184,12 @@ const AppLayout = ({ children }) => {
                   <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
                     Agent Mode
                   </div>
-                </button>
-              </div>
+                </button> */}
+              {/* </div>
             ) : (
-              <div className="w-full bg-black/5 dark:bg-[#131520] p-1 rounded-xl border border-border-primary/60 dark:border-white/[0.08] flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]">
+              <div className="w-full bg-black/5 dark:bg-[#131520] p-1 rounded-xl border border-border-primary/60 dark:border-white/[0.08] flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"> */}
                 {/* Chat Tab */}
-                <button
+                {/* <button
                   type="button"
                   onClick={handleExitAgentMode}
                   className={`group flex-1 py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
@@ -1206,10 +1206,10 @@ const AppLayout = ({ children }) => {
                     }`}
                   />
                   <span className="tracking-tight">Chat</span>
-                </button>
+                </button> */}
 
                 {/* Agent Tab */}
-                <button
+                {/* <button
                   type="button"
                   onClick={handleEnterAgentMode}
                   className={`group flex-1 py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
@@ -1235,10 +1235,10 @@ const AppLayout = ({ children }) => {
                   >
                     AI
                   </span>
-                </button>
-              </div>
+                </button> */}
+              {/* </div>
             )}
-          </div>
+          </div> */}
 
           {/* Main Sidebar Content Area (takes remaining space, enables internal scrolling) */}
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -1119,7 +1119,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         console.error("Stream parsing exception:", err);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: `⚠️ Error: Unable to process request.` }
+          { role: "assistant", content: "I'm sorry, I am experiencing difficulty connecting at the moment due to high traffic. Please try again in a few minutes." }
         ]);
       }
       setIsSearching(false);
@@ -1233,7 +1233,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               try {
                 const saved = localStorage.getItem("pinnedChats");
                 pinnedItemIds = saved ? JSON.parse(saved) : [];
-              } catch (e) {}
+              } catch (e) { }
 
               if (pinnedItemIds.includes(currentChat._id)) {
                 suffix = "pinned";
@@ -1322,11 +1322,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   setIsArtifactOpen((prev) => !prev);
                 }
               }}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${
-                isArtifactOpen
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${isArtifactOpen
                   ? "bg-accent-primary text-white border-accent-primary shadow-xs"
                   : "bg-accent-primary/10 text-accent-primary border-accent-primary/30 hover:bg-accent-primary/20"
-              }`}
+                }`}
               title={isArtifactOpen ? "Hide Live Preview Panel" : "Open Live Preview Panel"}
             >
               <FiEye className="text-[14px]" />
@@ -1360,11 +1359,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       <div className="flex-1 min-h-0 min-w-0 flex flex-row overflow-hidden relative">
         {/* Left: Chat Area */}
         <div
-          className={`h-full flex flex-col min-w-0 transition-all duration-300 ${
-            isArtifactOpen && activeArtifact
+          className={`h-full flex flex-col min-w-0 transition-all duration-300 ${isArtifactOpen && activeArtifact
               ? "w-full md:w-[48%] lg:w-[45%]"
               : "w-full"
-          }`}
+            }`}
         >
           {/* Messages Scroll Area - ONLY this section scrolls */}
           <div
@@ -1373,264 +1371,264 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             onWheel={handleWheel}
             className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
           >
-        <div
-          className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
-        >
-          {!isSearching && !isBotTyping && isFetchingMessages && (
-            <div className="flex flex-col items-center justify-center flex-1 text-center">
-              <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
-              <p className="text-xs text-text-primary">Loading chat...</p>
-            </div>
-          )}
+            <div
+              className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
+            >
+              {!isSearching && !isBotTyping && isFetchingMessages && (
+                <div className="flex flex-col items-center justify-center flex-1 text-center">
+                  <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
+                  <p className="text-xs text-text-primary">Loading chat...</p>
+                </div>
+              )}
 
-          {!isFetchingMessages &&
-            messages.length === 0 &&
-            !isSearching &&
-            !isBotTyping && (
-              <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-[820px] mx-auto py-6 md:py-10">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-[1px] w-8 bg-accent-primary"></div>
-                  <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-muted">
-                    Intelligence, without the noise
+              {!isFetchingMessages &&
+                messages.length === 0 &&
+                !isSearching &&
+                !isBotTyping && (
+                  <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-[820px] mx-auto py-6 md:py-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-[1px] w-8 bg-accent-primary"></div>
+                      <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-muted">
+                        Intelligence, without the noise
+                      </span>
+                    </div>
+                    <h2
+                      className={`text-[26px] font-light! md:text-[48px] font-serif leading-tight tracking-tight mb-4 ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                    >
+                      What can we{" "}
+                      <span className="text-accent-primary italic font-normal">
+                        make clear
+                      </span>{" "}
+                      today?
+                    </h2>
+                    <p className="text-xs md:text-sm text-text-muted max-w-md leading-relaxed mb-6">
+                      Codegene helps you reason through hard problems, build
+                      <br />
+                      useful things, and move from a blank page to a precise
+                      <br />
+                      result.
+                    </p>
+
+                    {/* Quick Actions */}
+                    <div className="flex flex-col md:flex-row w-full max-w-[820px] mx-auto rounded-xl border border-border-primary dark:border-white/5 overflow-hidden shadow-sm bg-white dark:bg-[#191a24]">
+                      {/* Build Card */}
+                      <button
+                        onClick={() =>
+                          handleSendSubmit("Help me build a prototype.")
+                        }
+                        className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                      >
+                        <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiCode className="text-[14px]" />
+                        </div>
+                        <span className="text-[13px] font-normal mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                          Build a prototype
+                        </span>
+                        <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                          Turn an idea into a working interface
+                        </span>
+                      </button>
+                      {/* Analyze Card */}
+                      <button
+                        onClick={() =>
+                          handleSendSubmit("Help me analyze a document.")
+                        }
+                        className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                      >
+                        <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiFileText className="text-[14px]" />
+                        </div>
+                        <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                          Analyze a document
+                        </span>
+                        <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                          Find the signal in a long file
+                        </span>
+                      </button>
+                      {/* Create Card */}
+                      <button
+                        onClick={() =>
+                          handleSendSubmit("Help me explore a visual direction.")
+                        }
+                        className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                      >
+                        <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiImage className="text-[14px]" />
+                        </div>
+                        <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                          Create an image
+                        </span>
+                        <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                          Explore a visual direction
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              {!isFetchingMessages && messages.length > 0 && (
+                <div className="w-full flex justify-center py-1">
+                  <span className="text-[11px] font-semibold text-text-muted">
+                    {formatChatTimestamp(currentChat, messages)}
                   </span>
                 </div>
-                <h2
-                  className={`text-[26px] font-light! md:text-[48px] font-serif leading-tight tracking-tight mb-4 ${"text-text-primary dark:text-[#F4F4F5]"}`}
-                >
-                  What can we{" "}
-                  <span className="text-accent-primary italic font-normal">
-                    make clear
-                  </span>{" "}
-                  today?
-                </h2>
-                <p className="text-xs md:text-sm text-text-muted max-w-md leading-relaxed mb-6">
-                  Codegene helps you reason through hard problems, build
-                  <br />
-                  useful things, and move from a blank page to a precise
-                  <br />
-                   result.
-                </p>
+              )}
 
-                {/* Quick Actions */}
-                <div className="flex flex-col md:flex-row w-full max-w-[820px] mx-auto rounded-xl border border-border-primary dark:border-white/5 overflow-hidden shadow-sm bg-white dark:bg-[#191a24]">
-                  {/* Build Card */}
-                  <button
-                    onClick={() =>
-                      handleSendSubmit("Help me build a prototype.")
-                    }
-                    className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
-                  >
-                    <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                      <FiCode className="text-[14px]" />
+              {!isFetchingMessages && messages.length > 0 && (() => {
+                const lastAssistantMsgIdx = messages.reduce(
+                  (lastIdx, msg, idx) => (msg.role === "assistant" ? idx : lastIdx),
+                  -1
+                );
+                return messages.map((m, index) => {
+                  const isUserMsg = m.role === "user";
+                  const isLatestUserMsg = index === lastUserMsgIdx;
+                  const isLatestAssistant = index === lastAssistantMsgIdx && !isSearching && !isBotTyping;
+                  const prevUserMsg = !isUserMsg
+                    ? [...messages.slice(0, index)]
+                      .reverse()
+                      .find((msg) => msg.role === "user")
+                    : null;
+
+                  const isSearchActuallyExecuted = isUserMsg
+                    ? Boolean(
+                      m.searchExecuted ||
+                      (messages[index + 1] && Array.isArray(messages[index + 1].sources) && messages[index + 1].sources.length > 0) ||
+                      (isLatestUserMsg && Array.isArray(activeSearchSources) && activeSearchSources.length > 0)
+                    )
+                    : false;
+
+                  return (
+                    <div
+                      key={index}
+                      ref={isLatestUserMsg ? latestUserMsgRef : undefined}
+                      className="w-full flex flex-col"
+                    >
+                      <MessageBubble
+                        role={m.role}
+                        content={m.content}
+                        attachments={m.attachments}
+                        enableSearch={m.enableSearch}
+                        searchExecuted={isSearchActuallyExecuted}
+                        sources={m.sources || []}
+                        requiresWebSearch={m.requiresWebSearch || false}
+                        onEnableSearchAndRetry={() => {
+                          handleToggleWebSearch(true);
+                          if (prevUserMsg?.content) {
+                            handleSendSubmit(
+                              prevUserMsg.content,
+                              null,
+                              undefined,
+                              prevUserMsg.attachments,
+                              undefined,
+                              false,
+                              true
+                            );
+                          }
+                        }}
+                        followUps={m.followUps || []}
+                        isLatestAssistant={isLatestAssistant}
+                        onSelectFollowUp={(followUpPrompt) => handleSendSubmit(followUpPrompt)}
+                        isSpeaking={activeSpeakingIndex === index}
+                        onToggleSpeak={
+                          !isUserMsg
+                            ? (rawContent) => handleToggleSpeak(index, rawContent)
+                            : undefined
+                        }
+                        onRetry={
+                          isUserMsg
+                            ? (newContent) =>
+                              handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index, false, m.enableSearch)
+                            : prevUserMsg
+                              ? (newContent) =>
+                                handleSendSubmit(newContent || prevUserMsg.content, null, undefined, prevUserMsg.attachments, undefined, false, prevUserMsg.enableSearch)
+                              : undefined
+                        }
+                        isStoppedMidway={m.isStoppedMidway}
+                        onContinueGeneration={() => handleContinueGeneration(m.content, index)}
+                      />
                     </div>
-                    <span className="text-[13px] font-normal mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
-                      Build a prototype
-                    </span>
-                    <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
-                      Turn an idea into a working interface
-                    </span>
-                  </button>
-                  {/* Analyze Card */}
+                  );
+                });
+              })()}
+
+              {(isSearching || isBotTyping) && (
+                <MessageBubble
+                  role="assistant"
+                  content={streamingReply}
+                  isStreaming={true}
+                  isThinking={!streamingReply}
+                  isWebSearching={isWebSearching}
+                  sources={activeSearchSources}
+                  requiresWebSearch={isSearchGuidanceActive}
+                  onEnableSearchAndRetry={() => handleToggleWebSearch(true)}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Fixed Input Area - Text stops above this line; background pattern shows through */}
+          <div className="shrink-0 z-10 relative pb-2 sm:pb-3 md:pb-4 bg-transparent pr-0 md:pr-[6px]">
+            {(showScrollBottom || showScrollToUser) && (
+              <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-1.5 p-1 rounded-full bg-surface-primary/95 dark:bg-[#191A24]/95 backdrop-blur-md border border-border-primary dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-200">
+                {showScrollToUser && (
                   <button
-                    onClick={() =>
-                      handleSendSubmit("Help me analyze a document.")
-                    }
-                    className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                    onClick={scrollToLatestUserMessage}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary text-xs font-medium transition-all active:scale-95 cursor-pointer shadow-xs group"
+                    title="Scroll to your latest message"
                   >
-                    <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                      <FiFileText className="text-[14px]" />
-                    </div>
-                    <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
-                      Analyze a document
-                    </span>
-                    <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
-                      Find the signal in a long file
-                    </span>
+                    <FiArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-y-0.5 transition-transform" />
+                    <span className="text-[11px] font-semibold hidden xs:inline">Latest sent</span>
                   </button>
-                  {/* Create Card */}
+                )}
+                {showScrollBottom && (
                   <button
-                    onClick={() =>
-                      handleSendSubmit("Help me explore a visual direction.")
-                    }
-                    className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                    onClick={() => scrollToBottom(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-text-primary dark:text-white text-xs font-medium transition-all active:scale-95 cursor-pointer shadow-xs group"
+                    title="Scroll to bottom"
                   >
-                    <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                      <FiImage className="text-[14px]" />
-                    </div>
-                    <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
-                      Create an image
-                    </span>
-                    <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
-                      Explore a visual direction
-                    </span>
+                    <FiArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-y-0.5 transition-transform" />
+                    <span className="text-[11px] font-semibold hidden xs:inline">Bottom</span>
                   </button>
-                </div>
+                )}
               </div>
             )}
-
-          {!isFetchingMessages && messages.length > 0 && (
-            <div className="w-full flex justify-center py-1">
-              <span className="text-[11px] font-semibold text-text-muted">
-                {formatChatTimestamp(currentChat, messages)}
-              </span>
+            <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6 pb-2 shrink-0">
+              <ChatInput
+                onSend={handleSendSubmit}
+                isGenerating={isSearching || isBotTyping}
+                onStop={handleStopGeneration}
+                autoListenTrigger={autoListenTrigger}
+                isWebSearchActive={isWebSearchActive}
+                setIsWebSearchActive={handleToggleWebSearch}
+                isDevModeActive={isDevModeActive}
+                setIsDevModeActive={handleToggleDevMode}
+              />
             </div>
-          )}
-
-          {!isFetchingMessages && messages.length > 0 && (() => {
-            const lastAssistantMsgIdx = messages.reduce(
-              (lastIdx, msg, idx) => (msg.role === "assistant" ? idx : lastIdx),
-              -1
-            );
-            return messages.map((m, index) => {
-              const isUserMsg = m.role === "user";
-              const isLatestUserMsg = index === lastUserMsgIdx;
-              const isLatestAssistant = index === lastAssistantMsgIdx && !isSearching && !isBotTyping;
-              const prevUserMsg = !isUserMsg
-                ? [...messages.slice(0, index)]
-                    .reverse()
-                    .find((msg) => msg.role === "user")
-                : null;
-
-              const isSearchActuallyExecuted = isUserMsg
-                ? Boolean(
-                    m.searchExecuted ||
-                    (messages[index + 1] && Array.isArray(messages[index + 1].sources) && messages[index + 1].sources.length > 0) ||
-                    (isLatestUserMsg && Array.isArray(activeSearchSources) && activeSearchSources.length > 0)
-                  )
-                : false;
-
-              return (
-                <div
-                  key={index}
-                  ref={isLatestUserMsg ? latestUserMsgRef : undefined}
-                  className="w-full flex flex-col"
-                >
-                  <MessageBubble
-                    role={m.role}
-                    content={m.content}
-                    attachments={m.attachments}
-                    enableSearch={m.enableSearch}
-                    searchExecuted={isSearchActuallyExecuted}
-                    sources={m.sources || []}
-                    requiresWebSearch={m.requiresWebSearch || false}
-                    onEnableSearchAndRetry={() => {
-                      handleToggleWebSearch(true);
-                      if (prevUserMsg?.content) {
-                        handleSendSubmit(
-                          prevUserMsg.content,
-                          null,
-                          undefined,
-                          prevUserMsg.attachments,
-                          undefined,
-                          false,
-                          true
-                        );
-                      }
-                    }}
-                    followUps={m.followUps || []}
-                    isLatestAssistant={isLatestAssistant}
-                    onSelectFollowUp={(followUpPrompt) => handleSendSubmit(followUpPrompt)}
-                    isSpeaking={activeSpeakingIndex === index}
-                    onToggleSpeak={
-                      !isUserMsg
-                        ? (rawContent) => handleToggleSpeak(index, rawContent)
-                        : undefined
-                    }
-                    onRetry={
-                      isUserMsg
-                        ? (newContent) =>
-                            handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index, false, m.enableSearch)
-                        : prevUserMsg
-                        ? (newContent) =>
-                            handleSendSubmit(newContent || prevUserMsg.content, null, undefined, prevUserMsg.attachments, undefined, false, prevUserMsg.enableSearch)
-                        : undefined
-                    }
-                    isStoppedMidway={m.isStoppedMidway}
-                    onContinueGeneration={() => handleContinueGeneration(m.content, index)}
-                  />
-                </div>
-              );
-            });
-          })()}
-
-          {(isSearching || isBotTyping) && (
-            <MessageBubble
-              role="assistant"
-              content={streamingReply}
-              isStreaming={true}
-              isThinking={!streamingReply}
-              isWebSearching={isWebSearching}
-              sources={activeSearchSources}
-              requiresWebSearch={isSearchGuidanceActive}
-              onEnableSearchAndRetry={() => handleToggleWebSearch(true)}
-            />
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* Fixed Input Area - Text stops above this line; background pattern shows through */}
-      <div className="shrink-0 z-10 relative pb-2 sm:pb-3 md:pb-4 bg-transparent pr-0 md:pr-[6px]">
-        {(showScrollBottom || showScrollToUser) && (
-          <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-1.5 p-1 rounded-full bg-surface-primary/95 dark:bg-[#191A24]/95 backdrop-blur-md border border-border-primary dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 duration-200">
-            {showScrollToUser && (
-              <button
-                onClick={scrollToLatestUserMessage}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary text-xs font-medium transition-all active:scale-95 cursor-pointer shadow-xs group"
-                title="Scroll to your latest message"
-              >
-                <FiArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-y-0.5 transition-transform" />
-                <span className="text-[11px] font-semibold hidden xs:inline">Latest sent</span>
-              </button>
-            )}
-            {showScrollBottom && (
-              <button
-                onClick={() => scrollToBottom(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-text-primary dark:text-white text-xs font-medium transition-all active:scale-95 cursor-pointer shadow-xs group"
-                title="Scroll to bottom"
-              >
-                <FiArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-y-0.5 transition-transform" />
-                <span className="text-[11px] font-semibold hidden xs:inline">Bottom</span>
-              </button>
-            )}
+        {/* Right Pane: Live Artifact Sandbox (Desktop/Tablet) */}
+        {isArtifactOpen && activeArtifact && (
+          <div className="hidden md:flex flex-1 min-w-0 h-full overflow-hidden transition-all duration-300">
+            <ArtifactPreviewPanel
+              artifact={activeArtifact}
+              onClose={handleCloseArtifact}
+            />
           </div>
         )}
-        <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6 pb-2 shrink-0">
-          <ChatInput
-            onSend={handleSendSubmit}
-            isGenerating={isSearching || isBotTyping}
-            onStop={handleStopGeneration}
-            autoListenTrigger={autoListenTrigger}
-            isWebSearchActive={isWebSearchActive}
-            setIsWebSearchActive={handleToggleWebSearch}
-            isDevModeActive={isDevModeActive}
-            setIsDevModeActive={handleToggleDevMode}
-          />
-        </div>
       </div>
-    </div>
 
-      {/* Right Pane: Live Artifact Sandbox (Desktop/Tablet) */}
+      {/* Mobile Fullscreen Preview Overlay */}
       {isArtifactOpen && activeArtifact && (
-        <div className="hidden md:flex flex-1 min-w-0 h-full overflow-hidden transition-all duration-300">
-          <ArtifactPreviewPanel
-            artifact={activeArtifact}
-            onClose={handleCloseArtifact}
-          />
+        <div className="md:hidden fixed inset-0 z-50 bg-black/80 flex flex-col">
+          <div className="flex-1 h-full w-full">
+            <ArtifactPreviewPanel
+              artifact={activeArtifact}
+              onClose={handleCloseArtifact}
+            />
+          </div>
         </div>
       )}
-    </div>
-
-    {/* Mobile Fullscreen Preview Overlay */}
-    {isArtifactOpen && activeArtifact && (
-      <div className="md:hidden fixed inset-0 z-50 bg-black/80 flex flex-col">
-        <div className="flex-1 h-full w-full">
-          <ArtifactPreviewPanel
-            artifact={activeArtifact}
-            onClose={handleCloseArtifact}
-          />
-        </div>
-      </div>
-    )}
 
       {/* ChatGPT-style Share Modal */}
       <ShareModal

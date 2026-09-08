@@ -1,7 +1,30 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
-import { FiDatabase, FiStar, FiZap, FiFileText, FiImage, FiX, FiPaperclip, FiGlobe, FiCode } from "react-icons/fi";
+import {
+  FiDatabase,
+  FiStar,
+  FiZap,
+  FiFileText,
+  FiImage,
+  FiX,
+  FiPaperclip,
+  FiGlobe,
+  FiCode,
+  FiSearch,
+  FiCheck,
+  FiCpu,
+  FiServer
+} from "react-icons/fi";
+
+const DEFAULT_AUTO_MODEL = {
+  displayName: "Auto",
+  modelId: "auto",
+  provider: "auto",
+  serverName: "Auto",
+  isCluster: true,
+  isAuto: true,
+};
 
 const ChatInput = ({
   onSend,
@@ -28,13 +51,11 @@ const ChatInput = ({
   const { isDark } = useTheme();
 
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState({
-    displayName: "Glm 5.3 Flash Cloud",
-    modelId: "glm-5.3-flash:cloud",
-    provider: "glm",
-  });
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_AUTO_MODEL);
+  const isUserSelectedModelRef = useRef(false);
   const [modelsList, setModelsList] = useState([]);
-  const [activeTab, setActiveTab] = useState("All Servers");
+  const [activeTab, setActiveTab] = useState("cluster");
+  const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [userCredits, setUserCredits] = useState(0);
   const modelMenuRef = useRef(null);
   const inputRef = useRef(null);
@@ -221,32 +242,131 @@ const ChatInput = ({
     }
   }, [isModelMenuOpen]);
 
-  const getProvider = (m) => {
-    let p = m.provider || m.serverFormat || "";
-    p = p.toLowerCase().trim();
-    if (!p || p === "system") {
-      const mid = (m.modelId || "").toLowerCase();
-      if (mid.includes("gemini")) return "gemini";
-      if (mid.includes("gpt")) return "openai";
-      if (mid.includes("llama")) return "ollama";
-      if (mid.includes("glm")) return "glm";
-      if (p) return p;
-      return "other";
-    }
-    return p;
+  const [serversList, setServersList] = useState([]);
+
+  const getServerIcon = (format = "", name = "") => {
+    const f = (format || "").toLowerCase();
+    const n = (name || "").toLowerCase();
+    if (f === "ollama" || n.includes("ollama")) return "🦙";
+    if (f === "gemini" || n.includes("gemini")) return "✨";
+    if (f === "glm" || n.includes("glm") || n.includes("zhipu")) return "🌐";
+    if (f === "openai" || n.includes("openai") || n.includes("gpt")) return "🟢";
+    if (f === "anthropic" || n.includes("claude")) return "🟣";
+    if (f === "groq" || n.includes("groq")) return "⚡";
+    return "🖥️";
   };
 
-  const providers = [
-    "All Servers",
-    ...new Set(modelsList.map((m) => getProvider(m)).filter(Boolean)),
-  ];
-  const filteredModels =
-    activeTab === "All Servers"
-      ? modelsList.filter((m) => m.enabled && m.modelId !== "auto")
-      : modelsList.filter(
-          (m) =>
-            m.enabled && getProvider(m) === activeTab && m.modelId !== "auto",
-        );
+  const availableTabs = useMemo(() => {
+    const realModels = modelsList.filter((m) => !m.isCluster && m.modelId !== "auto");
+    const tabs = [
+      { key: "cluster", label: "Auto", icon: "⚡", isCluster: true, count: realModels.length }
+    ];
+
+    let activeServers = [];
+    if (serversList && serversList.length > 0) {
+      activeServers = serversList;
+    } else {
+      // Dynamic fallback: derive active servers directly from the returned models list
+      const map = new Map();
+      realModels.forEach((m) => {
+        const sKey = (m.serverName || m.provider || "server").trim();
+        if (!map.has(sKey.toLowerCase())) {
+          map.set(sKey.toLowerCase(), {
+            id: m.serverId,
+            name: sKey,
+            format: m.serverFormat || m.provider || "ollama",
+          });
+        }
+      });
+      activeServers = Array.from(map.values());
+    }
+
+    activeServers.forEach((srv) => {
+      const srvKey = (srv.name || "").toLowerCase().trim();
+      const srvModels = realModels.filter((m) =>
+        (m.serverId && srv.id && String(m.serverId) === String(srv.id)) ||
+        (m.serverName && m.serverName.toLowerCase().trim() === srvKey)
+      );
+
+      // Only display tabs for active servers that have models in the DB
+      if (srvModels.length > 0) {
+        tabs.push({
+          key: srvKey,
+          serverId: srv.id,
+          serverName: srv.name,
+          label: srv.name.charAt(0).toUpperCase() + srv.name.slice(1),
+          icon: getServerIcon(srv.format, srv.name),
+          count: srvModels.length,
+        });
+      }
+    });
+
+    return tabs;
+  }, [serversList, modelsList]);
+
+  // Keep activeTab aligned with available tabs
+  useEffect(() => {
+    if (availableTabs.length > 0) {
+      const exists = availableTabs.some((t) => t.key === activeTab);
+      if (!exists) {
+        setActiveTab(availableTabs[0].key);
+      }
+    }
+  }, [availableTabs, activeTab]);
+
+  const activeTabObj = useMemo(() => {
+    return availableTabs.find((t) => t.key === activeTab) || availableTabs[0] || { key: "cluster", label: "Auto" };
+  }, [availableTabs, activeTab]);
+
+  const displayedModels = useMemo(() => {
+    const q = modelSearchQuery.trim().toLowerCase();
+
+    if (activeTab === "cluster") {
+      const clusterItem = modelsList.find((m) => m.modelId === "auto" || m.isCluster) || DEFAULT_AUTO_MODEL;
+      const normalizedClusterItem = {
+        ...clusterItem,
+        displayName: "Auto",
+        modelId: "auto",
+        provider: "auto",
+        serverName: "Auto",
+        isCluster: true,
+        isAuto: true,
+        recommended: true,
+        description: "Auto-routes dynamically across any active servers in the database"
+      };
+
+      if (!q) return [normalizedClusterItem];
+      // When searching in Auto tab, search across all models from all active servers
+      return modelsList.filter((m) =>
+        (m.displayName || "").toLowerCase().includes(q) ||
+        (m.modelId || "").toLowerCase().includes(q) ||
+        (m.serverName || "").toLowerCase().includes(q)
+      );
+    }
+
+    // Filter strictly by the active server for this tab
+    const currentTabObj = availableTabs.find((t) => t.key === activeTab);
+    let filtered = modelsList.filter((m) => {
+      if (m.isCluster || m.modelId === "auto") return false;
+      if (!m.enabled) return false;
+      if (currentTabObj?.serverId && m.serverId) {
+        if (String(m.serverId) === String(currentTabObj.serverId)) return true;
+      }
+      if (m.serverName && m.serverName.toLowerCase().trim() === activeTab.toLowerCase().trim()) {
+        return true;
+      }
+      return false;
+    });
+
+    if (q) {
+      filtered = filtered.filter((m) =>
+        (m.displayName || "").toLowerCase().includes(q) ||
+        (m.modelId || "").toLowerCase().includes(q) ||
+        (m.serverName || "").toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [modelsList, activeTab, modelSearchQuery, availableTabs]);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -261,24 +381,19 @@ const ChatInput = ({
         const data = await res.json();
 
         if (data.success && data.models) {
-          const allProviders = data.models.map((m) => m.provider);
-          const uniqueProviders = [...new Set(allProviders)];
-          console.log("📦 All Providers from Data:", allProviders);
-          console.log("✨ Unique Providers:", uniqueProviders);
-
           setModelsList(data.models);
-          const defaultGlm =
-            data.models.find(
-              (m) =>
-                m.enabled &&
-                (m.modelId === "glm-5.3-flash:cloud" ||
-                  m.displayName === "Glm 5.3 Flash Cloud" ||
-                  (m.modelId && m.modelId.toLowerCase().includes("glm-5.3-flash")) ||
-                  (m.displayName && m.displayName.toLowerCase().includes("glm 5.3 flash")))
-            ) ||
-            data.models.find((m) => m.recommended && m.enabled) ||
-            data.models.find((m) => m.enabled);
-          if (defaultGlm) setSelectedModel(defaultGlm);
+          if (data.servers && Array.isArray(data.servers)) {
+            setServersList(data.servers);
+          }
+          // If user hasn't explicitly chosen a specific model, always keep Auto
+          setSelectedModel((prev) => {
+            if (isUserSelectedModelRef.current && prev && prev.modelId && prev.modelId !== "auto" && !prev.isCluster && !prev.isAuto) {
+              const matched = data.models.find((m) => m.modelId === prev.modelId);
+              if (matched) return matched;
+            }
+            const clusterModel = data.models.find((m) => m.modelId === "auto" || m.isCluster);
+            return clusterModel ? { ...clusterModel, displayName: "Auto", isAuto: true } : DEFAULT_AUTO_MODEL;
+          });
         }
       } catch (err) {
         console.error("Failed to fetch models:", err);
@@ -880,11 +995,21 @@ const ChatInput = ({
               <button
                 type="button"
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1 md:gap-1.5 text-[11px] sm:text-[12px] font-medium px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 border-0"
+                className="text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white transition flex items-center gap-1.5 text-[11px] sm:text-[12px] font-medium px-2 py-1 sm:py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 border-0"
               >
-                <span className="truncate max-w-[65px] xs:max-w-[95px] sm:max-w-[160px] md:max-w-[220px] text-left">
-                  {selectedModel.displayName}
-                </span>
+                {(!selectedModel || selectedModel.isCluster || selectedModel.modelId === "auto" || selectedModel.isAuto) ? (
+                  <span className="flex items-center gap-1.5 font-semibold text-accent-primary">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                    <span className="truncate max-w-[75px] xs:max-w-[110px] sm:max-w-[160px] md:max-w-[200px]">Auto</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span className="truncate max-w-[75px] xs:max-w-[110px] sm:max-w-[160px] md:max-w-[200px] text-left">
+                      {selectedModel.displayName || selectedModel.modelId}
+                    </span>
+                  </span>
+                )}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -903,34 +1028,182 @@ const ChatInput = ({
 
               {/* Desktop Dropdown Menu (hidden on mobile) */}
               <div 
-                className={`hidden sm:block absolute bottom-full right-0 mb-2 w-64 bg-surface-dropdown dark:bg-[#191A24] border border-border-primary dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 origin-bottom-right ${isModelMenuOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
+                className={`hidden sm:block absolute bottom-full right-0 mb-2 w-[390px] bg-surface-dropdown dark:bg-[#15161F] border border-border-primary dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 origin-bottom-right ${isModelMenuOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
               >
-                <div className="p-1.5 flex flex-col gap-0.5 max-h-[260px] overflow-y-auto custom-scrollbar">
-                  {filteredModels.map((model, index) => (
-                    <button
-                      key={`${model.modelId}-${model.serverId || index}`}
-                      type="button"
+                {/* Header */}
+                <div className="px-3.5 pt-3 pb-2 border-b border-border-primary/60 dark:border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-accent-primary/10 text-accent-primary flex items-center justify-center text-xs font-bold">
+                      <FiCpu className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-[13px] font-bold text-text-primary dark:text-white leading-tight">AI Model Routing</h4>
+                      <p className="text-[10px] text-text-muted dark:text-[#8A8A93]">Active cluster pool & categorized models</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Pool
+                  </span>
+                </div>
+
+                {/* Provider Tabs */}
+                <div className="px-2 pt-2 pb-1.5 flex items-center gap-1 border-b border-border-primary/40 dark:border-white/5 overflow-x-auto custom-scrollbar">
+                  {availableTabs.map((tab) => {
+                    const isActive = activeTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(tab.key);
+                          setModelSearchQuery("");
+                        }}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                          isActive
+                            ? "bg-accent-primary text-white shadow-xs font-semibold"
+                            : "text-text-muted hover:text-text-primary dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                        }`}
+                      >
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                        {tab.key !== "cluster" && tab.count != null && (
+                          <span className={`text-[10px] px-1 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-black/10 dark:bg-white/10 text-text-muted"}`}>
+                            {tab.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Search Bar */}
+                {activeTab !== "cluster" && (
+                  <div className="px-3 py-1.5 border-b border-border-primary/40 dark:border-white/5">
+                    <div className="relative flex items-center">
+                      <FiSearch className="absolute left-2.5 w-3.5 h-3.5 text-text-muted" />
+                      <input
+                        type="text"
+                        value={modelSearchQuery}
+                        onChange={(e) => setModelSearchQuery(e.target.value)}
+                        placeholder={`Search ${activeTabObj.label} models...`}
+                        className="w-full pl-8 pr-3 py-1 text-xs rounded-lg bg-black/5 dark:bg-white/5 border border-border-primary/40 dark:border-white/10 text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-accent-primary"
+                      />
+                      {modelSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setModelSearchQuery("")}
+                          className="absolute right-2 text-text-muted hover:text-text-primary dark:hover:text-white"
+                        >
+                          <FiX className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Model List */}
+                <div className="p-2 flex flex-col gap-1 max-h-[290px] overflow-y-auto custom-scrollbar">
+                  {/* Auto Route Banner */}
+                  {activeTab === "cluster" && !modelSearchQuery && (
+                    <div
                       onClick={() => {
-                        setSelectedModel(model);
+                        isUserSelectedModelRef.current = false;
+                        setSelectedModel(DEFAULT_AUTO_MODEL);
                         setIsModelMenuOpen(false);
                       }}
-                      className={`text-left px-3 py-2 text-[12px] md:text-[13px] font-medium rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-2 ${
-                        selectedModel.modelId === model.modelId 
-                          ? "bg-accent-primary/10 text-text-primary dark:text-[#e5e5e5]" 
-                          : "text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-[#e5e5e5]"
+                      className={`p-3 rounded-xl border transition-all cursor-pointer text-left flex flex-col gap-1.5 ${
+                        !selectedModel || selectedModel.modelId === "auto" || selectedModel.isCluster || selectedModel.isAuto
+                          ? "bg-accent-primary/10 border-accent-primary text-text-primary dark:text-white shadow-xs"
+                          : "bg-surface-secondary/40 border-border-primary/60 dark:border-white/10 hover:border-accent-primary/60 hover:bg-black/5 dark:hover:bg-white/5"
                       }`}
                     >
-                      <span className="truncate flex-1">{model.displayName || model.modelId}</span>
-                      {selectedModel.modelId === model.modelId && (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent-primary shrink-0">
-                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                  {filteredModels.length === 0 && (
-                    <div className="text-center py-4 text-text-muted dark:text-[#888] text-xs">
-                      No models found.
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">⚡</span>
+                          <span className="text-xs font-bold text-text-primary dark:text-white">Auto (Smart Auto-Route)</span>
+                        </div>
+                        {(!selectedModel || selectedModel.modelId === "auto" || selectedModel.isCluster || selectedModel.isAuto) ? (
+                          <span className="flex items-center gap-1 text-[11px] font-semibold text-accent-primary">
+                            <FiCheck className="w-4 h-4" /> Selected
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Auto-Balance
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-text-muted dark:text-[#8A8A93] leading-relaxed">
+                        Smart auto-route across all active healthy cluster nodes (Gemini, Ollama, Cloud). Any active server can send response dynamically with instant failover.
+                      </p>
+                      <div className="flex items-center gap-2 pt-1 border-t border-border-primary/40 dark:border-white/5 text-[10px] text-text-muted">
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          All Active Servers
+                        </span>
+                        <span>•</span>
+                        <span>Dynamic Load Balancing</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Render Categorized Model Items */}
+                  {displayedModels
+                    .filter((m) => !(activeTab === "cluster" && (m.modelId === "auto" || m.isCluster)))
+                    .map((model, index) => {
+                      const isSelected = selectedModel.modelId === model.modelId && !selectedModel.isCluster && !selectedModel.isAuto;
+                      return (
+                        <button
+                          key={`${model.modelId}-${model.serverId || index}`}
+                          type="button"
+                          onClick={() => {
+                            isUserSelectedModelRef.current = true;
+                            setSelectedModel(model);
+                            setIsModelMenuOpen(false);
+                          }}
+                          className={`text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${
+                            isSelected
+                              ? "bg-accent-primary/10 border-accent-primary text-text-primary dark:text-white font-medium"
+                              : "border-transparent hover:border-border-primary dark:hover:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-text-muted dark:text-[#8A8A93] hover:text-text-primary dark:hover:text-white"
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-semibold text-text-primary dark:text-white truncate">
+                                {model.displayName || model.modelId}
+                              </span>
+                              {model.tier && (
+                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-medium ${
+                                  model.tier === "FAST"
+                                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                    : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                                }`}>
+                                  {model.tier}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-text-muted dark:text-[#8A8A93] mt-0.5 truncate">
+                              <span className="truncate">{model.serverName || model.provider || "Active Node"}</span>
+                              <span>•</span>
+                              <span className="font-mono">{model.modelId}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-text-muted dark:text-[#8A8A93]">
+                              {model.creditCost != null ? `${model.creditCost} cr` : "0.5 cr"}
+                            </span>
+                            {isSelected && (
+                              <FiCheck className="w-4 h-4 text-accent-primary shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                  {displayedModels.length === 0 && (
+                    <div className="text-center py-6 text-text-muted text-xs">
+                      No models found matching "{modelSearchQuery}".
                     </div>
                   )}
                 </div>
@@ -950,7 +1223,7 @@ const ChatInput = ({
 
                   {/* Sheet Modal */}
                   <div
-                    className="relative z-10 w-full bg-white dark:bg-[#191A24] border-t border-border-primary dark:border-white/10 rounded-t-3xl shadow-2xl p-4 max-h-[75vh] flex flex-col animate-in slide-in-from-bottom duration-200"
+                    className="relative z-10 w-full bg-white dark:bg-[#15161F] border-t border-border-primary dark:border-white/10 rounded-t-3xl shadow-2xl p-4 max-h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-200"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Pull Indicator Pill */}
@@ -959,11 +1232,12 @@ const ChatInput = ({
                     {/* Header */}
                     <div className="flex items-center justify-between pb-3 border-b border-border-primary dark:border-white/10">
                       <div>
-                        <h3 className="text-[14px] font-semibold text-text-primary dark:text-white">
-                          Select Model
+                        <h3 className="text-[14px] font-semibold text-text-primary dark:text-white flex items-center gap-1.5">
+                          <FiCpu className="text-accent-primary" />
+                          Select AI Model & Cluster
                         </h3>
                         <p className="text-[11px] text-text-muted dark:text-[#8A8A93]">
-                          Choose an AI model for your prompt
+                          Choose active cluster or specific provider model
                         </p>
                       </div>
                       <button
@@ -975,36 +1249,161 @@ const ChatInput = ({
                       </button>
                     </div>
 
-                    {/* Model List */}
-                    <div className="py-2 flex flex-col gap-1 overflow-y-auto custom-scrollbar max-h-[55vh]">
-                      {filteredModels.map((model, index) => {
-                        const isSelected = selectedModel.modelId === model.modelId;
+                    {/* Mobile Provider Tabs */}
+                    <div className="py-2 flex items-center gap-1.5 border-b border-border-primary/40 dark:border-white/5 overflow-x-auto custom-scrollbar">
+                      {availableTabs.map((tab) => {
+                        const isActive = activeTab === tab.key;
                         return (
                           <button
-                            key={`${model.modelId}-${model.serverId || index}`}
+                            key={tab.key}
                             type="button"
                             onClick={() => {
-                              setSelectedModel(model);
-                              setIsModelMenuOpen(false);
+                              setActiveTab(tab.key);
+                              setModelSearchQuery("");
                             }}
-                            className={`text-left px-3.5 py-3 text-[13px] font-medium rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-3 ${
-                              isSelected
-                                ? "bg-accent-primary/10 text-accent-primary dark:text-white font-semibold"
-                                : "text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-[#e5e5e5]"
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                              isActive
+                                ? "bg-accent-primary text-white shadow-xs font-semibold"
+                                : "text-text-muted hover:text-text-primary dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                             }`}
                           >
-                            <span className="truncate flex-1">{model.displayName || model.modelId}</span>
-                            {isSelected && (
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent-primary shrink-0">
-                                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-                              </svg>
+                            <span>{tab.icon}</span>
+                            <span>{tab.label}</span>
+                            {tab.key !== "cluster" && tab.count != null && (
+                              <span className={`text-[10px] px-1 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-black/10 dark:bg-white/10 text-text-muted"}`}>
+                                {tab.count}
+                              </span>
                             )}
                           </button>
                         );
                       })}
-                      {filteredModels.length === 0 && (
-                        <div className="text-center py-6 text-text-muted dark:text-[#888] text-xs">
-                          No models found.
+                    </div>
+
+                    {/* Search Bar on Mobile */}
+                    {activeTab !== "cluster" && (
+                      <div className="py-2 border-b border-border-primary/40 dark:border-white/5">
+                        <div className="relative flex items-center">
+                          <FiSearch className="absolute left-2.5 w-3.5 h-3.5 text-text-muted" />
+                          <input
+                            type="text"
+                            value={modelSearchQuery}
+                            onChange={(e) => setModelSearchQuery(e.target.value)}
+                            placeholder={`Search ${activeTabObj.label} models...`}
+                            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-black/5 dark:bg-white/5 border border-border-primary/40 dark:border-white/10 text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-accent-primary"
+                          />
+                          {modelSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setModelSearchQuery("")}
+                              className="absolute right-2 text-text-muted hover:text-text-primary dark:hover:text-white"
+                            >
+                              <FiX className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Model List */}
+                    <div className="py-2 flex flex-col gap-1 overflow-y-auto custom-scrollbar max-h-[50vh]">
+                      {activeTab === "cluster" && !modelSearchQuery && (
+                        <div
+                          onClick={() => {
+                            isUserSelectedModelRef.current = false;
+                            setSelectedModel(DEFAULT_AUTO_MODEL);
+                            setIsModelMenuOpen(false);
+                          }}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-left flex flex-col gap-1.5 ${
+                            !selectedModel || selectedModel.modelId === "auto" || selectedModel.isCluster || selectedModel.isAuto
+                              ? "bg-accent-primary/10 border-accent-primary text-text-primary dark:text-white shadow-xs"
+                              : "bg-surface-secondary/40 border-border-primary/60 dark:border-white/10 hover:border-accent-primary/60"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">⚡</span>
+                              <span className="text-xs font-bold text-text-primary dark:text-white">Auto (Smart Auto-Route)</span>
+                            </div>
+                            {(!selectedModel || selectedModel.modelId === "auto" || selectedModel.isCluster || selectedModel.isAuto) ? (
+                              <span className="flex items-center gap-1 text-xs font-semibold text-accent-primary">
+                                <FiCheck className="w-4 h-4" /> Selected
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                Auto-Balance
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-text-muted dark:text-[#8A8A93] leading-relaxed">
+                            Smart auto-route across all active healthy servers in the database. Any active server can send response dynamically with instant failover.
+                          </p>
+                          <div className="flex items-center gap-2 pt-1.5 border-t border-border-primary/40 dark:border-white/5 text-[11px] text-text-muted">
+                            <span className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              All Active Servers
+                            </span>
+                            <span>•</span>
+                            <span>Highest Reliability</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {displayedModels
+                        .filter((m) => !(activeTab === "cluster" && (m.modelId === "auto" || m.isCluster)))
+                        .map((model, index) => {
+                          const isSelected = selectedModel.modelId === model.modelId && !selectedModel.isCluster && !selectedModel.isAuto;
+                          return (
+                            <button
+                              key={`${model.modelId}-${model.serverId || index}`}
+                              type="button"
+                              onClick={() => {
+                                isUserSelectedModelRef.current = true;
+                                setSelectedModel(model);
+                                setIsModelMenuOpen(false);
+                              }}
+                              className={`text-left p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 border ${
+                                isSelected
+                                  ? "bg-accent-primary/10 border-accent-primary text-text-primary dark:text-white font-medium"
+                                  : "border-transparent hover:border-border-primary dark:hover:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-text-muted dark:text-[#8A8A93]"
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[13px] font-semibold text-text-primary dark:text-white truncate">
+                                    {model.displayName || model.modelId}
+                                  </span>
+                                  {model.tier && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                      model.tier === "FAST"
+                                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                        : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                                    }`}>
+                                      {model.tier}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-text-muted dark:text-[#8A8A93] mt-0.5 truncate">
+                                  <span className="truncate">{model.serverName || model.provider || "Active Node"}</span>
+                                  <span>•</span>
+                                  <span className="font-mono">{model.modelId}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[11px] text-text-muted dark:text-[#8A8A93]">
+                                  {model.creditCost != null ? `${model.creditCost} cr` : "0.5 cr"}
+                                </span>
+                                {isSelected && (
+                                  <FiCheck className="w-4 h-4 text-accent-primary shrink-0" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+
+                      {displayedModels.length === 0 && (
+                        <div className="text-center py-8 text-text-muted text-xs">
+                          No models found matching "{modelSearchQuery}".
                         </div>
                       )}
                     </div>
