@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Loader2 } from "lucide-react";
 import {
   FiUser,
   FiRotateCw,
@@ -513,19 +514,9 @@ const MessageBubble = ({
                 <span>Searching the web...</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 h-7 select-none py-1">
-                <span
-                  className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
-                  style={{ animationDelay: "-0.32s" }}
-                />
-                <span
-                  className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
-                  style={{ animationDelay: "-0.16s" }}
-                />
-                <span
-                  className="w-2 h-2 rounded-full bg-accent-primary dark:bg-white/80 animate-bounce"
-                  style={{ animationDelay: "0s" }}
-                />
+              <div className="flex items-center gap-2 h-7 select-none py-1 text-xs text-text-muted dark:text-white/80 font-medium">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-primary shrink-0" />
+                <span className="tracking-wide animate-pulse">Thinking...</span>
               </div>
             )
           ) : isEditing && isUser ? (
