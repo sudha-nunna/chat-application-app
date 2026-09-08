@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 import {
   FiX,
   FiPlay,
@@ -877,8 +878,8 @@ export default function TestDrawer({
               )}
               {isThinking && (
                 <div className="text-xs text-text-muted flex items-center gap-2 p-2">
-                  <div className="w-2 h-2 rounded-full bg-accent-primary animate-ping" />
-                  <span>Generating with {model}...</span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-primary shrink-0" />
+                  <span className="tracking-wide animate-pulse">Thinking...</span>
                 </div>
               )}
               {/* Invisible scroll-to-bottom anchor */}
