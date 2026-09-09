@@ -336,6 +336,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   }, [isArtifactOpen]);
 
   useEffect(() => {
+    // Preserve artifact if currently streaming and currentChatId just transitioned from null/new -> assigned chatId
+    if (isGeneratingRef.current && (streamingChatIdRef.current === currentChatId || !currentChatId)) {
+      return;
+    }
     setActiveArtifact(null);
     setIsArtifactOpen(false);
   }, [currentChatId]);
@@ -774,8 +778,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       lastUsedModelRef.current = selectedModelId;
     }
 
-    // When Dev Mode is active, immediately open the split view with a clean ready state (no old code from previous chats)
-    if (isDevModeActive && !continuationContext) {
+    lastParsedContentRef.current = "";
+    lastArtifactUpdateRef.current = 0;
+
+    // Detect if prompt is requesting web code / UI creation, or if Dev Mode is active
+    const isCodeOrWebPrompt =
+      isDevModeActive ||
+      /(landing page|website|web page|webpage|dashboard|component|react|html|css|tailwind|portfolio|admin|ui|frontend|app preview|clone|design a|build a|create a.*page|create a.*app|generate a.*page|make a.*page|write code)/i.test(
+        cleanText
+      );
+
+    // Immediately open the preview pane so user sees the live generation in real-time
+    if (isCodeOrWebPrompt && !continuationContext) {
       setIsArtifactOpen(true);
       setActiveArtifact({
         code: `<!-- Generating live code preview... -->\n<div class="flex items-center justify-center min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans p-6 text-center">\n  <div>\n    <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/10 animate-pulse">\n      ⚡\n    </div>\n    <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">Generating Web App...</h1>\n    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">\n      Codegene AI is writing the code. It will stream live directly here in real-time.\n    </p>\n    <div class="inline-flex items-center gap-2 mt-5 px-3.5 py-1.5 rounded-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-mono">\n      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>\n      Streaming live\n    </div>\n  </div>\n</div>`,

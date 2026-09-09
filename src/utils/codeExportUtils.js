@@ -4,6 +4,61 @@
  */
 
 /**
+ * Checks if a code block is non-UI backend code or an isolated inline fragment
+ */
+function isIgnoredOrBackendBlock(rawCode, lang) {
+  const lower = (rawCode || "").toLowerCase();
+  // Skip shell/terminal
+  if (lang === "bash" || lang === "sh" || lang === "shell" || lang === "terminal") return true;
+  // Skip backend serverless or database schemas
+  if (
+    lower.includes("@vercel/node") ||
+    lower.includes("req: vercelrequest") ||
+    lower.includes("res: vercelresponse") ||
+    (lower.includes("export default {") && lower.includes("name: \"article\""))
+  ) {
+    return true;
+  }
+
+  // If it's CSS or full HTML document
+  if (lang === "css" || rawCode.includes("<!DOCTYPE") || rawCode.includes("<html")) return false;
+
+  // Must declare a function, class, arrow component, or export
+  const hasComponentDeclaration =
+    /\b(function|class)\b/.test(rawCode) ||
+    /\bconst\s+[A-Za-z0-9_$]+\s*(?::\s*[^=]+)?=\s*(?:\([^)]*\)|[a-zA-Z0-9_$]+|\(\s*\))\s*=>/.test(rawCode) ||
+    /\bexport\s+default\b/.test(rawCode) ||
+    /\bexport\s+(const|let|var|function|class|interface|type|enum)\b/.test(rawCode) ||
+    /\b(interface|type)\s+[A-Z]/.test(rawCode);
+
+  if (!hasComponentDeclaration) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Robustly extracts the component name from code (supports function, class, arrow component, export default)
+ */
+export function extractComponentName(code, fallbackName = "App") {
+  if (!code) return fallbackName;
+  // 1. export default function Name
+  let m = code.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
+  if (m) return m[1];
+  // 2. export default Name;
+  m = code.match(/export\s+default\s+([A-Z][A-Za-z0-9_]*)\b/);
+  if (m && m[1] !== "function" && m[1] !== "class") return m[1];
+  // 3. const Name: ... = ... => or const Name = ... =>
+  m = code.match(/(?:export\s+)?(?:const|let|var)\s+([A-Z][A-Za-z0-9_]*)(?:\s*:\s*[^=]+)?\s*=\s*(?:(?:\([^)]*\)|[a-zA-Z0-9_$]+|\(\s*\))\s*=>|function)/);
+  if (m) return m[1];
+  // 4. function Name(
+  m = code.match(/function\s+([A-Z][A-Za-z0-9_]*)\s*\(/);
+  if (m) return m[1];
+  return fallbackName;
+}
+
+/**
  * Parses markdown to detect if multiple files/components are present.
  * Detects filenames from headers (### Navbar.jsx), code fence params (```jsx filename="App.jsx"),
  * or top-line comments (// Navbar.jsx).
@@ -11,17 +66,19 @@
 export function extractProjectFiles(markdownText) {
   if (!markdownText || typeof markdownText !== "string") return null;
 
-  const codeBlockRegex = /```([a-zA-Z0-9_.-]*)\s*([\s\S]*?)```/gi;
+  const codeBlockRegex = /```([a-zA-Z0-9_.-]*)[^\n]*\n([\s\S]*?)```/gi;
   const blocks = [];
   let match;
+  let lastMatchEnd = 0;
 
   while ((match = codeBlockRegex.exec(markdownText)) !== null) {
     const info = (match[1] || "").trim();
     const rawCode = (match[2] || "").trim();
     const matchIndex = match.index;
+    lastMatchEnd = matchIndex + match[0].length;
 
     // Detect language
-    let lang = "html";
+    let lang = info.toLowerCase();
     let filenameFromInfo = null;
 
     const fnMatch = info.match(/(?:filename=|file=)?["']?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)["']?/i);
@@ -33,33 +90,73 @@ export function extractProjectFiles(markdownText) {
       lang = firstToken || "html";
     }
 
-    // Inspect preceding markdown text (up to 150 chars) for filename headers like `### Navbar.jsx`
-    const precedingText = markdownText.slice(Math.max(0, matchIndex - 150), matchIndex);
-    const headerMatch = precedingText.match(/(?:^|\n)(?:###|##|#|\*\*)\s*(?:File:\s*)?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)/i);
+    // Skip non-UI backend code or isolated fragments
+    if (isIgnoredOrBackendBlock(rawCode, lang)) {
+      continue;
+    }
+
+    // Inspect preceding markdown text strictly between the previous block and this block
+    const precedingText = markdownText.slice(Math.max(lastMatchEnd, matchIndex - 250), matchIndex);
+    const headerMatches = Array.from(precedingText.matchAll(/(?:^|\n)(?:###|##|#|\*\*)\s*(?:`?File:\s*)?`?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)/gi));
+    const headerMatch = headerMatches.length > 0 ? headerMatches[headerMatches.length - 1] : null;
 
     // Inspect first line of code for `// Navbar.jsx` or `/* Navbar.jsx */`
     const firstLineMatch = rawCode.match(/^(?:\/\/|\/\*|<!--)\s*([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)/i);
 
     let detectedName = filenameFromInfo || (headerMatch ? headerMatch[1].trim() : null) || (firstLineMatch ? firstLineMatch[1].trim() : null);
 
-    // Component name fallback for React
-    const componentMatch = rawCode.match(/(?:export\s+default\s+function|function|const)\s+([A-Z][A-Za-z0-9_]*)/);
-    const componentName = componentMatch ? componentMatch[1] : null;
+    // Clean up filename (remove leading paths like src/components/)
+    let baseFileName = detectedName ? detectedName.split("/").pop() : null;
 
-    if (!detectedName && componentName) {
-      detectedName = `${componentName}.${lang === "tsx" || lang === "ts" ? "tsx" : "jsx"}`;
+    // Component name extraction
+    const componentName = extractComponentName(rawCode, null);
+
+    if (!baseFileName && componentName) {
+      baseFileName = `${componentName}.${lang === "tsx" || lang === "ts" ? "tsx" : "jsx"}`;
     }
 
-    const hasHtmlTags = /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode);
-    const hasReactComponent = /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*\s*=\s*\(|return\s*\(\s*<)/.test(rawCode);
+    // If there is already at least one component, secondary blocks without explicit filename
+    // and without a component declaration (e.g. usage snippets `<Component />` or instructions)
+    // must not be treated as separate project files!
+    if (blocks.length > 0 && !detectedName && !componentName && lang !== "css") {
+      continue;
+    }
 
-    if (lang === "html" || lang === "jsx" || lang === "tsx" || lang === "css" || hasHtmlTags || hasReactComponent || (rawCode.length > 40 && /<[\s\S]+>/.test(rawCode))) {
+    const isWebLang = /^(html|htm|jsx|tsx|react|javascript|js|typescript|ts|css)$/i.test(lang);
+    const hasHtmlTags = /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode);
+    const hasReactComponent = /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*|return\s*\(\s*<)/.test(rawCode) && /<[a-zA-Z][\s\S]*>/.test(rawCode);
+
+    if (isWebLang || hasHtmlTags || hasReactComponent || (rawCode.length > 30 && /<[\s\S]+>/.test(rawCode))) {
       blocks.push({
-        name: detectedName || (blocks.length === 0 ? "App.jsx" : `Component${blocks.length + 1}.jsx`),
+        name: baseFileName || (blocks.length === 0 ? "App.jsx" : `Component${blocks.length + 1}.jsx`),
         code: rawCode,
-        language: lang === "css" ? "css" : lang === "html" ? "html" : lang === "tsx" ? "tsx" : "jsx",
+        language: lang === "css" ? "css" : lang === "html" ? "html" : lang.includes("ts") ? "tsx" : "jsx",
         componentName: componentName,
+        hasReactComponent: hasReactComponent,
       });
+    }
+  }
+
+  // Also check for trailing active streaming block in multi-file responses
+  let isActivelyStreamingTrailing = false;
+  const trailingRemaining = markdownText.slice(lastMatchEnd);
+  const trailingMatch = trailingRemaining.match(/```([a-zA-Z0-9_.-]*)[^\n]*\n?([\s\S]+)$/i);
+  if (trailingMatch) {
+    const tLang = (trailingMatch[1] || "").toLowerCase();
+    const tRawCode = (trailingMatch[2] || "").trim();
+    const tIsWeb = /^(html|htm|jsx|tsx|react|javascript|js|typescript|ts|css)$/i.test(tLang);
+    if (tIsWeb && tRawCode.length > 10 && !isIgnoredOrBackendBlock(tRawCode, tLang)) {
+      const compName = extractComponentName(tRawCode, null);
+      const ext = tLang.includes("ts") ? "tsx" : tLang === "html" ? "html" : "jsx";
+      const name = compName ? `${compName}.${ext}` : `StreamingComponent_${blocks.length + 1}.${ext}`;
+      blocks.push({
+        name,
+        code: tRawCode,
+        language: tLang === "css" ? "css" : tLang === "html" ? "html" : tLang.includes("ts") ? "tsx" : "jsx",
+        componentName: compName,
+        hasReactComponent: true,
+      });
+      isActivelyStreamingTrailing = true;
     }
   }
 
@@ -70,16 +167,46 @@ export function extractProjectFiles(markdownText) {
   const fileNames = [];
   let entryFile = null;
 
+  // Priority order for entry file: App > Admin > Dashboard > Portal > Home > Layout > Main > Index > Pricing > Page > first component with JSX
+  for (const b of blocks) {
+    if (/^app\.(jsx|tsx|js|html)$/i.test(b.name)) {
+      entryFile = b.name;
+      break;
+    }
+  }
+  if (!entryFile) {
+    for (const b of blocks) {
+      if (/^(admin|dashboard|portal|home|layout|main|index|pricing|page|landing)\.(jsx|tsx|js|html)$/i.test(b.name)) {
+        entryFile = b.name;
+        break;
+      }
+    }
+  }
+  if (!entryFile) {
+    for (const b of blocks) {
+      // Must contain JSX / React elements
+      if (b.hasReactComponent && /<[a-zA-Z][\s\S]*>/.test(b.code)) {
+        entryFile = b.name;
+        break;
+      }
+    }
+  }
+  if (!entryFile) {
+    for (const b of blocks) {
+      if (b.hasReactComponent) {
+        entryFile = b.name;
+        break;
+      }
+    }
+  }
+
   blocks.forEach((b, idx) => {
     let finalName = b.name;
     if (files[finalName]) {
       finalName = `${finalName.replace(/\.[^/.]+$/, "")}_${idx + 1}.${b.language}`;
     }
 
-    const isEntry = /app\.(jsx|tsx|js|html)$/i.test(finalName) || (!entryFile && idx === 0);
-    if (isEntry && !entryFile) {
-      entryFile = finalName;
-    }
+    const isEntry = (entryFile ? finalName === entryFile : idx === 0);
 
     files[finalName] = {
       name: finalName,
@@ -98,6 +225,7 @@ export function extractProjectFiles(markdownText) {
 
   return {
     isMultiFile: fileNames.length > 1,
+    isStreaming: isActivelyStreamingTrailing,
     files,
     fileNames,
     activeFile: entryFile || fileNames[0],
@@ -125,7 +253,7 @@ export function extractPreviewableCode(markdownText) {
       code: entry.code,
       language: entry.language,
       title: title.slice(0, 45),
-      isStreaming: false,
+      isStreaming: Boolean(project.isStreaming),
       isMultiFile: project.isMultiFile,
       files: project.files,
       fileNames: project.fileNames,
@@ -134,20 +262,24 @@ export function extractPreviewableCode(markdownText) {
     };
   }
 
-  // 2. Check for active STREAMING code block (unclosed ``` at the end of markdownText)
-  const streamingMatch = markdownText.match(/```([a-zA-Z0-9_.-]*)\s*([\s\S]+)$/i);
+  // 2. Check for active STREAMING single code block (unclosed ``` at the end of markdownText)
+  const streamingMatch = markdownText.match(/```([a-zA-Z0-9_.-]*)[^\n]*\n?([\s\S]*)$/i);
   if (streamingMatch) {
     const lang = (streamingMatch[1] || "").toLowerCase();
     const rawCode = (streamingMatch[2] || "").trim();
-    const hasHtmlTags = /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode);
-    const hasReactComponent = /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*\s*=\s*\(|return\s*\(\s*<)/.test(rawCode);
 
-    const isWebLang = lang === "html" || lang === "jsx" || lang === "tsx";
-    if (isWebLang || hasHtmlTags || hasReactComponent || (rawCode.length > 30 && /<[a-zA-Z][\s\S]*>/.test(rawCode))) {
-      const fileName = lang === "html" ? "index.html" : (lang === "tsx" ? "App.tsx" : "App.jsx");
+    const isWebLang = /^(html|htm|jsx|tsx|react|javascript|js|typescript|ts)$/i.test(lang);
+    const hasHtmlTags = /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode);
+    const hasReactComponent = /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*|return\s*\(\s*<)/.test(rawCode);
+
+    if (isWebLang || hasHtmlTags || hasReactComponent || (rawCode.length > 20 && /<[a-zA-Z][\s\S]*>/.test(rawCode))) {
+      const isHtml = lang === "html" || lang === "htm" || hasHtmlTags;
+      const fileName = isHtml ? "index.html" : (lang.includes("ts") ? "App.tsx" : "App.jsx");
+      const detectedCompName = isHtml ? null : extractComponentName(rawCode, "App");
+
       return {
         code: rawCode,
-        language: lang === "html" ? "html" : (lang === "tsx" ? "tsx" : "jsx"),
+        language: isHtml ? "html" : (lang.includes("ts") ? "tsx" : "jsx"),
         title: "Live Code Preview",
         isStreaming: true,
         isMultiFile: false,
@@ -155,7 +287,8 @@ export function extractPreviewableCode(markdownText) {
           [fileName]: {
             name: fileName,
             code: rawCode,
-            language: lang === "html" ? "html" : "jsx",
+            language: isHtml ? "html" : "jsx",
+            componentName: detectedCompName,
             isEntry: true,
           },
         },
@@ -206,20 +339,28 @@ function collectImportedNames(codeString) {
 function cleanModuleSyntax(code) {
   if (!code) return "";
   let res = code;
+  // Replace import.meta.env
+  res = res.replace(/\bimport\.meta\.env\b/g, "(window.env || {})");
   // Remove import type and import statements
   res = res.replace(/import\s+(?:type\s+)?[\s\S]*?from\s+['"][^'"]+['"];?/g, "");
   // Remove bare asset/css imports e.g. import './App.css';
   res = res.replace(/import\s+['"][^'"]+['"];?/g, "");
-  // Remove standalone default exports e.g. export default App;
-  res = res.replace(/export\s+default\s+[A-Za-z0-9_$]+;?/g, "");
+  // Convert `export default function Name` to `function Name`
+  res = res.replace(/export\s+default\s+function\s+([A-Za-z0-9_$]+)/g, "function $1");
+  // Convert anonymous `export default function (` to `function App(`
+  res = res.replace(/export\s+default\s+function\s*\(/g, "function App(");
+  // Convert `export default () =>` to `const App = () =>`
+  res = res.replace(/export\s+default\s+(?:\(\s*\)|[a-zA-Z0-9_$]+|\([^)]*\))\s*=>/g, "const App = () =>");
+  // Convert `export default class` to `class` FIRST
+  res = res.replace(/export\s+default\s+class/g, "class");
+  // Remove standalone default exports e.g. export default App; (negative lookahead avoids stripping functions/classes)
+  res = res.replace(/export\s+default\s+(?!function|class\b)[A-Za-z0-9_$]+;?/g, "");
   // Remove named exports e.g. export { App, Nav };
   res = res.replace(/export\s*\{[^}]*\};?/g, "");
-  // Convert `export default function` to `function`
-  res = res.replace(/export\s+default\s+function/g, "function");
-  // Convert `export default class` to `class`
-  res = res.replace(/export\s+default\s+class/g, "class");
-  // Strip `export` modifier from const/let/var/function/class/interface/type
-  res = res.replace(/export\s+(const|let|var|function|class|interface|type)\b/g, "$1");
+  // Strip `export` modifier from const/let/var/function/class/interface/type/async
+  res = res.replace(/export\s+(async\s+)?(const|let|var|function|class|interface|type)\b/g, "$1$2");
+  // Strip any remaining leading `export ` keyword
+  res = res.replace(/^\s*export\s+/gm, "");
   return res;
 }
 
@@ -254,7 +395,7 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
     isMultiFile ||
     language === "jsx" ||
     language === "tsx" ||
-    /(export\s+default\s+function|function\s+[A-Z]\w*|return\s*\(\s*<)/.test(code);
+    /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*|return\s*\(\s*<)/.test(code);
 
   if (!isReact) {
     // If it's already a full HTML document
@@ -306,61 +447,83 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
       }
     });
 
-    // 2. Process Child Components first, and Entry component (App) last
-    const nonEntryComponents = fileEntries.filter(
-      (f) => f.language !== "css" && !f.name.endsWith(".css") && !f.isEntry
-    );
-    const entryComponents = fileEntries.filter(
-      (f) => f.language !== "css" && !f.name.endsWith(".css") && f.isEntry
-    );
+    // 2. Separate into dependency order:
+    // a) Data, types, context, and utility files (executed FIRST)
+    // b) Child UI components (executed SECOND)
+    // c) Entry / main container component (executed LAST)
+    const dataFiles = [];
+    const childComponents = [];
+    const entryFiles = [];
+
+    fileEntries.forEach((f) => {
+      if (f.language === "css" || f.name.endsWith(".css")) return;
+      if (f.isEntry) {
+        entryFiles.push(f);
+      } else {
+        const hasJsx = /<[a-zA-Z][\s\S]*>/.test(f.code);
+        const isDataOrUtil = f.name.endsWith(".ts") || /(data|mock|service|api|model|type|util|helper|theme|context|state|booking)/i.test(f.name);
+        if (!hasJsx || isDataOrUtil) {
+          dataFiles.push(f);
+        } else {
+          childComponents.push(f);
+        }
+      }
+    });
 
     const orderedComponents = [
-      ...nonEntryComponents,
-      ...(entryComponents.length > 0 ? entryComponents : nonEntryComponents.splice(-1)),
+      ...dataFiles,
+      ...childComponents,
+      ...(entryFiles.length > 0 ? entryFiles : childComponents.splice(-1)),
     ];
 
     orderedComponents.forEach((file) => {
       let compCode = file.code || "";
 
-      // Collect imported identifiers
+      // Collect imported identifiers before cleaning
       const imports = collectImportedNames(compCode);
       imports.forEach((name) => allImportedNames.add(name));
 
-      // Extract component name
-      let compName = file.componentName;
-      const expMatch = compCode.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
-      if (expMatch) {
-        compName = expMatch[1];
-      } else {
-        const fnMatch = compCode.match(/function\s+([A-Z][A-Za-z0-9_]*)/);
-        if (fnMatch) compName = fnMatch[1];
-        else {
-          const constMatch = compCode.match(/const\s+([A-Za-z0-9_]+)\s*=\s*\(/);
-          if (constMatch) compName = constMatch[1];
+      // Extract all exported identifiers to expose globally
+      const exportedIds = new Set();
+      const exportMatches = compCode.matchAll(/(?:export\s+(?:default\s+)?(?:async\s+)?(?:const|let|var|function|class)\s+|export\s+default\s+)([A-Za-z0-9_$]+)/g);
+      for (const em of exportMatches) {
+        if (em[1] && em[1] !== "function" && em[1] !== "class" && em[1] !== "default") {
+          exportedIds.add(em[1]);
         }
       }
+      const exportCurlyMatches = compCode.matchAll(/export\s*\{([^}]+)\}/g);
+      for (const ecm of exportCurlyMatches) {
+        ecm[1].split(",").forEach((item) => {
+          const parts = item.trim().split(/\s+as\s+/);
+          const name = (parts[1] || parts[0]).trim();
+          if (name && /^[A-Za-z0-9_$]+$/.test(name)) exportedIds.add(name);
+        });
+      }
 
-      if (!compName) {
+      // Extract component name accurately
+      let compName = file.componentName || extractComponentName(compCode, null);
+      if (!compName && /<[a-zA-Z][\s\S]*>/.test(compCode)) {
         const baseName = file.name.split("/").pop().replace(/\.[^/.]+$/, "");
         compName = baseName.replace(/[^a-zA-Z0-9_]/g, "");
       }
+      if (compName) exportedIds.add(compName);
 
-      // Clean module syntax
-      compCode = cleanModuleSyntax(compCode);
-
-      if (file.isEntry || /app\.(jsx|tsx|js)$/i.test(file.name)) {
+      if (file.isEntry || /^(app|admin|dashboard|portal|home|layout|main|pricing)\.(jsx|tsx|js)$/i.test(file.name)) {
         rootComponentName = compName || "App";
       }
 
-      // Expose to window so any other component can use it without import errors
-      const safeExpose = compName
-        ? `\ntry { if (typeof ${compName} !== 'undefined') { window.${compName} = ${compName}; } } catch(e) {}\n`
-        : "";
+      // Clean module syntax safely
+      compCode = cleanModuleSyntax(compCode);
+
+      // Expose all exported items to window so any other component or helper can access them
+      const safeExposes = Array.from(exportedIds)
+        .map((id) => `try { if (typeof ${id} !== 'undefined') { window.${id} = ${id}; } } catch(e) {}`)
+        .join("\n");
 
       componentScripts.push(`
         // --- File: ${file.name} ---
         ${compCode}
-        ${safeExpose}
+        ${safeExposes}
       `);
     });
   } else {
@@ -369,18 +532,19 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
     const imports = collectImportedNames(compCode);
     imports.forEach((name) => allImportedNames.add(name));
 
-    const exportMatch = code.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
-    if (exportMatch) {
-      rootComponentName = exportMatch[1];
-    } else {
-      const constMatch = code.match(/const\s+([A-Za-z0-9_]+)\s*=\s*\(/);
-      if (constMatch) {
-        rootComponentName = constMatch[1];
-      }
-    }
+    const detectedCompName = extractComponentName(compCode, "App");
+    rootComponentName = detectedCompName;
 
     compCode = cleanModuleSyntax(compCode);
-    componentScripts.push(compCode);
+
+    const safeExpose = detectedCompName
+      ? `\ntry { if (typeof ${detectedCompName} !== 'undefined') { window.${detectedCompName} = ${detectedCompName}; } } catch(e) {}\n`
+      : "";
+
+    componentScripts.push(`
+      ${compCode}
+      ${safeExpose}
+    `);
   }
 
   // Pre-populate missing component & Lucide icon stubs
@@ -394,7 +558,7 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js" crossorigin></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -409,8 +573,14 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
     window.onerror = function(msg, url, line, col, err) {
       console.error("Sandbox global error:", msg, err);
       var rootEl = document.getElementById('root');
+      if (rootEl && rootEl.hasAttribute('data-mounted')) return;
+      if (msg === 'Script error.' && !err) return;
       if (rootEl && (!rootEl.children || rootEl.children.length === 0 || rootEl.innerHTML.trim() === '')) {
-        rootEl.innerHTML = '<div style="padding:24px;margin:16px;background:#fef2f2;border:1px solid #f87171;border-radius:12px;color:#991b1b;font-family:monospace;font-size:13px;"><div style="font-weight:bold;font-size:15px;margin-bottom:8px;">⚠️ Script / Compile Error</div><div style="white-space:pre-wrap;">' + (msg || err || 'Error loading preview') + '</div></div>';
+        setTimeout(function() {
+          if (rootEl && (!rootEl.children || rootEl.children.length === 0)) {
+            rootEl.innerHTML = '<div style="padding:24px;margin:16px;background:#fef2f2;border:1px solid #f87171;border-radius:12px;color:#991b1b;font-family:monospace;font-size:13px;"><div style="font-weight:bold;font-size:15px;margin-bottom:8px;">⚠️ Component Error</div><div style="white-space:pre-wrap;">' + (err && err.message ? err.message : (msg || 'Error loading preview')) + '</div></div>';
+          }
+        }, 500);
       }
     };
   </script>
@@ -420,6 +590,92 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
 
   <script type="text/babel" data-presets="react,typescript">
     const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
+
+    // Classnames utility (clsx / cn / twMerge)
+    window.clsx = function() {
+      var classes = [];
+      for (var i = 0; i < arguments.length; i++) {
+        var arg = arguments[i];
+        if (!arg) continue;
+        var argType = typeof arg;
+        if (argType === 'string' || argType === 'number') {
+          classes.push(arg);
+        } else if (Array.isArray(arg)) {
+          if (arg.length) {
+            var inner = window.clsx.apply(null, arg);
+            if (inner) classes.push(inner);
+          }
+        } else if (argType === 'object') {
+          for (var key in arg) {
+            if (arg.hasOwnProperty(key) && arg[key]) {
+              classes.push(key);
+            }
+          }
+        }
+      }
+      return classes.join(' ');
+    };
+    window.cn = window.clsx;
+    window.twMerge = window.clsx;
+
+    // Framer motion stubs
+    const createMotionComponent = (tag) => {
+      return React.forwardRef((props, ref) => {
+        const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props || {};
+        return React.createElement(tag, { ...rest, ref });
+      });
+    };
+    window.motion = new Proxy({}, {
+      get: (target, prop) => {
+        if (typeof prop !== 'string') return undefined;
+        return createMotionComponent(prop);
+      }
+    });
+    window.AnimatePresence = ({ children }) => children || null;
+
+    // Date utilities stub
+    window.format = (date, fmt) => {
+      try {
+        const d = new Date(date);
+        return isNaN(d.getTime()) ? String(date || '') : d.toLocaleDateString();
+      } catch (e) {
+        return String(date || '');
+      }
+    };
+    window.formatDistanceToNow = () => 'recently';
+
+    // React Router DOM lightweight stubs
+    window.Link = (props) => React.createElement('a', { ...props, href: props.to || '#', className: 'cursor-pointer ' + (props.className || '') }, props.children);
+    window.useNavigate = () => (path) => console.log('Navigate to:', path);
+    window.useLocation = () => ({ pathname: '/', search: '', hash: '', state: null });
+    window.useParams = () => ({});
+    window.useSearchParams = () => [new URLSearchParams(), () => {}];
+    window.Outlet = (props) => props.children || null;
+    window.Routes = (props) => props.children || null;
+    window.Route = (props) => props.element || props.children || null;
+    window.BrowserRouter = (props) => props.children || null;
+
+    // Translation and Theme stubs
+    window.useTranslation = () => ({ t: (k, fb) => fb || (k ? k.split('.').pop() : ''), i18n: { language: 'en', changeLanguage: () => {} } });
+    window.t = (k, fb) => fb || (k ? k.split('.').pop() : '');
+    window.useTheme = () => ({ theme: 'light', isDark: false, toggle: () => {}, toggleTheme: () => {}, setTheme: () => {} });
+    window.ThemeProvider = (props) => props.children || null;
+
+    // Analytics and Database stubs
+    window.track = () => {};
+    window.trackEvent = () => {};
+    window.Analytics = () => null;
+    window.loadStripe = () => Promise.resolve({ redirectToCheckout: () => Promise.resolve({}) });
+
+    const createChainableMock = () => new Proxy(() => {}, {
+      get: (target, prop) => {
+        if (prop === 'then') return (resolve) => resolve({ data: [], error: null });
+        return createChainableMock();
+      },
+      apply: () => createChainableMock()
+    });
+    window.supabase = createChainableMock();
+    window.hasSupabase = true;
 
     // React Error Boundary to catch render errors in any component
     class SafeErrorBoundary extends React.Component {
@@ -434,7 +690,7 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
         console.error("SafeErrorBoundary caught:", error, errorInfo);
       }
       render() {
-        if (this.state.error) {
+        if (this.state.hasError && this.state.error) {
           return React.createElement(
             "div",
             {
@@ -457,13 +713,32 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
       }
     }
 
-    // Safe stub generator for missing child components & Lucide icons
+    // Universal safe stub generator for missing child components & Lucide icons
     const __createSafeStub = (name) => {
-      return function SafeStubComponent(props) {
-        // Try Lucide icon SVG
+      const stub = function SafeStub(props) {
+        // Handle when called as a hook or utility function (e.g. useX(), t("..."))
+        if (!props || typeof props !== 'object' || Array.isArray(props)) {
+          if (name === 't' || name.startsWith('useTrans')) {
+            return (k, fb) => fb || (k ? k.split('.').pop() : '');
+          }
+          return {
+            t: (k, fb) => fb || (k ? k.split('.').pop() : ''),
+            theme: 'light',
+            isDark: false,
+            toggle: () => {},
+            toggleTheme: () => {},
+            data: [],
+            error: null,
+            loading: false,
+          };
+        }
+
+        // Try Lucide icon SVG with raw and prefix-stripped name
         if (window.lucide && window.lucide.icons) {
+          const stripped = name.replace(/^(Fi|Fa|Hi|Lu|Md|Ai|Bi|Bs|Ri|Tb|Io|Ci|Pi|Ti|Vsc|Rx|Si)/, '');
+          const candidateKeys = [name.toLowerCase(), stripped.toLowerCase()];
           const key = Object.keys(window.lucide.icons).find(
-            (k) => k.toLowerCase() === name.toLowerCase()
+            (k) => candidateKeys.includes(k.toLowerCase()) || candidateKeys.includes(k.replace(/-/g, '').toLowerCase())
           );
           if (key) {
             try {
@@ -487,7 +762,7 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
             "span",
             {
               className: ((props && props.className) || "") + " inline-flex items-center justify-center",
-              style: { display: "inline-flex", verticalAlign: "middle", width: "1.25em", height: "1.25em" },
+              style: { display: "inline-flex", verticalAlign: "middle", width: "1.2em", height: "1.2em" },
               title: name,
             },
             React.createElement(
@@ -506,16 +781,45 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
           );
         }
 
-        // Fallback for ungenerated child components
+        // Fallback for ungenerated child components: pass children through or subtle placeholder
+        if (props && props.children) {
+          return React.createElement("div", { className: props.className || "" }, props.children);
+        }
+
         return React.createElement(
           "div",
           {
-            className: "p-4 my-3 border border-dashed border-slate-300 dark:border-zinc-700 rounded-xl text-center text-xs text-slate-500 font-mono bg-slate-50/60 dark:bg-zinc-900/60",
-            style: { padding: "12px", margin: "8px 0", borderRadius: "8px", border: "1px dashed #cbd5e1", textAlign: "center", fontSize: "12px", color: "#64748b" }
+            className: "p-4 my-2 border border-dashed border-slate-300 dark:border-zinc-700 rounded-xl text-center text-xs text-slate-500 font-mono bg-slate-50/60 dark:bg-zinc-900/60",
+            style: { padding: "8px 12px", margin: "4px 0", borderRadius: "8px", border: "1px dashed #cbd5e1", textAlign: "center", fontSize: "12px", color: "#64748b" }
           },
-          props && props.children ? props.children : ("[" + name + "]")
+          "[" + name + "]"
         );
       };
+
+      stub[Symbol.toPrimitive] = () => 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80';
+      stub.toString = () => 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80';
+      stub.valueOf = () => 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80';
+
+      return new Proxy(stub, {
+        get(target, prop) {
+          if (prop === '$$typeof') return undefined;
+          if (prop === Symbol.toPrimitive) {
+            return (hint) => 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80';
+          }
+          if (prop === 'toString' || prop === 'valueOf') {
+            return () => 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80';
+          }
+          if (prop === 'src' || prop === 'url' || prop === 'href') {
+            return 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80';
+          }
+          if (prop === 'width' || prop === 'height') {
+            return 800;
+          }
+          if (prop in target) return target[prop];
+          if (prop === 'then') return undefined;
+          return __createSafeStub(name + '.' + String(prop));
+        }
+      });
     };
 
     // Pre-declare stubs for all imported components/icons to prevent ReferenceErrors
@@ -529,11 +833,36 @@ export function generateSandboxHtml(codeOrArtifact, defaultLanguage = "html") {
     try {
       ${componentScripts.join("\n\n")}
 
-      const RootComp = typeof ${rootComponentName} !== 'undefined'
-        ? ${rootComponentName}
-        : (typeof App !== 'undefined' ? App : () => React.createElement('div', { className: 'p-6 text-slate-700' }, 'React components ready'));
+      // Resolve RootComp to a valid React component function
+      const candidates = [
+        typeof window['${rootComponentName}'] === 'function' ? window['${rootComponentName}'] : null,
+        typeof ${rootComponentName} === 'function' ? ${rootComponentName} : null,
+        typeof Admin === 'function' ? Admin : null,
+        typeof Dashboard === 'function' ? Dashboard : null,
+        typeof App === 'function' ? App : null,
+        typeof Home === 'function' ? Home : null,
+        typeof Layout === 'function' ? Layout : null,
+        typeof Main === 'function' ? Main : null,
+        typeof Landing === 'function' ? Landing : null,
+        typeof Pricing === 'function' ? Pricing : null,
+        typeof PlanCard === 'function' ? PlanCard : null,
+      ];
+      let RootComp = candidates.find(c => Boolean(c));
+      if (!RootComp) {
+        for (const k of Object.keys(window)) {
+          if (/^[A-Z]/.test(k) && typeof window[k] === 'function' && !['React', 'ReactDOM', 'SafeErrorBoundary', 'Link', 'Outlet', 'Routes', 'Route', 'BrowserRouter', 'ThemeProvider', 'Analytics'].includes(k)) {
+            RootComp = window[k];
+            break;
+          }
+        }
+      }
+      if (!RootComp) {
+        RootComp = () => React.createElement('div', { className: 'p-6 text-slate-700' }, 'React components ready');
+      }
 
-      const root = ReactDOM.createRoot(document.getElementById('root'));
+      const rootEl = document.getElementById('root');
+      rootEl.setAttribute('data-mounted', 'true');
+      const root = ReactDOM.createRoot(rootEl);
       root.render(
         React.createElement(
           SafeErrorBoundary,

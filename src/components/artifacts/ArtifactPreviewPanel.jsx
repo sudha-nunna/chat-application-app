@@ -29,7 +29,7 @@ const ArtifactPreviewPanel = ({
   totalVersions = 1,
 }) => {
   const { isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState(artifact?.isStreaming ? "code" : "preview"); // 'preview' | 'code'
+  const [activeTab, setActiveTab] = useState("preview"); // 'preview' | 'code'
   const wasStreamingRef = useRef(Boolean(artifact?.isStreaming));
   const codeContainerRef = useRef(null);
   const [viewportMode, setViewportMode] = useState("desktop"); // 'desktop' | 'tablet' | 'mobile'
@@ -98,13 +98,8 @@ const ArtifactPreviewPanel = ({
     };
   }, [artifact, editedFiles, selectedFileName]);
 
-  // When code is streaming, show code tab so user watches it typing live.
-  // When streaming finishes, automatically switch to preview!
+  // When streaming finishes, ensure preview tab is active
   useEffect(() => {
-    if (artifact?.isStreaming && !wasStreamingRef.current) {
-      setActiveTab("code");
-      setIsEditMode(false);
-    }
     if (wasStreamingRef.current && !artifact?.isStreaming && artifact?.code) {
       setActiveTab("preview");
     }
