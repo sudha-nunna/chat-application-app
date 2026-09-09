@@ -15,6 +15,7 @@ import {
   FiChevronRight,
   FiKey,
   FiX,
+  FiMenu,
 } from "react-icons/fi";
 import { Sparkles } from "lucide-react";
 import { backEndCallGet, backEndCallObjDel } from "../services/authService";
@@ -162,18 +163,27 @@ const DashboardPage = () => {
     <div className="flex-1 h-full overflow-y-auto p-6 md:p-8 custom-scrollbar bg-transparent text-text-primary">
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-text-primary">
-              Multi-Agent AI Applications
-            </h1>
-            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-accent-primary/15 text-accent-primary font-bold uppercase tracking-wider border border-accent-primary/30 shadow-2xs">
-              {bots.length} {bots.length === 1 ? "Agent" : "Agents"} Deployed
-            </span>
+        <div className="flex items-start gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+            className="md:hidden p-2 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary border-border-primary/60 dark:border-white/10 shadow-2xs mt-0.5"
+            title="Toggle Sidebar"
+          >
+            <FiMenu className="text-lg" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-text-primary">
+                Multi-Agent AI Applications
+              </h1>
+              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-accent-primary/15 text-accent-primary font-bold uppercase tracking-wider border border-accent-primary/30 shadow-2xs">
+                {bots.length} {bots.length === 1 ? "Agent" : "Agents"} Deployed
+              </span>
+            </div>
+            <p className="text-xs mt-1.5 text-text-muted max-w-xl leading-relaxed">
+             AI-powered conversations, voice interactions, and task automation in one place.
+            </p>
           </div>
-          <p className="text-xs mt-1.5 text-text-muted max-w-xl leading-relaxed">
-           AI-powered conversations, voice interactions, and task automation in one place.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">

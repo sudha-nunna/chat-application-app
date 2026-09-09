@@ -11,7 +11,8 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
-  Loader2
+  Loader2,
+  Menu
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getJwt } from "../services/authService";
@@ -319,6 +320,14 @@ const AgentHomePage = () => {
         {/* Header */}
         <div className="p-4 pb-2 flex items-center justify-between border-b border-border-primary/50">
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+              className="md:hidden p-1.5 rounded-lg border border-border-primary/60 text-text-primary hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
+              title="Toggle Sidebar"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
             <MessageSquare className="w-4 h-4 text-accent-primary" />
             <span className="text-sm font-bold text-text-primary">History</span>
           </div>
@@ -395,8 +404,16 @@ const AgentHomePage = () => {
       {/* Right Main Panel */}
       <div className="flex-1 min-w-0 flex flex-col h-full bg-white dark:bg-[#0B0C12] overflow-hidden relative">
         {/* Top Header Bar */}
-        <div className="h-12 px-6 border-b border-border-primary/60 flex items-center justify-between shrink-0 bg-white dark:bg-[#0B0C12] z-10">
+        <div className="h-12 px-4 sm:px-6 border-b border-border-primary/60 flex items-center justify-between shrink-0 bg-white dark:bg-[#0B0C12] z-10">
           <div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+              className="md:hidden p-1.5 rounded-lg border border-border-primary/60 text-text-primary hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0 mr-1"
+              title="Toggle Sidebar"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
             <Sparkles className="w-4 h-4 text-accent-primary" />
             <span>AI Assistant</span>
           </div>

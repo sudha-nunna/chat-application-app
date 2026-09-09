@@ -34,7 +34,8 @@ import {
   FiTerminal,
   FiCheckSquare,
   FiExternalLink,
-  FiChevronDown
+  FiChevronDown,
+  FiMenu
 } from "react-icons/fi";
 import { TbRobotFace } from "react-icons/tb";
 import {
@@ -1510,6 +1511,13 @@ const AgentStudioPage = () => {
       <header className="h-14 sm:h-16 border-b border-border-primary/50 px-3 sm:px-6 flex items-center justify-between shrink-0 bg-surface-secondary/40 backdrop-blur-md z-10 gap-2 sm:gap-4 w-full">
         {/* Left: Navigation & Agent Identity */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+            className="md:hidden p-2 rounded-xl hover:bg-surface-secondary text-text-muted hover:text-text-primary transition-all flex items-center justify-center cursor-pointer border border-border-primary/60 bg-surface-primary/70 shadow-2xs hover:shadow-xs shrink-0"
+            title="Toggle Sidebar"
+          >
+            <FiMenu className="text-base" />
+          </button>
           <button
             onClick={() => {
               if (window.history.length > 1) {

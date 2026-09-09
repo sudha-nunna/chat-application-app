@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { VoiceRecorder } from "../../utils/voiceRecorder";
 import {
@@ -425,21 +425,36 @@ const ChatInput = ({
   const latestTranscriptRef = useRef("");
   const recognitionRef = useRef(null);
 
-  const handleVoiceAutoSubmit = () => {
+  const stopVoiceSession = useCallback(async () => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
+    setIsListening(false);
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+    if (voiceRecorderRef.current) {
+      try {
+        await voiceRecorderRef.current.stopRecording();
+      } catch (e) {}
+      try {
+        voiceRecorderRef.current.cleanup();
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleVoiceAutoSubmit = async () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    await stopVoiceSession();
+
     const promptToSubmit = (latestTranscriptRef.current || text || "").trim();
     if (promptToSubmit && onSend) {
-      setIsListening(false);
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
-      }
-      voiceRecorderRef.current?.stopRecording().catch(() => null);
-
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.resume();
@@ -482,6 +497,8 @@ const ChatInput = ({
           clearTimeout(silenceTimerRef.current);
           silenceTimerRef.current = null;
           handleVoiceAutoSubmit();
+        } else {
+          stopVoiceSession();
         }
       };
 
@@ -511,11 +528,7 @@ const ChatInput = ({
         if (event.error !== "no-speech" && event.error !== "aborted") {
           console.warn("Speech recognition warning:", event.error);
         }
-        if (silenceTimerRef.current) {
-          clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = null;
-        }
-        setIsListening(false);
+        stopVoiceSession();
       };
 
       setRecognition(rec);
@@ -529,23 +542,16 @@ const ChatInput = ({
           recognitionRef.current.abort();
         } catch (e) {}
       }
+      try {
+        voiceRecorderRef.current?.cleanup();
+      } catch (e) {}
     };
-  }, []);
+  }, [stopVoiceSession]);
 
   const handleVoiceClick = async () => {
     try {
       if (isListening) {
-        if (silenceTimerRef.current) {
-          clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = null;
-        }
-        setIsListening(false);
-        if (recognitionRef.current) {
-          try {
-            recognitionRef.current.stop();
-          } catch (e) {}
-        }
-        await voiceRecorderRef.current?.stopRecording().catch(() => null);
+        await stopVoiceSession();
 
         const promptToSubmit = (latestTranscriptRef.current || text || "").trim();
         if (promptToSubmit && onSend) {
@@ -572,7 +578,7 @@ const ChatInput = ({
       }
     } catch (err) {
       console.warn("Voice toggle error:", err);
-      setIsListening(false);
+      await stopVoiceSession();
     }
   };
 
@@ -605,7 +611,7 @@ const ChatInput = ({
       setIsListening(true);
     } catch (err) {
       console.warn("Voice start error:", err);
-      setIsListening(false);
+      await stopVoiceSession();
     }
   };
 
@@ -628,10 +634,7 @@ const ChatInput = ({
       silenceTimerRef.current = null;
     }
     if (isListening) {
-      setIsListening(false);
-      try {
-        recognitionRef.current?.stop();
-      } catch (e) {}
+      stopVoiceSession();
     }
 
     isSubmittingRef.current = true;

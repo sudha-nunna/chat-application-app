@@ -16,6 +16,7 @@ import {
   FiCalendar,
   FiCheckCircle,
   FiAlertTriangle,
+  FiMenu,
 } from "react-icons/fi";
 import { backEndCallGet } from "../../services/authService";
 import { useSubscription } from "../../context/SubscriptionContext";
@@ -158,6 +159,13 @@ const CreditsModal = ({ isPage = false }) => {
 
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+              className="md:hidden p-2 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary hover:bg-surface-tertiary text-text-primary dark:text-white border-border-primary/60 dark:border-white/10 shadow-2xs"
+              title="Toggle Sidebar"
+            >
+              <FiMenu className="text-base" />
+            </button>
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0 font-bold">
               <FiActivity />
             </div>

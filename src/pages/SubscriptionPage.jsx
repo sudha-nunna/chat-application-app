@@ -14,6 +14,7 @@ import {
   FiAlertTriangle,
   FiActivity,
   FiArrowRight,
+  FiMenu,
 } from "react-icons/fi";
 
 const SubscriptionPage = () => {
@@ -132,13 +133,22 @@ const SubscriptionPage = () => {
     <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-6xl mx-auto custom-scrollbar bg-transparent text-text-primary">
       {/* Clean Unboxed Header Row */}
       <div className="flex items-center justify-between pb-2">
-        <div>
-          <h1 className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>
-            Credit Top-Up
-          </h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Select a package to recharge your AI credits. Pay once, use until consumed.
-          </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+            className="md:hidden p-2 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary/70 hover:bg-surface-secondary text-text-primary border-border-primary/60 dark:border-white/10 shadow-2xs"
+            title="Toggle Sidebar"
+          >
+            <FiMenu className="text-lg" />
+          </button>
+          <div>
+            <h1 className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-text-primary"}`}>
+              Credit Top-Up
+            </h1>
+            <p className="text-xs text-text-muted mt-0.5">
+              Select a package to recharge your AI credits. Pay once, use until consumed.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

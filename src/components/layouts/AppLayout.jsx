@@ -280,7 +280,11 @@ const AppLayout = ({ children }) => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -1046,7 +1050,16 @@ const AppLayout = ({ children }) => {
                     </sup>
                   </span>
                 </div>
-                <FiChevronDown className="text-text-primary/70 text-lg shrink-0 group-hover:text-text-primary transition-colors" />
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11.5px] px-2 py-0.5 rounded-full bg-accent-primary/10 text-accent-primary font-medium border border-accent-primary/20">
+                    {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
+                  </span>
+                  <FiChevronDown
+                    className={`text-text-primary/70 text-lg shrink-0 group-hover:text-text-primary transition-transform duration-200 ${
+                      isProfileDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
               </div>
 
               {isProfileDropdownOpen && (
@@ -1054,19 +1067,34 @@ const AppLayout = ({ children }) => {
                   ref={profileDropdownRef}
                   className="profile-dropdown absolute top-[calc(100%-4px)] left-4 right-4 mt-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary"
                 >
-                  <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
-                    <div className="flex items-center gap-3">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsProfileDropdownOpen(false);
+                      setIsMobileMenuOpen(false);
+                      navigate("/usage");
+                    }}
+                    className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-surface-secondary dark:hover:bg-white/5 transition rounded-lg mx-1 mb-1"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
                       <UserAvatar
                         user={user}
                         className="w-8 h-8 text-[12px]"
                         borderClassName="border border-border-primary"
                       />
-                      <div className="flex flex-col">
-                        <span className="text-[13px] font-bold truncate tracking-wide">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[13px] font-bold truncate tracking-wide text-text-primary">
                           {user?.name || "User Name"}
+                        </span>
+                        <span className="text-[11.5px] text-text-muted truncate leading-tight mt-0.5 font-normal flex items-center gap-1">
+                          <span className="font-semibold text-accent-primary">
+                            {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits}
+                          </span>{" "}
+                          Credits
                         </span>
                       </div>
                     </div>
+                    <FiChevronRight className="text-text-primary/70 text-sm shrink-0" />
                   </div>
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
@@ -1075,11 +1103,23 @@ const AppLayout = ({ children }) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsProfileDropdownOpen(false);
+                      setIsMobileMenuOpen(false);
                       navigate("/subscription");
                     }}
                     className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
                   >
                     <FiZap className="text-sm" /> Upgrade plan
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsProfileDropdownOpen(false);
+                      setIsMobileMenuOpen(false);
+                      navigate("/usage");
+                    }}
+                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                  >
+                    <FiCreditCard className="text-sm" /> Credits usage
                   </button>
                   <button
                     onClick={(e) => {
@@ -1258,7 +1298,7 @@ const AppLayout = ({ children }) => {
           </div> */}
 
           {/* Main Sidebar Content Area (takes remaining space, enables internal scrolling) */}
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className={`flex-1 min-h-0 flex flex-col ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-hidden"}`}>
             {activeSidebarTab === "agents" ? (
               <AgentSidebar
                 isSidebarCollapsed={isSidebarCollapsed}
@@ -1286,6 +1326,7 @@ const AppLayout = ({ children }) => {
             ) : (
               <ChatSidebar
                 isSidebarCollapsed={isSidebarCollapsed}
+                setIsSidebarCollapsed={setIsSidebarCollapsed}
                 isMobile={isMobile}
                 handleNewChat={handleNewChat}
                 setIsSearchModalOpen={setIsSearchModalOpen}
@@ -1310,20 +1351,33 @@ const AppLayout = ({ children }) => {
                   ref={profileDropdownRef}
                   className={`profile-dropdown absolute bottom-full left-4 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[220px]`}
                 >
-                  <div className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1">
-                    <div className="flex items-center gap-3">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsProfileDropdownOpen(false);
+                      navigate("/usage");
+                    }}
+                    className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
                       <UserAvatar
                         user={user}
                         className="w-8 h-8 text-[12px]"
                         borderClassName="border border-border-primary"
                       />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         <span className="text-[13px] font-bold truncate tracking-wide">
                           {user?.name || "Nunna Sudha"}
                         </span>
+                        <span className="text-[11.5px] text-text-muted truncate leading-tight mt-0.5 font-normal flex items-center gap-1">
+                          <span className="font-medium text-accent-primary">
+                            {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits}
+                          </span>{" "}
+                          Credits
+                        </span>
                       </div>
                     </div>
-                    <FiChevronRight className="text-text-primary/70 text-sm" />
+                    <FiChevronRight className="text-text-primary/70 text-sm shrink-0" />
                   </div>
 
                   <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>

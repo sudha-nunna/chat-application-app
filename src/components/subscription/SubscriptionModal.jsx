@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { usePlans } from "../../hooks/usePlans";
-import { FiX, FiZap, FiShield, FiRefreshCw } from "react-icons/fi";
+import { FiX, FiZap, FiShield, FiRefreshCw, FiMenu } from "react-icons/fi";
 import PlanCard from "./PlanCard";
 import { useTheme } from "../../context/ThemeContext";
 import { redirectToStripe } from "../../utils/stripeService";
@@ -72,6 +72,13 @@ const SubscriptionModal = () => {
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Left side: Icon + Title & Subtitle */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+              className="md:hidden p-2 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary hover:bg-surface-tertiary text-text-primary dark:text-white border-border-primary/60 dark:border-white/10 shadow-2xs"
+              title="Toggle Sidebar"
+            >
+              <FiMenu className="text-base" />
+            </button>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shadow-lg shadow-accent-primary/20 shrink-0 font-bold">
               <FiZap className="animate-pulse text-amber-300" />
             </div>

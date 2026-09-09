@@ -13,7 +13,8 @@ import {
   Settings,
   BookOpen,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Menu
 } from "lucide-react";
 
 const FEATURE_META = {
@@ -99,7 +100,16 @@ const AgentFeaturePlaceholder = () => {
   const IconComponent = meta.icon;
 
   return (
-    <div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center p-6 bg-white dark:bg-[#0B0C12] text-text-primary">
+    <div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center p-6 bg-white dark:bg-[#0B0C12] text-text-primary relative">
+      <div className="absolute top-3 left-3 md:hidden z-10">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+          className="p-2 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary border-border-primary/60 dark:border-white/10 shadow-2xs"
+          title="Toggle Sidebar"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+      </div>
       <div className="w-full max-w-lg mx-auto flex flex-col items-center text-center">
         {/* Section Badge */}
         <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-accent-primary/10 text-accent-primary border border-accent-primary/20">

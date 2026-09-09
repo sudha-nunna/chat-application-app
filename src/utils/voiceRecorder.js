@@ -15,6 +15,9 @@ export class VoiceRecorder {
       throw new Error("Microphone recording is not supported in this browser.");
     }
 
+    // Always release any previously lingering stream tracks before starting a new recording
+    this.cleanup();
+
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.audioChunks = [];
 
@@ -36,30 +39,67 @@ export class VoiceRecorder {
     this.isRecording = true;
   }
 
+  cleanup() {
+    this.isRecording = false;
+    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
+      try {
+        this.mediaRecorder.stop();
+      } catch (e) {}
+    }
+    this.mediaRecorder = null;
+
+    if (this.stream) {
+      try {
+        this.stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {}
+        });
+      } catch (e) {}
+      this.stream = null;
+    }
+  }
+
   async stopRecording() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+      const releaseTracks = () => {
+        this.isRecording = false;
+        if (this.stream) {
+          try {
+            this.stream.getTracks().forEach((track) => {
+              try {
+                track.stop();
+              } catch (e) {}
+            });
+          } catch (e) {}
+          this.stream = null;
+        }
+      };
+
       if (!this.mediaRecorder || this.mediaRecorder.state === "inactive") {
+        releaseTracks();
         return resolve(null);
       }
 
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: this.mediaRecorder.mimeType || "audio/wav" });
-        this.isRecording = false;
-
-        // Clean up tracks
-        if (this.stream) {
-          this.stream.getTracks().forEach((track) => track.stop());
-          this.stream = null;
-        }
-
+        const audioBlob = new Blob(this.audioChunks, {
+          type: this.mediaRecorder?.mimeType || "audio/wav",
+        });
+        releaseTracks();
         resolve(audioBlob);
       };
 
-      this.mediaRecorder.onerror = (err) => {
-        reject(err);
+      this.mediaRecorder.onerror = () => {
+        releaseTracks();
+        resolve(null);
       };
 
-      this.mediaRecorder.stop();
+      try {
+        this.mediaRecorder.stop();
+      } catch (err) {
+        releaseTracks();
+        resolve(null);
+      }
     });
   }
 }

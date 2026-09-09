@@ -227,6 +227,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     return () => window.removeEventListener("open-artifact", handleOpenArtifact);
   }, [chatTitle]);
 
+  const lastParsedContentRef = useRef("");
+
   // Automatically detect artifacts from latest assistant message or streaming reply
   useEffect(() => {
     if (streamingReply) {
@@ -245,12 +247,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     if (Array.isArray(messages) && messages.length > 0) {
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].role === "assistant" && messages[i].content) {
-          const parsed = extractPreviewableCode(messages[i].content);
-          if (parsed) {
-            setActiveArtifact(parsed);
-            setIsArtifactOpen(true);
-            break;
+          const content = messages[i].content;
+          if (lastParsedContentRef.current !== content) {
+            lastParsedContentRef.current = content;
+            const parsed = extractPreviewableCode(content);
+            if (parsed) {
+              setActiveArtifact(parsed);
+              setIsArtifactOpen(true);
+            }
           }
+          break;
         }
       }
     }

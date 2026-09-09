@@ -7,7 +7,8 @@ import {
   FiTrash2,
   FiArrowLeft,
   FiFileText,
-  FiEdit2
+  FiEdit2,
+  FiMenu
 } from "react-icons/fi";
 import { NobackEndCall, backEndCallObjDel } from "../services/authService";
 import BotChatTab from "../components/bots/BotChatTab";
@@ -107,6 +108,13 @@ const BotDetailPage = () => {
       <div className={` p-2 md:p-3 md:p-5 border-b flex flex-col xl:flex-row xl:items-center justify-between gap-2 lg:gap-4 ${isDark ? "border-border-primary bg-interactive-base" : "border-border-primary bg-white"
         }`}>
         <div className="flex items-start sm:items-center gap-1.5 lg:gap-3 w-full xl:w-auto min-w-0">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+            className="md:hidden p-2 rounded-lg border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary text-text-primary border-border-primary/60 shadow-2xs"
+            title="Toggle Sidebar"
+          >
+            <FiMenu className="text-lg" />
+          </button>
           <button
             onClick={() => navigate("/dashboard")}
             className={`shrink-0 p-2 rounded-lg transition ${isDark ? "text-text-primary hover:text-white hover:bg-interactive-active" : "text-text-primary hover:text-text-primary hover:bg-surface-secondary"
