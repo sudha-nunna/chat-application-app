@@ -298,10 +298,10 @@ const CreditsModal = ({ isPage = false }) => {
     creditBalance > 100
       ? { label: "Healthy", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", barColor: "bg-emerald-500" }
       : creditBalance > 20
-      ? { label: "Moderate", color: "text-amber-400 bg-amber-500/10 border-amber-500/20", barColor: "bg-amber-500" }
-      : creditBalance > 0
-      ? { label: "Low", color: "text-rose-400 bg-rose-500/10 border-rose-500/20", barColor: "bg-rose-500" }
-      : { label: "Depleted", color: "text-rose-500 bg-rose-500/20 border-rose-500/30", barColor: "bg-rose-600" };
+        ? { label: "Moderate", color: "text-amber-400 bg-amber-500/10 border-amber-500/20", barColor: "bg-amber-500" }
+        : creditBalance > 0
+          ? { label: "Low", color: "text-rose-400 bg-rose-500/10 border-rose-500/20", barColor: "bg-rose-500" }
+          : { label: "Depleted", color: "text-rose-500 bg-rose-500/20 border-rose-500/30", barColor: "bg-rose-600" };
 
   return (
     <div className="w-full h-full flex flex-col bg-[#0b0c13] text-slate-200 overflow-hidden font-sans select-none">
@@ -489,32 +489,47 @@ const CreditsModal = ({ isPage = false }) => {
               {/* Creative Floating Glass Tooltip Card */}
               {hoveredDayPoint && (
                 <div
-                  className="absolute pointer-events-none z-30 -top-6 bg-[#161728]/95 text-white text-[10.5px] font-medium px-3 py-2 rounded-xl shadow-2xl border border-indigo-500/30 transition-all transform -translate-x-1/2 flex flex-col items-center gap-1 backdrop-blur-md"
-                  style={{ left: `${Math.min(85, Math.max(15, (hoveredDayPoint.x / 360) * 100))}%` }}
+                  className="absolute z-30 top-1 pointer-events-none bg-[#161728]/95 text-white px-3 py-2 rounded-xl shadow-2xl border border-indigo-500/30 backdrop-blur-md flex flex-col gap-1.5 -translate-x-1/2 min-w-[150px]"
+                  style={{
+                    left: `${Math.min(78, Math.max(22, (hoveredDayPoint.x / 360) * 100))}%`,
+                  }}
                 >
-                  <div className="flex items-center gap-2 text-slate-300 text-[10px] font-semibold border-b border-white/10 pb-1 w-full justify-between">
+                  <div className="flex items-center justify-between text-[10.5px] font-semibold text-slate-400 border-b border-white/10 pb-1 w-full">
                     <span>{hoveredDayPoint.shortDate} ({hoveredDayPoint.dayLabel})</span>
                     {hoveredDayPoint.dayLabel === "Today" && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold">LIVE</span>
+                      <span className="text-[8.5px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold">LIVE</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 font-mono text-[10px] pt-0.5">
-                    <span className="font-bold text-indigo-300">
-                      ⚡ {formatNumber(hoveredDayPoint.tokens)} tokens
-                    </span>
-                    <span className="text-slate-500">•</span>
-                    <span className="text-emerald-400 font-bold">
-                      💬 {hoveredDayPoint.messages} msgs
-                    </span>
-                    <span className="text-slate-500">•</span>
-                    <span className="text-indigo-300 font-bold">
-                      {hoveredDayPoint.credits.toFixed(2)} credits
-                    </span>
+                  <div className="flex items-center justify-between gap-2.5 pt-0.5">
+                    {/* Tokens */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-indigo-400">⚡</span>
+                      <div className="flex flex-col leading-none">
+                        <span className="font-bold text-white text-[10.5px] font-mono">{formatNumber(hoveredDayPoint.tokens)}</span>
+                        <span className="text-slate-500 text-[8.5px]">tokens</span>
+                      </div>
+                    </div>
+                    <div className="w-px h-6 bg-white/10" />
+                    {/* Messages */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-emerald-400">💬</span>
+                      <div className="flex flex-col leading-none">
+                        <span className="font-bold text-white text-[10.5px] font-mono">{hoveredDayPoint.messages}</span>
+                        <span className="text-slate-500 text-[8.5px]">msgs</span>
+                      </div>
+                    </div>
+                    <div className="w-px h-6 bg-white/10" />
+                    {/* Credits */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-amber-400">🪙</span>
+                      <div className="flex flex-col leading-none">
+                        <span className="font-bold text-white text-[10.5px] font-mono">{hoveredDayPoint.credits.toFixed(2)}</span>
+                        <span className="text-slate-500 text-[8.5px]">credits</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#161728] border-r border-b border-indigo-500/30 rotate-45 pointer-events-none" />
                 </div>
               )}
-
               <svg
                 className="w-full h-full overflow-visible"
                 viewBox="0 0 360 120"
@@ -627,13 +642,12 @@ const CreditsModal = ({ isPage = false }) => {
                         cx={pt.x}
                         cy={pt.y}
                         r={isHovered ? "6" : isToday ? "5" : "4"}
-                        className={`${
-                          isHovered
-                            ? "fill-indigo-300"
-                            : isToday
+                        className={`${isHovered
+                          ? "fill-indigo-300"
+                          : isToday
                             ? "fill-indigo-400"
                             : "fill-indigo-500"
-                        } stroke-[#0b0c13] transition-all duration-150 cursor-pointer`}
+                          } stroke-[#0b0c13] transition-all duration-150 cursor-pointer`}
                         strokeWidth="2.5"
                       />
                       <circle
@@ -655,13 +669,12 @@ const CreditsModal = ({ isPage = false }) => {
               {dailyUsageData.coords.map((pt) => (
                 <span
                   key={pt.dateKey}
-                  className={`cursor-pointer transition ${
-                    hoveredDayPoint?.dateKey === pt.dateKey
-                      ? "text-indigo-400 font-bold"
-                      : pt.dayLabel === "Today"
+                  className={`cursor-pointer transition ${hoveredDayPoint?.dateKey === pt.dateKey
+                    ? "text-indigo-400 font-bold"
+                    : pt.dayLabel === "Today"
                       ? "text-slate-200 font-bold"
                       : "hover:text-slate-300"
-                  }`}
+                    }`}
                   onMouseEnter={() => setHoveredDayPoint(pt)}
                   onMouseLeave={() => setHoveredDayPoint(null)}
                 >
@@ -795,7 +808,7 @@ const CreditsModal = ({ isPage = false }) => {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-[#161828] border-b border-white/[0.06]">
                 <tr className="text-[9.5px] uppercase font-bold tracking-wider text-slate-400">
-                  <th className="px-5 py-2.5">Time</th>
+                  <th className="px-5 py-2.5">Date/Time</th>
                   <th className="px-5 py-2.5">Activity</th>
                   <th className="px-5 py-2.5">Model</th>
                   <th className="px-5 py-2.5 text-right">Tokens</th>
@@ -873,9 +886,8 @@ const CreditsModal = ({ isPage = false }) => {
 
                         {/* Credits */}
                         <td
-                          className={`px-5 py-2.5 text-right font-mono font-bold ${
-                            info.isPositive ? "text-emerald-400" : "text-slate-200"
-                          }`}
+                          className={`px-5 py-2.5 text-right font-mono font-bold ${info.isPositive ? "text-emerald-400" : "text-slate-200"
+                            }`}
                         >
                           {info.isPositive
                             ? `+${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} credits`
@@ -885,11 +897,10 @@ const CreditsModal = ({ isPage = false }) => {
                         {/* Status */}
                         <td className="px-5 py-2.5 text-right">
                           <span
-                            className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
-                              info.isPositive
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                : "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
-                            }`}
+                            className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full border ${info.isPositive
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                              : "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                              }`}
                           >
                             {info.isPositive ? "Credit Added" : "Success"}
                           </span>

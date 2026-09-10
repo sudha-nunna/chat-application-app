@@ -33,11 +33,10 @@ const AuthModal = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-8 ${
-      "bg-[#111111] md:bg-black/90 md:backdrop-blur-md"
-    }`}>
+    <div className={`absolute inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-8 ${"bg-[#111111] md:bg-black/90 md:backdrop-blur-md"
+      }`}>
       <div className="flex flex-col md:flex-row w-full h-full md:h-auto max-w-4xl md:min-h-[500px] bg-transparent md:bg-[#0A0A0A] rounded-none md:rounded-[32px] md:border border-white/[0.01] overflow-hidden md:shadow-2xl relative">
-        
+
         {/* Top Image (Mobile) / Left Side (Desktop) */}
         <div className="flex md:flex-col w-full md:w-1/2 h-[45%] md:h-auto p-8 md:p-10 justify-between relative bg-gradient-to-b from-[#111111] to-[#050505] border-none md:border-r border-white/5 overflow-hidden">
           {/* Background Image Layer */}
@@ -46,7 +45,7 @@ const AuthModal = ({ onAuthSuccess }) => {
           </div>
 
           <Link to="/" className="hidden md:flex relative z-10 items-center gap-1">
-            <img src="/mini-logo2.png" alt="Codegene Logo" className={`w-12 h-12 object-contain shrink-0`}/>
+            <img src="/mini-logo2.png" alt="Codegene Logo" className={`w-12 h-12 object-contain shrink-0`} />
             <span className="text-white font-medium text-sm tracking-wide flex items-start gap-0.5">
               CODEGENE
               <sup className="text-[9px] mt-1 font-sans text-white/50 font-semibold tracking-wider">
@@ -68,7 +67,7 @@ const AuthModal = ({ onAuthSuccess }) => {
         {/* Bottom Card (Mobile) / Right Side (Desktop) */}
         <div className="w-full md:w-1/2 h-[75%] md:h-auto flex flex-col justify-start md:justify-center bg-[#121212] relative z-10 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 p-8 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] md:shadow-none overflow-y-auto">
           <div className="max-w-[340px] mx-auto w-full pt-2 md:pt-0">
-            
+
             {/* Mobile Logo */}
             <div className="md:hidden flex flex-col items-center justify-center gap-2 mb-3">
               <img src="/codegene-mark.png" alt="Codegene Logo" className="w-12 h-12 object-contain" />

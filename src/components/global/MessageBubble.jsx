@@ -9,8 +9,6 @@ import {
   FiCopy,
   FiEdit2,
   FiCheck,
-  FiThumbsUp,
-  FiThumbsDown,
   FiCode,
   FiFileText,
   FiImage,
@@ -848,18 +846,7 @@ const MessageBubble = ({
                 </button>
               )}
 
-              <button
-                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition cursor-pointer"
-                title="Good response"
-              >
-                <FiThumbsUp className="w-4 h-4" />
-              </button>
-              <button
-                className="p-1.5 rounded-lg hover:bg-surface-secondary hover:text-text-primary transition"
-                title="Bad response"
-              >
-                <FiThumbsDown className="w-4 h-4" />
-              </button>
+
               {onRetry && (
                 <button
                   onClick={() => onRetry()}
@@ -917,7 +904,7 @@ const MessageBubble = ({
 
         {/* Action Buttons for User Message (Visible on Hover) */}
         {isUser && !isEditing && (
-          <div className="flex items-center gap-1 mt-0.5 justify-end h-0 overflow-visible opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity pt-1 z-10">
+          <div className="flex items-center gap-1 mt-1 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             {searchExecuted && (
               <div
                 className="p-1.5 rounded-lg text-accent-primary hover:bg-surface-secondary transition flex items-center justify-center cursor-help"
