@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import ChatArea from "../components/global/ChatArea";
 import { useTheme } from "../context/ThemeContext";
 
 const ChatPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isExplicitNewChat = Boolean(
     location.state?.newChat || location.state?.resetChat
@@ -20,25 +21,24 @@ const ChatPage = () => {
   useEffect(() => {
     if (isExplicitNewChat) {
       setCurrentChatId(null);
-      if (searchParams.get("chatId")) {
-        setSearchParams({}, { replace: true });
-      }
+      // Clean up the transient location.state so it does not perpetually override chatId assignment
+      navigate("/chat", { replace: true, state: {} });
     } else {
       setCurrentChatId(rawUrlChatId || null);
     }
-  }, [rawUrlChatId, isExplicitNewChat, location.key, location.state]);
+  }, [rawUrlChatId, isExplicitNewChat, location.key, navigate]);
 
   useEffect(() => {
     const handleNewChatAction = () => {
       setCurrentChatId(null);
-      setSearchParams({}, { replace: true });
+      navigate("/chat", { replace: true, state: {} });
     };
 
     window.addEventListener("new-chat-action", handleNewChatAction);
     return () => {
       window.removeEventListener("new-chat-action", handleNewChatAction);
     };
-  }, [setSearchParams]);
+  }, [navigate]);
 
   const triggerSidebarRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -46,9 +46,9 @@ const ChatPage = () => {
 
   const handleSetCurrentChatId = (newId) => {
     if (newId) {
-      setSearchParams({ chatId: newId });
+      navigate(`/chat?chatId=${newId}`, { replace: true, state: {} });
     } else {
-      setSearchParams({});
+      navigate("/chat", { replace: true, state: {} });
     }
     setCurrentChatId(newId || null);
   };

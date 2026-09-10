@@ -64,16 +64,14 @@ const ChatSidebar = ({
     <div className="flex flex-col h-full min-h-0 flex-1">
       {/* Top Controls: New Chat, Search */}
       <div
-        className={`pt-2 pb-2 flex flex-col gap-2 shrink-0 ${
-          isSidebarCollapsed ? "px-1 items-center" : "px-4"
-        }`}
+        className={`pt-2 pb-2 flex flex-col gap-2 shrink-0 ${isSidebarCollapsed ? "px-1 items-center" : "px-4"
+          }`}
       >
         {/* New Chat Button */}
         <button
           onClick={handleNewChat}
-          className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-medium shadow-sm ${
-            isSidebarCollapsed ? "justify-center" : ""
-          } group relative`}
+          className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer bg-accent-primary text-white hover:opacity-90 font-medium shadow-sm ${isSidebarCollapsed ? "justify-center" : ""
+            } group relative`}
         >
           <div className="w-6 h-6 flex items-center justify-center shrink-0">
             <FiPlus className="text-lg" />
@@ -138,18 +136,16 @@ const ChatSidebar = ({
 
       {/* Scrollable Chat History List */}
       <div
-        className={`flex-1 relative ${
-          isSidebarCollapsed && !isMobile
+        className={`flex-1 relative ${isSidebarCollapsed && !isMobile
             ? "overflow-visible"
             : "overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        }`}
+          }`}
       >
         <div
-          className={`pt-1 pb-6 space-y-4 ${
-            isSidebarCollapsed && !isMobile
+          className={`pt-1 pb-6 space-y-4 ${isSidebarCollapsed && !isMobile
               ? "px-1 overflow-visible space-y-3!"
               : "px-3"
-          }`}
+            }`}
         >
           {/* Collapsed State: Buttons expand the sidebar */}
           {isSidebarCollapsed && !isMobile ? (
@@ -209,7 +205,7 @@ const ChatSidebar = ({
                   {/* Pinned Chats */}
                   {filteredPinnedChats.length > 0 && (
                     <div>
-                      <div
+                      {/* <div
                         className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1 cursor-pointer hover:text-text-muted transition select-none"
                         onClick={() => setIsPinnedOpen?.(!isPinnedOpen)}
                       >
@@ -219,14 +215,25 @@ const ChatSidebar = ({
                         ) : (
                           <FiChevronRight className="text-[10px]" />
                         )}
+                      </div> */}
+                      <div
+                        className="text-xs font-semibold text-text-primary px-3 mb-1.5 flex items-center gap-1.5 cursor-pointer hover:text-text-muted transition select-none"
+                        onClick={() => setIsPinnedOpen?.(!isPinnedOpen)}
+                      >
+                        <TbPin className="text-sm shrink-0" />
+                        <span>Pinned</span>
+                        {isPinnedOpen ? (
+                          <FiChevronDown className="text-[10px]" />
+                        ) : (
+                          <FiChevronRight className="text-[10px]" />
+                        )}
                       </div>
 
                       <div
-                        className={`grid transition-all duration-300 ease-in-out ${
-                          isPinnedOpen || query
+                        className={`grid transition-all duration-300 ease-in-out ${isPinnedOpen || query
                             ? "grid-rows-[1fr] opacity-100"
                             : "grid-rows-[0fr] opacity-0"
-                        }`}
+                          }`}
                       >
                         <div className="overflow-hidden">
                           <div className="space-y-0.5">
@@ -250,9 +257,8 @@ const ChatSidebar = ({
                         {filteredGroupedRecentChats.map((group, idx) => (
                           <div key={group.key} className="flex flex-col gap-0.5">
                             <h4
-                              className={`text-[11.5px] font-sans font-medium text-text-muted/80 px-3 mb-1 ${
-                                idx > 0 ? "mt-2" : ""
-                              }`}
+                              className={`text-[11.5px] font-sans font-medium text-text-muted/80 px-3 mb-1 ${idx > 0 ? "mt-2" : ""
+                                }`}
                             >
                               {group.label}
                             </h4>

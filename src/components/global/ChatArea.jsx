@@ -215,6 +215,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     const handleOpenArtifact = (e) => {
       if (e.detail?.code) {
         setActiveArtifact({
+          ...e.detail,
           code: e.detail.code,
           language: e.detail.language || "html",
           title: e.detail.title || chatTitle || "Interactive Preview",
@@ -232,13 +233,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   // Automatically detect artifacts from latest assistant message or streaming reply
   useEffect(() => {
     if (streamingReply) {
-      const now = Date.now();
-      if (now - lastArtifactUpdateRef.current > 120) {
-        lastArtifactUpdateRef.current = now;
-        const parsed = extractPreviewableCode(streamingReply);
-        if (parsed) {
-          setActiveArtifact(parsed);
-          setIsArtifactOpen(true);
+      if (streamingReply.includes("```")) {
+        const now = Date.now();
+        if (now - lastArtifactUpdateRef.current > 350) {
+          lastArtifactUpdateRef.current = now;
+          const parsed = extractPreviewableCode(streamingReply);
+          if (parsed) {
+            setActiveArtifact(parsed);
+            setIsArtifactOpen(true);
+          }
         }
       }
       return;
@@ -423,7 +426,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     streamNetworkDoneRef.current = false;
     tokenQueueRef.current = [];
 
-    // Track last flush time so we release tokens at a capped rate
     let lastFlushTime = 0;
 
     const tick = (now) => {
@@ -433,17 +435,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       }
 
       const elapsed = now - lastFlushTime;
-      // Target: ~35 words/sec → one flush every ~28ms
-      const flushInterval = 28;
+      // High-performance 12ms interval (up to ~80-120fps smooth typing)
+      const flushInterval = 12;
 
-      if (elapsed >= flushInterval) {
+      if (elapsed >= flushInterval || streamNetworkDoneRef.current) {
         const qLen = tokenQueueRef.current.length;
         if (qLen > 0) {
-          // Adaptive catch-up: if queue is backed up, drain faster
-          let step = 1;
-          if (qLen > 60) step = Math.min(8, Math.ceil(qLen / 10));
-          else if (qLen > 25) step = 3;
-          else if (qLen > 10) step = 2;
+          let step;
+          if (streamNetworkDoneRef.current) {
+            // Network stream complete: flush all remaining queued tokens immediately!
+            step = qLen;
+          } else if (qLen > 40) {
+            step = Math.ceil(qLen / 3);
+          } else if (qLen > 15) {
+            step = Math.ceil(qLen / 4);
+          } else if (qLen > 5) {
+            step = 3;
+          } else {
+            step = 2;
+          }
 
           const words = tokenQueueRef.current.splice(0, step).join("");
           currentStreamingTextRef.current += words;
@@ -486,7 +496,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     // If user navigated to a different chat thread while generating, abort active stream
     if (isGeneratingRef.current && prevChatIdRef.current !== currentChatId) {
-      handleStopGeneration();
+      handleStopGeneration(prevChatIdRef.current || streamingChatIdRef.current);
     }
 
     prevChatIdRef.current = currentChatId;
@@ -592,7 +602,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
   };
 
-  const handleStopGeneration = () => {
+  const handleStopGeneration = (targetChatOverride = null) => {
     isGeneratingRef.current = false;
     isAbortedRef.current = true;
     if (abortControllerRef.current) {
@@ -604,17 +614,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     streamNetworkDoneRef.current = false;
     streamCompleteCbRef.current = null;
 
+    const targetChat = targetChatOverride || streamingChatIdRef.current || (currentChatId && currentChatId !== "new" ? currentChatId : null);
     const partialText = currentStreamingTextRef.current;
     if (partialText && partialText.trim()) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: partialText, isStoppedMidway: true }
-      ]);
+      if (!targetChatOverride || targetChatOverride === currentChatId) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: partialText, isStoppedMidway: true }
+        ]);
+      }
 
       // Synchronize stop with backend so switching chats or reloading preserves the Continue button
       try {
         const token = localStorage.getItem("token");
-        const targetChat = currentChatId && currentChatId !== "new" ? currentChatId : null;
         if (targetChat && token) {
           fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChat}/messages/stop`, {
             method: "POST",
@@ -724,7 +736,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   const loadSavedMessages = async () => {
-    if (isGeneratingRef.current || !currentChatId) return;
+    if (!currentChatId) return;
+    if (isGeneratingRef.current) {
+      handleStopGeneration(streamingChatIdRef.current);
+    }
     const targetChatId = currentChatId;
     handleStopSpeaking();
     pendingVoiceAutoSpeakRef.current = false;
@@ -782,11 +797,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     lastArtifactUpdateRef.current = 0;
 
     // Detect if prompt is requesting web code / UI creation, or if Dev Mode is active
+    const isBackendQuery =
+      /(backend|express|server\.js|api route|database schema|sql query|git command|install package)/i.test(cleanText) &&
+      !/(frontend|ui|page|landing|dashboard|component|react)/i.test(cleanText);
+
     const isCodeOrWebPrompt =
       isDevModeActive ||
-      /(landing page|website|web page|webpage|dashboard|component|react|html|css|tailwind|portfolio|admin|ui|frontend|app preview|clone|design a|build a|create a.*page|create a.*app|generate a.*page|make a.*page|write code)/i.test(
-        cleanText
-      );
+      (!isBackendQuery &&
+        /(landing page|website|web page|webpage|dashboard|component|react ui|html|css|tailwind|portfolio|admin panel|ui|frontend|app preview|clone|design a|build a.*page|create a.*page|create a.*app|generate a.*page|make a.*page)/i.test(
+          cleanText
+        ));
 
     // Immediately open the preview pane so user sees the live generation in real-time
     if (isCodeOrWebPrompt && !continuationContext) {
@@ -810,7 +830,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     isGeneratingRef.current = true;
     isAbortedRef.current = false;
-    streamingChatIdRef.current = currentChatId;
+    const effectiveChatId = activeChatIdRef.current || currentChatId;
+    streamingChatIdRef.current = effectiveChatId;
     streamFollowUpsRef.current = [];
 
     const isSearchRequested = Boolean(enableSearch);
@@ -856,7 +877,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     try {
       const token = localStorage.getItem("token");
-      const targetChatEndpoint = currentChatId && currentChatId !== "new" ? currentChatId : "new";
+      const targetChatEndpoint = effectiveChatId && effectiveChatId !== "new" ? effectiveChatId : "new";
       const conversationMode = "text";
 
       abortControllerRef.current = new AbortController();
@@ -945,6 +966,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               if (parsed.type === "meta") {
                 if (!currentChatId || currentChatId === "new") {
                   streamingChatIdRef.current = parsed.chatId;
+                  activeChatIdRef.current = parsed.chatId;
                   setCurrentChatId(parsed.chatId);
                   queryClient.invalidateQueries({ queryKey: ["chats"] });
                 }
@@ -982,7 +1004,21 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   handleIncomingStreamSpeech(textBit);
                 }
               } else if (parsed.type === "follow_ups") {
-                streamFollowUpsRef.current = Array.isArray(parsed.followUps) ? parsed.followUps : [];
+                const incomingFollowUps = Array.isArray(parsed.followUps) ? parsed.followUps : [];
+                streamFollowUpsRef.current = incomingFollowUps;
+                setMessages((prev) => {
+                  if (!Array.isArray(prev) || prev.length === 0) return prev;
+                  const lastIdx = prev.length - 1;
+                  if (prev[lastIdx]?.role === "assistant") {
+                    const updated = [...prev];
+                    updated[lastIdx] = {
+                      ...updated[lastIdx],
+                      followUps: incomingFollowUps
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
               } else if (parsed.type === "error") {
                 setMessages((prev) => [
                   ...prev,
@@ -1117,6 +1153,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         triggerMicAutoListen();
       }
       if (onChatUpdated) onChatUpdated();
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
       // Invalidate usage to refresh credits once stream completes without multiple get calls
       queryClient.invalidateQueries({ queryKey: ["usage"] });
     } catch (err) {
@@ -1392,7 +1429,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
           >
             <div
-              className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-2.5"}`}
+              className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-1.5 sm:space-y-2"}`}
             >
               {!isSearching && !isBotTyping && isFetchingMessages && (
                 <div className="flex flex-col items-center justify-center flex-1 text-center">
@@ -1495,6 +1532,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               )}
 
               {!isFetchingMessages && messages.length > 0 && (() => {
+                const lastUserMsgIdx = messages.reduce(
+                  (lastIdx, msg, idx) => (msg.role === "user" ? idx : lastIdx),
+                  -1
+                );
                 const lastAssistantMsgIdx = messages.reduce(
                   (lastIdx, msg, idx) => (msg.role === "assistant" ? idx : lastIdx),
                   -1
@@ -1656,6 +1697,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         onClose={() => setIsShareModalOpen(false)}
         chatId={currentChatId}
         chatTitle={chatTitle}
+        hasMessages={messages.length > 0}
       />
     </div>
   );

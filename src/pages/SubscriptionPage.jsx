@@ -130,7 +130,8 @@ const SubscriptionPage = () => {
   const activeCredits = usage?.user?.credits ?? 0;
 
   return (
-    <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 space-y-8 max-w-6xl mx-auto custom-scrollbar bg-transparent text-text-primary">
+    <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-transparent text-text-primary">
+      <div className="max-w-6xl mx-auto w-full space-y-8">
       {/* Clean Unboxed Header Row */}
       <div className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-3">
@@ -289,7 +290,8 @@ const SubscriptionPage = () => {
         )}
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default SubscriptionPage;

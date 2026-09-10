@@ -1,28 +1,24 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   FiRefreshCw,
-  FiActivity,
   FiX,
-  FiShield,
-  FiZap,
-  FiCpu,
-  FiClock,
-  FiShoppingBag,
-  FiArrowUpRight,
-  FiArrowDownLeft,
-  FiTrendingUp,
-  FiLayers,
   FiCreditCard,
-  FiCalendar,
+  FiActivity,
+  FiLayers,
+  FiZap,
   FiCheckCircle,
   FiAlertTriangle,
   FiMenu,
+  FiShoppingBag,
+  FiCpu,
+  FiClock,
+  FiArrowUpRight,
+  FiArrowDownRight,
 } from "react-icons/fi";
 import { backEndCallGet } from "../../services/authService";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { useTanStackData, useTanStackQueryClient } from "../../hooks/useTanStackData";
 import { useNavigate, useLocation } from "react-router-dom";
-import PlanBadge from "./PlanBadge";
 
 const CreditsModal = ({ isPage = false }) => {
   const navigate = useNavigate();
@@ -32,17 +28,13 @@ const CreditsModal = ({ isPage = false }) => {
   const {
     isCreditsModalOpen,
     setIsCreditsModalOpen,
-    subscription,
-    currentPlan,
-    subscriptionStatus,
-    priorityScore,
     refreshSubscription,
-    cancelSubscription,
   } = useSubscription();
 
   const queryClient = useTanStackQueryClient();
   const token = localStorage.getItem("token");
 
+  // Fetch real-time usage telemetry from backend
   const {
     data: usageData,
     isLoading,
@@ -58,12 +50,10 @@ const CreditsModal = ({ isPage = false }) => {
     { enabled: (isCreditsModalOpen || isUsageRoute) && !!token }
   );
 
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [cancelFeedback, setCancelFeedback] = useState(null);
+  const [hoveredDayPoint, setHoveredDayPoint] = useState(null);
 
   const loading = isLoading || isFetching;
-  const error = isError ? "Unable to load real-time usage stats. Please try again." : "";
+  const error = isError ? "Unable to load real-time usage telemetry. Please try refreshing." : "";
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["usage"] });
@@ -86,484 +76,273 @@ const CreditsModal = ({ isPage = false }) => {
     navigate("/subscription");
   };
 
-  const handleCancelClick = async () => {
-    if (!cancelSubscription) return;
-    setCancelLoading(true);
-    setCancelFeedback(null);
-    const res = await cancelSubscription();
-    setCancelLoading(false);
-    setShowCancelConfirm(false);
-
-    if (res.success) {
-      setCancelFeedback({
-        type: "success",
-        message: "Subscription set to cancel at end of current billing period.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["usage"] });
-    } else {
-      setCancelFeedback({
-        type: "error",
-        message: res.message || "Failed to cancel subscription.",
-      });
-    }
-  };
-
   if (!isCreditsModalOpen && !isUsageRoute) return null;
 
+  // Real Dynamic Telemetry Payloads from Backend
+  const user = usageData?.user || { credits: 0, plan: "Free Tier", isPaidUser: false };
+  const plan = usageData?.plan || { name: "FREE TIER", maxMessagesPerDay: 50, isPaidUser: false };
   const today = usageData?.today || {
     messagesUsed: 0,
     tokensUsed: 0,
     creditsUsed: 0,
     messagesRemaining: 50,
-    messagesLimit: 50,
   };
-  const plan = usageData?.plan || { name: "FREE", maxMessagesPerDay: 50 };
-  const user = usageData?.user || { credits: 0, plan: "free" };
   const lifetime = usageData?.lifetime || {
     totalTokens: 0,
     totalCreditsUsed: 0,
     totalRequests: 0,
   };
-  const modelBreakdown = usageData?.modelBreakdown || [];
   const recentTransactions = usageData?.recentTransactions || [];
+  const recentHistory = usageData?.recentHistory || [];
 
   const isUnlimited = plan.maxMessagesPerDay === -1 || user.isPaidUser;
   const maxCap = plan.maxMessagesPerDay > 0 ? plan.maxMessagesPerDay : 50;
-  const progressPercent = isUnlimited
-    ? 100
-    : Math.min(100, Math.round((today.messagesUsed / maxCap) * 100));
 
-  const formatModelName = (id) => {
-    if (!id) return "Unknown Model";
-    if (id === "auto") return "Auto Model Router";
-    if (id.includes("deepseek")) return "DeepSeek V4 Flash";
-    if (id.includes("zhipuai") || id.includes("glm")) return "GLM-4 Flash";
-    if (id.includes("kimi")) return "Kimi K2.7 Code";
-    if (id.includes("gpt-4")) return "GPT-4o Turbo";
-    if (id.includes("claude")) return "Claude 3.5 Sonnet";
-    return id.split("/").pop().replace(/[:_]/g, " ");
-  };
-
+  // Formatting helpers
   const formatNumber = (num) => {
-    if (typeof num !== "number") return num || 0;
+    if (typeof num !== "number" || isNaN(num)) return "0";
     if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
     if (num >= 1000) return (num / 1000).toFixed(1) + "k";
     return num.toLocaleString();
   };
 
+  const formatModelName = (id) => {
+    if (!id || typeof id !== "string") return "—";
+    const clean = id.toLowerCase().trim();
+    if (clean === "auto") return "Auto AI Router";
+    if (clean.includes("deepseek")) return "DeepSeek V4 Flash";
+    if (clean.includes("glm-4-flash") || clean.includes("glm-4")) return "GLM-4 Flash";
+    if (clean.includes("glm-5")) return "GLM-5 Flash";
+    if (clean.includes("kimi")) return "Kimi K2.7 Code";
+    if (clean.includes("gemini-2.5-flash")) return "Gemini 2.5 Flash";
+    if (clean.includes("gemini-2.5-pro")) return "Gemini 2.5 Pro";
+    if (clean.includes("gemini")) return "Google Gemini";
+    if (clean.includes("qwen")) return "Qwen 2.5";
+    if (clean.includes("nemotron")) return "Nemotron 3";
+    if (clean.includes("minimax")) return "MiniMax M2.7";
+    if (clean.includes("gpt-4")) return "GPT-4o";
+    if (clean.includes("claude")) return "Claude 3.5";
+    return id.split("/").pop().replace(/[:_]/g, " ");
+  };
+
+  // Senior Developer Parser: Extracts human-readable activity & exact telemetry
+  const getTransactionInfo = (tx) => {
+    const isPositive = (tx.amount || 0) > 0;
+    const type = (tx.type || "").toLowerCase();
+    const desc = (tx.description || "").trim();
+
+    let activity = "AI Chat Response";
+    let isModelUsage = false;
+
+    if (
+      type === "admin_grant" ||
+      desc.toLowerCase().includes("admin manual") ||
+      desc.toLowerCase().includes("admin balance") ||
+      desc.toLowerCase().includes("admin adjustment")
+    ) {
+      activity = isPositive ? "Admin Credit Top-up" : "Admin Balance Adjustment";
+      isModelUsage = false;
+    } else if (type === "purchase" || desc.toLowerCase().includes("purchase") || desc.toLowerCase().includes("top up")) {
+      activity = "Credit Pack Top-up";
+      isModelUsage = false;
+    } else if (type === "subscription_grant" || desc.toLowerCase().includes("subscription")) {
+      activity = "Monthly Plan Allowance";
+      isModelUsage = false;
+    } else if (
+      type === "ai_message_consumption" ||
+      type === "message_sent" ||
+      type === "bot_chat" ||
+      !isPositive
+    ) {
+      activity = "AI Chat Response";
+      isModelUsage = true;
+    } else {
+      activity = isPositive ? "Credit Credited" : "Credit Deducted";
+    }
+
+    // Model Name: Show real model ONLY for AI completions, NEVER for wallet/admin operations!
+    let modelDisplay = "—";
+    if (isModelUsage) {
+      if (tx.modelId && tx.modelId.trim()) {
+        modelDisplay = formatModelName(tx.modelId);
+      } else if (desc.toLowerCase().includes("for ")) {
+        const parts = desc.split(/for /i);
+        modelDisplay = formatModelName(parts[parts.length - 1].trim());
+      } else {
+        modelDisplay = "Auto AI Router";
+      }
+    }
+
+    // Exact Token Count
+    let tokens = null;
+    let promptTok = tx.promptTokens || null;
+    let compTok = tx.completionTokens || null;
+
+    if (typeof tx.totalTokens === "number" && tx.totalTokens > 0) {
+      tokens = tx.totalTokens;
+    } else if ((tx.promptTokens || 0) + (tx.completionTokens || 0) > 0) {
+      tokens = (tx.promptTokens || 0) + (tx.completionTokens || 0);
+    } else if (desc.includes("tokens")) {
+      const match = desc.match(/\((\d+)\s*in\s*\/\s*(\d+)\s*out tokens\)/i);
+      if (match) {
+        promptTok = parseInt(match[1], 10);
+        compTok = parseInt(match[2], 10);
+        tokens = promptTok + compTok;
+      }
+    }
+
+    return {
+      activity,
+      modelDisplay,
+      tokens,
+      promptTokens: promptTok,
+      completionTokens: compTok,
+      isPositive,
+      isModelUsage,
+    };
+  };
+
+  // 100% Dynamic 7-Day Rolling Telemetry Graph (Directly Mapped from MongoDB History)
+  const dailyUsageData = useMemo(() => {
+    const numDays = 7;
+    const days = [];
+    const now = new Date();
+
+    // Index MongoDB history records by date string YYYY-MM-DD
+    const historyMap = new Map();
+    (recentHistory || []).forEach((h) => {
+      if (h?.date) {
+        historyMap.set(h.date, {
+          tokens: h.tokensUsedToday || 0,
+          messages: h.messagesUsedToday || 0,
+          credits: h.creditsUsedToday || 0,
+        });
+      }
+    });
+
+    // Ensure today's live telemetry is included
+    const todayKey = new Date().toISOString().split("T")[0];
+    if (today) {
+      historyMap.set(todayKey, {
+        tokens: today.tokensUsed || 0,
+        messages: today.messagesUsed || 0,
+        credits: today.creditsUsed || 0,
+      });
+    }
+
+    // Build array for exactly the last 7 calendar days ending today
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dateKey = d.toISOString().split("T")[0];
+      const record = historyMap.get(dateKey) || { tokens: 0, messages: 0, credits: 0 };
+
+      days.push({
+        dateObj: d,
+        dateKey,
+        dayLabel: i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" }),
+        shortDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        tokens: record.tokens,
+        messages: record.messages,
+        credits: record.credits,
+      });
+    }
+
+    // Dynamic 7-day token total
+    const totalPeriodTokens = days.reduce((sum, d) => sum + (d.tokens || 0), 0);
+    const totalPeriodMessages = days.reduce((sum, d) => sum + (d.messages || 0), 0);
+    const totalPeriodCredits = days.reduce((sum, d) => sum + (d.credits || 0), 0);
+
+    // SVG Chart Coordinates (360 x 120 viewBox)
+    const maxTokens = Math.max(...days.map((d) => d.tokens), 500);
+    const width = 360;
+    const height = 120;
+    const padX = 24;
+    const padTop = 18;
+    const padBottom = 22;
+    const usableW = width - padX * 2;
+    const usableH = height - padTop - padBottom;
+
+    const coords = days.map((day, idx) => {
+      const x = padX + (idx / (days.length - 1)) * usableW;
+      const normalized = maxTokens > 0 ? day.tokens / maxTokens : 0;
+      const y = height - padBottom - normalized * usableH;
+      return { ...day, x, y };
+    });
+
+    let linePath = `M ${coords[0].x},${coords[0].y}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p0 = coords[i];
+      const p1 = coords[i + 1];
+      const cx = p0.x + (p1.x - p0.x) / 2;
+      linePath += ` C ${cx},${p0.y} ${cx},${p1.y} ${p1.x},${p1.y}`;
+    }
+
+    const baselineY = height - padBottom;
+    const areaPath = `${linePath} L ${coords[coords.length - 1].x},${baselineY} L ${coords[0].x},${baselineY} Z`;
+
+    return {
+      coords,
+      linePath,
+      areaPath,
+      maxTokens,
+      totalPeriodTokens,
+      totalPeriodMessages,
+      totalPeriodCredits,
+    };
+  }, [recentHistory, today]);
+
+  // Credit health metrics
+  const creditBalance = typeof user.credits === "number" ? user.credits : 0;
+  const creditHealthStatus =
+    creditBalance > 100
+      ? { label: "Healthy", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", barColor: "bg-emerald-500" }
+      : creditBalance > 20
+      ? { label: "Moderate", color: "text-amber-400 bg-amber-500/10 border-amber-500/20", barColor: "bg-amber-500" }
+      : creditBalance > 0
+      ? { label: "Low", color: "text-rose-400 bg-rose-500/10 border-rose-500/20", barColor: "bg-rose-500" }
+      : { label: "Depleted", color: "text-rose-500 bg-rose-500/20 border-rose-500/30", barColor: "bg-rose-600" };
+
   return (
-    <div className="w-full h-full flex flex-col bg-surface-primary dark:bg-[#13141f] text-text-primary dark:text-white overflow-hidden">
-      {/* Header Bar */}
-      <div className="relative py-3.5 px-5 md:px-6 border-b shrink-0 bg-gradient-to-r from-accent-primary/10 via-surface-secondary/90 to-indigo-500/10 dark:from-[#1e2034] dark:via-[#161725] dark:to-[#1a1b2d] border-border-primary dark:border-white/10 overflow-hidden">
-        <div className="absolute -top-12 -left-12 w-32 h-32 bg-accent-primary/20 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
-              className="md:hidden p-2 rounded-xl border flex items-center justify-center shrink-0 cursor-pointer transition bg-surface-secondary hover:bg-surface-tertiary text-text-primary dark:text-white border-border-primary/60 dark:border-white/10 shadow-2xs"
-              title="Toggle Sidebar"
-            >
-              <FiMenu className="text-base" />
-            </button>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-primary via-indigo-500 to-purple-500 flex items-center justify-center text-white text-base shadow-md shadow-accent-primary/20 shrink-0 font-bold">
-              <FiActivity />
-            </div>
-            <div>
-              <h2 className="text-sm md:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-text-primary via-text-primary to-accent-primary dark:from-white dark:via-white dark:to-[#a4a9ff]">
-                Usage Analytics & Telemetry
-              </h2>
-              <p className="text-[11px] text-text-muted">
-                Live credit metrics, quotas, subscription status, and token consumption.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-secondary hover:bg-surface-tertiary dark:bg-[#1a1c2b] dark:hover:bg-[#23263a] text-text-primary dark:text-white border border-border-primary/60 dark:border-white/10 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
-              title="Refresh Telemetry"
-            >
-              <FiRefreshCw
-                className={`text-xs ${loading ? "animate-spin text-accent-primary" : ""}`}
-              />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-
-            <button
-              onClick={handleClose}
-              className="w-8 h-8 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-border-primary/50 dark:border-white/5"
-              title="Close Panel"
-            >
-              <FiX className="text-base" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Body Container */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar max-w-6xl mx-auto w-full">
-        {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
-            {error}
-          </div>
-        )}
-
-        {cancelFeedback && (
-          <div
-            className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between border ${
-              cancelFeedback.type === "success"
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-            }`}
+    <div className="w-full h-full flex flex-col bg-[#0b0c13] text-slate-200 overflow-hidden font-sans select-none">
+      {/* Top Header Bar */}
+      <div className="py-3.5 px-6 md:px-8 border-b border-white/[0.08] bg-[#11121c]/90 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
+            className="md:hidden p-2 rounded-xl border border-white/10 flex items-center justify-center shrink-0 hover:bg-white/5 text-slate-300 hover:text-white transition"
+            title="Toggle Sidebar"
           >
+            <FiMenu className="text-base" />
+          </button>
+          <div>
             <div className="flex items-center gap-2">
-              {cancelFeedback.type === "success" ? (
-                <FiCheckCircle className="text-base" />
-              ) : (
-                <FiAlertTriangle className="text-base" />
-              )}
-              <span>{cancelFeedback.message}</span>
+              <h1 className="text-base md:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                Credits & Usage Telemetry
+              </h1>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                {plan.name}
+              </span>
             </div>
-            <button
-              onClick={() => setCancelFeedback(null)}
-              className="text-xs opacity-75 hover:opacity-100 cursor-pointer"
-            >
-              Dismiss
-            </button>
+            <p className="text-[11px] text-slate-400">
+              Live consumption telemetry, balance quotas, and token activity.
+            </p>
           </div>
-        )}
-
-        {loading && !usageData ? (
-          <div className="py-20 text-center text-xs text-text-muted">
-            <FiRefreshCw className="animate-spin text-2xl mx-auto mb-3 text-accent-primary" />
-            Loading real-time telemetry...
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Section 1: Subscription & Tier Overview Cards (Shifted from Subscription page) */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-                  <FiCreditCard className="text-accent-primary text-xs" />
-                  <span>Subscription & Tier Details</span>
-                </span>
-                <PlanBadge showPriority={true} />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Active Tier */}
-                <div className="p-4 rounded-2xl border border-border-primary/60 dark:border-white/[0.08] bg-surface-secondary/70 dark:bg-[#151726]/90 flex flex-col justify-between shadow-xs">
-                  <div className="flex items-center justify-between text-text-muted text-[11px]">
-                    <span className="font-semibold uppercase tracking-wider">Active Tier</span>
-                    <FiCreditCard className="text-accent-primary text-xs" />
-                  </div>
-                  <div className="mt-2 text-xl font-bold capitalize text-text-primary dark:text-white">
-                    {currentPlan || "free"} Plan
-                  </div>
-                  <div className="mt-1 text-[11px] text-text-muted">
-                    Status: <span className="text-emerald-400 capitalize font-semibold">{subscriptionStatus || "active"}</span>
-                  </div>
-                </div>
-
-                {/* Queue Priority */}
-                <div className="p-4 rounded-2xl border border-border-primary/60 dark:border-white/[0.08] bg-surface-secondary/70 dark:bg-[#151726]/90 flex flex-col justify-between shadow-xs">
-                  <div className="flex items-center justify-between text-text-muted text-[11px]">
-                    <span className="font-semibold uppercase tracking-wider">Queue Priority</span>
-                    <FiZap className="text-amber-400 text-xs" />
-                  </div>
-                  <div className="mt-2 text-xl font-bold text-text-primary dark:text-white">
-                    {priorityScore || 0} / 100
-                  </div>
-                  <div className="mt-1 text-[11px] text-text-muted">
-                    {(priorityScore || 0) >= 50 ? "High priority processing queue" : "Standard processing queue"}
-                  </div>
-                </div>
-
-                {/* Renewal / Expiration */}
-                <div className="p-4 rounded-2xl border border-border-primary/60 dark:border-white/[0.08] bg-surface-secondary/70 dark:bg-[#151726]/90 flex flex-col justify-between shadow-xs">
-                  <div className="flex items-center justify-between text-text-muted text-[11px]">
-                    <span className="font-semibold uppercase tracking-wider">Renewal / Expiration</span>
-                    <FiCalendar className="text-blue-400 text-xs" />
-                  </div>
-                  <div className="mt-2 text-xl font-bold text-text-primary dark:text-white">
-                    {subscription?.endDate
-                      ? new Date(subscription.endDate).toLocaleDateString()
-                      : "Ongoing"}
-                  </div>
-                  <div className="mt-1 text-[11px] text-text-muted">
-                    {subscription?.cancelAtPeriodEnd ? "Cancels at end of cycle" : "Auto-renews"}
-                  </div>
-                </div>
-
-                {/* Available Credits with Top Up action */}
-                <div className="p-4 rounded-2xl border border-border-primary/60 dark:border-white/[0.08] bg-surface-secondary/70 dark:bg-[#151726]/90 flex flex-col justify-between shadow-xs">
-                  <div className="flex items-center justify-between text-text-muted text-[11px]">
-                    <span className="font-semibold uppercase tracking-wider">Credits Balance</span>
-                    <FiZap className="text-accent-primary text-xs" />
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-xl font-extrabold text-accent-primary dark:text-[#8f95ff] font-mono">
-                      {typeof user.credits === "number" ? user.credits.toFixed(2) : user.credits}
-                    </span>
-                    <span className="text-xs text-text-muted font-semibold">cr</span>
-                  </div>
-                  <button
-                    onClick={handleBuyCredits}
-                    className="mt-2 text-[11px] text-accent-primary hover:underline font-semibold text-left cursor-pointer flex items-center gap-1"
-                  >
-                    <span>Top Up Packages →</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Usage Analytics Breakdown (Shifted from Subscription page) */}
-            <div className="rounded-2xl border border-border-primary/60 dark:border-white/[0.08] p-5 bg-surface-secondary/40 dark:bg-[#151726]/50 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
-                  <FiActivity className="text-accent-primary text-xs" />
-                  <span>Daily Quotas & Consumption Limits</span>
-                </span>
-                <span className="text-[11px] text-text-muted">Reset daily at 00:00 UTC</span>
-              </div>
-
-              {/* Messages Progress */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                  <span className="text-text-muted">Daily Messages</span>
-                  <span className="font-bold text-text-primary dark:text-white">
-                    {today.messagesUsed} / {isUnlimited ? "Unlimited" : maxCap}
-                  </span>
-                </div>
-                <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      isUnlimited
-                        ? "bg-gradient-to-r from-accent-primary to-indigo-400"
-                        : progressPercent > 85
-                        ? "bg-rose-500"
-                        : "bg-blue-500"
-                    }`}
-                    style={{ width: `${isUnlimited ? 10 : progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Tokens Progress */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                  <span className="text-text-muted">Tokens Used Today</span>
-                  <span className="font-bold text-text-primary dark:text-white">
-                    {formatNumber(today.tokensUsed)}
-                    <span className="text-[11px] font-normal text-text-muted ml-1">
-                      (Total: {formatNumber(lifetime.totalTokens)})
-                    </span>
-                  </span>
-                </div>
-                <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-purple-500 h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(((today.tokensUsed || 0) / 10000) * 100, 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Credits Progress */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                  <span className="text-text-muted">Available Credit Reserve</span>
-                  <span className="font-bold text-text-primary dark:text-white">
-                    {typeof user.credits === "number" ? user.credits.toFixed(2) : user.credits} Credits
-                  </span>
-                </div>
-                <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-amber-500 h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(((user.credits || 0) / 100) * 100, 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: Model Usage Breakdown */}
-            <div className="rounded-2xl border border-border-primary/60 dark:border-white/[0.08] overflow-hidden bg-surface-secondary/30 dark:bg-[#151726]/40 shadow-sm">
-              <div className="px-4 py-3 bg-surface-secondary/80 dark:bg-[#181926] border-b border-border-primary/60 dark:border-white/10 flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
-                  <FiLayers className="text-accent-primary text-xs" />
-                  <span>Model Breakdown</span>
-                </span>
-                <span className="text-[11px] text-text-muted font-medium">
-                  Dispatched: <strong className="text-text-primary dark:text-white font-extrabold">{lifetime.totalRequests || 0}</strong>
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-border-primary/40 dark:border-white/10 text-[10px] uppercase tracking-wider text-text-muted bg-surface-secondary/40 dark:bg-[#141522]">
-                      <th className="px-4 py-2.5 font-bold">Model Name</th>
-                      <th className="px-4 py-2.5 font-bold text-center">Requests</th>
-                      <th className="px-4 py-2.5 font-bold text-right">In / Out Tokens</th>
-                      <th className="px-4 py-2.5 font-bold text-right">Credits</th>
-                      <th className="px-4 py-2.5 font-bold text-right">Latency</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-primary/30 dark:divide-white/5 text-xs">
-                    {modelBreakdown.length > 0 ? (
-                      modelBreakdown.map((m) => (
-                        <tr key={m.modelId} className="hover:bg-black/5 dark:hover:bg-white/5 transition">
-                          <td className="px-4 py-3 font-semibold text-text-primary dark:text-white">
-                            <div className="flex flex-col">
-                              <span>{formatModelName(m.modelId)}</span>
-                              <span className="text-[9.5px] text-text-muted font-mono">{m.modelId}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center text-text-secondary dark:text-zinc-300 font-semibold">
-                            {m.totalRequests}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono text-[11px]">
-                            <span className="text-text-primary dark:text-white font-bold">{formatNumber(m.promptTokens)}</span>
-                            <span className="text-text-muted opacity-50 px-1">/</span>
-                            <span className="text-purple-400 font-bold">{formatNumber(m.completionTokens)}</span>
-                          </td>
-                          <td className="px-4 py-3 text-right font-bold text-accent-primary dark:text-[#8f95ff] font-mono">
-                            {typeof m.creditsUsed === "number" ? m.creditsUsed.toFixed(4) : m.creditsUsed} cr
-                          </td>
-                          <td className="px-4 py-3 text-right text-text-muted text-[11px] font-mono">
-                            {m.avgLatencyMs ? `${m.avgLatencyMs} ms` : "-"}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="px-4 py-6 text-center text-text-muted text-xs">
-                          No model telemetry recorded yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Section 4: Recent Activity Audit Log */}
-            <div className="rounded-2xl border border-border-primary/60 dark:border-white/[0.08] overflow-hidden bg-surface-secondary/30 dark:bg-[#151726]/40 shadow-sm">
-              <div className="px-4 py-3 bg-surface-secondary/80 dark:bg-[#181926] border-b border-border-primary/60 dark:border-white/10 flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
-                  <FiTrendingUp className="text-accent-primary text-xs" />
-                  <span>Recent Activity Log</span>
-                </span>
-                <span className="text-[11px] text-text-muted font-medium">Last 10 events</span>
-              </div>
-
-              <div className="divide-y divide-border-primary/30 dark:divide-white/5 max-h-52 overflow-y-auto custom-scrollbar">
-                {recentTransactions.length > 0 ? (
-                  recentTransactions.map((tx) => {
-                    const modelName = formatModelName(tx.modelId || tx.description);
-                    const isPositive = tx.amount > 0;
-                    return (
-                      <div key={tx._id} className="px-4 py-3 flex items-center justify-between text-xs hover:bg-black/5 dark:hover:bg-white/5 transition">
-                        <div className="flex items-center gap-3 truncate pr-2">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isPositive ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-accent-primary/10 text-accent-primary dark:text-[#a0a5fa] border border-accent-primary/20"}`}>
-                            {isPositive ? <FiArrowDownLeft /> : <FiArrowUpRight />}
-                          </div>
-                          <div className="flex flex-col truncate">
-                            <span className="text-xs font-semibold text-text-primary dark:text-white truncate">
-                              {tx.description ? tx.description : `${modelName} Dispatch`}
-                            </span>
-                            <span className="text-[10px] text-text-muted mt-0.5">
-                              {new Date(tx.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center shrink-0">
-                          <span
-                            className={`font-bold font-mono px-2.5 py-1 rounded-lg text-xs ${
-                              isPositive
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                : "bg-accent-primary/10 text-accent-primary dark:text-[#a0a5fa] border border-accent-primary/20"
-                            }`}
-                          >
-                            {isPositive ? `+${tx.amount}` : `${tx.amount}`} cr
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="p-5 text-center text-xs text-text-muted">
-                    No transactions recorded yet.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section 5: Subscription Management (Cancel Subscription) */}
-            {currentPlan && currentPlan.toLowerCase() !== "free" && (
-              <div className="p-5 rounded-2xl border border-border-primary/60 dark:border-white/[0.08] bg-surface-secondary/40 dark:bg-[#151726]/50 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-                  Subscription Management
-                </h4>
-                <p className="text-xs text-text-muted">
-                  If you cancel your subscription, you will maintain access to your {currentPlan.toUpperCase()} tier until the end of your billing cycle on{" "}
-                  <span className="font-semibold text-text-primary dark:text-white">
-                    {subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString() : "the billing period end"}
-                  </span>.
-                </p>
-
-                {!showCancelConfirm ? (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition cursor-pointer"
-                  >
-                    Cancel Subscription
-                  </button>
-                ) : (
-                  <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 space-y-2.5">
-                    <p className="text-xs font-semibold text-rose-300">
-                      Are you sure you want to cancel your {currentPlan.toUpperCase()} subscription?
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleCancelClick}
-                        disabled={cancelLoading}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer"
-                      >
-                        {cancelLoading ? "Cancelling..." : "Confirm Cancellation"}
-                      </button>
-                      <button
-                        onClick={() => setShowCancelConfirm(false)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-secondary dark:bg-[#1a1c2b] text-text-primary dark:text-white border border-border-primary/40 dark:border-white/10 hover:bg-surface-tertiary transition cursor-pointer"
-                      >
-                        Keep Subscription
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="p-4 border-t shrink-0 flex items-center justify-between text-[11px] text-text-muted bg-surface-secondary/40 dark:bg-[#181926]/70 border-border-primary dark:border-white/10">
-        <div className="flex items-center gap-1.5 font-medium">
-          <FiShield className="text-emerald-400 text-xs" />
-          <span>Server Quota Guard Active</span>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
+            onClick={handleRefresh}
+            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#1a1b2b] hover:bg-[#23253b] text-slate-200 hover:text-white border border-white/10 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="Refresh Metrics"
+          >
+            <FiRefreshCw className={`text-xs ${loading ? "animate-spin text-indigo-400" : "text-slate-400"}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+
+          <button
             onClick={handleBuyCredits}
-            className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-indigo-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-accent-primary/25"
+            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer"
           >
             <FiShoppingBag className="text-xs" />
             <span>Buy Credits</span>
@@ -571,10 +350,563 @@ const CreditsModal = ({ isPage = false }) => {
 
           <button
             onClick={handleClose}
-            className="px-4 py-2 rounded-xl bg-surface-secondary dark:bg-[#1a1c2b] hover:bg-surface-tertiary dark:hover:bg-[#23263a] text-text-primary dark:text-white text-xs font-semibold transition cursor-pointer border border-border-primary/40 dark:border-white/10"
+            className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer border border-white/10"
+            title="Close Panel"
           >
-            Close
+            <FiX className="text-sm" />
           </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto px-5 md:px-8 py-5 space-y-4 custom-scrollbar">
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-2">
+            <FiAlertTriangle className="text-sm shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* TOP ROW: 3 Real-time Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* Card 1: Credits Balance */}
+          <div className="p-4 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/30 transition">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/10 transition" />
+            <div className="flex items-center justify-between z-10">
+              <span className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
+                Credits Balance
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
+                <FiZap className="text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 z-10">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black tracking-tight text-white font-mono">
+                  {creditBalance.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+                <span className="text-xs font-bold text-indigo-400 font-mono">credits</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                <span>Pay-as-you-go balance</span>
+                <button
+                  onClick={handleBuyCredits}
+                  className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer hover:underline"
+                >
+                  + Top up
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Tokens Used */}
+          <div className="p-4 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/30 transition">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-500/10 transition" />
+            <div className="flex items-center justify-between z-10">
+              <span className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
+                Tokens Consumed
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-inner">
+                <FiActivity className="text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 z-10">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black tracking-tight text-white font-mono">
+                  {formatNumber(lifetime.totalTokens || today.tokensUsed)}
+                </span>
+                <span className="text-xs text-slate-400 font-mono">tokens</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                <span>Today: <strong className="text-purple-300 font-mono">{formatNumber(today.tokensUsed || 0)}</strong></span>
+                <span>Lifetime total</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Total AI Messages */}
+          <div className="p-4 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/30 transition sm:col-span-2 lg:col-span-1">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/10 transition" />
+            <div className="flex items-center justify-between z-10">
+              <span className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
+                Total AI Messages
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
+                <FiLayers className="text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 z-10">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black tracking-tight text-white font-mono">
+                  {(lifetime.totalRequests || 0).toLocaleString()}
+                </span>
+                <span className="text-xs text-slate-400 font-mono">messages</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                <span>Today: <strong className="text-emerald-400 font-mono">{today.messagesUsed || 0}</strong> msgs</span>
+                <span>All-time total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MIDDLE ROW: 7-Day Usage Telemetry Trend & Credit Allocation */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Card A: 7-Day Rolling Daily Usage Trend */}
+          <div className="p-4.5 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col h-[270px] justify-between relative overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-md bg-indigo-500/15 flex items-center justify-center text-indigo-400">
+                  <FiActivity className="text-xs" />
+                </div>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                  Daily Usage (Last 7 Days)
+                </h3>
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium">Day-by-day telemetry</span>
+            </div>
+
+            {/* Metric Banner */}
+            <div className="flex items-baseline justify-between mt-1 shrink-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-extrabold tracking-tight text-white font-mono">
+                  {formatNumber(dailyUsageData.totalPeriodTokens)}
+                </span>
+                <span className="text-[11px] text-slate-400">tokens (7d actual)</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                <span>Live Sync</span>
+              </div>
+            </div>
+
+            {/* Interactive Creative SVG Spline Area Chart with Telemetry Pillars */}
+            <div className="relative w-full flex-1 min-h-0 flex items-center justify-center mt-1">
+              {/* Creative Floating Glass Tooltip Card */}
+              {hoveredDayPoint && (
+                <div
+                  className="absolute pointer-events-none z-30 -top-6 bg-[#161728]/95 text-white text-[10.5px] font-medium px-3 py-2 rounded-xl shadow-2xl border border-indigo-500/30 transition-all transform -translate-x-1/2 flex flex-col items-center gap-1 backdrop-blur-md"
+                  style={{ left: `${Math.min(85, Math.max(15, (hoveredDayPoint.x / 360) * 100))}%` }}
+                >
+                  <div className="flex items-center gap-2 text-slate-300 text-[10px] font-semibold border-b border-white/10 pb-1 w-full justify-between">
+                    <span>{hoveredDayPoint.shortDate} ({hoveredDayPoint.dayLabel})</span>
+                    {hoveredDayPoint.dayLabel === "Today" && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold">LIVE</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 font-mono text-[10px] pt-0.5">
+                    <span className="font-bold text-indigo-300">
+                      ⚡ {formatNumber(hoveredDayPoint.tokens)} tokens
+                    </span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-emerald-400 font-bold">
+                      💬 {hoveredDayPoint.messages} msgs
+                    </span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-indigo-300 font-bold">
+                      {hoveredDayPoint.credits.toFixed(2)} credits
+                    </span>
+                  </div>
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#161728] border-r border-b border-indigo-500/30 rotate-45 pointer-events-none" />
+                </div>
+              )}
+
+              <svg
+                className="w-full h-full overflow-visible"
+                viewBox="0 0 360 120"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  {/* Subtle Professional Glow Filter */}
+                  <filter id="proGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+
+                  {/* Professional Unified Indigo Line Stroke */}
+                  <linearGradient id="proLineStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="100%" stopColor="#818cf8" />
+                  </linearGradient>
+
+                  {/* Clean Translucent Area Gradient */}
+                  <linearGradient id="proAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.28" />
+                    <stop offset="60%" stopColor="#6366f1" stopOpacity="0.06" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                  </linearGradient>
+
+                  {/* Telemetry Pillar Bar Gradient */}
+                  <linearGradient id="pillarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.45" />
+                    <stop offset="100%" stopColor="#4338ca" stopOpacity="0.05" />
+                  </linearGradient>
+                </defs>
+
+                {/* Grid Guidelines */}
+                <line x1="20" y1="28" x2="340" y2="28" stroke="currentColor" className="text-white/[0.04]" strokeDasharray="3 3" />
+                <line x1="20" y1="62" x2="340" y2="62" stroke="currentColor" className="text-white/[0.04]" strokeDasharray="3 3" />
+                <line x1="20" y1="98" x2="340" y2="98" stroke="currentColor" className="text-white/[0.06]" />
+
+                {/* Professional Telemetry Pillars */}
+                {dailyUsageData.coords.map((pt) => {
+                  const barHeight = Math.max(0, 98 - pt.y);
+                  const isHovered = hoveredDayPoint?.dateKey === pt.dateKey;
+
+                  return (
+                    <g key={`bar-${pt.dateKey}`}>
+                      {/* Background Column Hover Highlight Beam */}
+                      {isHovered && (
+                        <rect
+                          x={pt.x - 18}
+                          y="10"
+                          width="36"
+                          height="88"
+                          rx="8"
+                          className="fill-indigo-500/10 transition-all pointer-events-none"
+                        />
+                      )}
+                      {/* Telemetry Pillar Bar */}
+                      {pt.tokens > 0 && (
+                        <rect
+                          x={pt.x - 6}
+                          y={pt.y}
+                          width="12"
+                          height={barHeight}
+                          rx="3"
+                          fill="url(#pillarGrad)"
+                          className={`transition-all duration-300 ${isHovered ? "opacity-90" : "opacity-45"}`}
+                        />
+                      )}
+                    </g>
+                  );
+                })}
+
+                {/* Shaded Area Under Curve */}
+                <path
+                  d={dailyUsageData.areaPath}
+                  fill="url(#proAreaGrad)"
+                  className="transition-all duration-500 ease-out"
+                />
+
+                {/* Smooth Professional Curve */}
+                <path
+                  d={dailyUsageData.linePath}
+                  fill="none"
+                  stroke="url(#proLineStroke)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  filter="url(#proGlow)"
+                  className="transition-all duration-500 ease-out"
+                />
+
+                {/* Interactive Points */}
+                {dailyUsageData.coords.map((pt, i) => {
+                  const isToday = i === dailyUsageData.coords.length - 1;
+                  const isHovered = hoveredDayPoint?.dateKey === pt.dateKey;
+
+                  return (
+                    <g key={pt.dateKey}>
+                      {isToday && (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r="8"
+                          className="fill-indigo-500/30 animate-ping pointer-events-none"
+                        />
+                      )}
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={isHovered ? "6" : isToday ? "5" : "4"}
+                        className={`${
+                          isHovered
+                            ? "fill-indigo-300"
+                            : isToday
+                            ? "fill-indigo-400"
+                            : "fill-indigo-500"
+                        } stroke-[#0b0c13] transition-all duration-150 cursor-pointer`}
+                        strokeWidth="2.5"
+                      />
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="18"
+                        className="fill-transparent cursor-pointer"
+                        onMouseEnter={() => setHoveredDayPoint(pt)}
+                        onMouseLeave={() => setHoveredDayPoint(null)}
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* X-Axis Date Labels */}
+            <div className="flex justify-between px-2 text-[9.5px] font-medium text-slate-500 pt-1.5 shrink-0 border-t border-white/[0.05]">
+              {dailyUsageData.coords.map((pt) => (
+                <span
+                  key={pt.dateKey}
+                  className={`cursor-pointer transition ${
+                    hoveredDayPoint?.dateKey === pt.dateKey
+                      ? "text-indigo-400 font-bold"
+                      : pt.dayLabel === "Today"
+                      ? "text-slate-200 font-bold"
+                      : "hover:text-slate-300"
+                  }`}
+                  onMouseEnter={() => setHoveredDayPoint(pt)}
+                  onMouseLeave={() => setHoveredDayPoint(null)}
+                >
+                  {pt.dayLabel}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Card B: Quotas & Resource Allocation */}
+          <div className="p-4.5 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col h-[270px] justify-between">
+            <div className="flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-1.5">
+                <FiCreditCard className="text-indigo-400 text-xs" />
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                  Quota & Allocation
+                </h3>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono">Resets 00:00 UTC</span>
+            </div>
+
+            <div className="flex-1 min-h-0 flex flex-col justify-around py-1 space-y-2">
+              {/* Item 1: Daily Messages */}
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-medium mb-1">
+                  <span className="text-slate-400">Daily Messages</span>
+                  <span className="font-bold text-white font-mono">
+                    {today.messagesUsed || 0} / {isUnlimited ? "Unlimited" : maxCap}
+                    {!isUnlimited && (
+                      <span className="text-[10px] text-slate-400 font-normal ml-1.5">
+                        ({Math.max(0, maxCap - (today.messagesUsed || 0))} remaining)
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: isUnlimited
+                        ? `${Math.min(100, Math.max(8, ((today.messagesUsed || 0) / 100) * 100))}%`
+                        : `${Math.min(100, Math.round(((today.messagesUsed || 0) / maxCap) * 100))}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Item 2: Tokens Consumed Today */}
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-medium mb-1">
+                  <span className="text-slate-400">Tokens Used Today</span>
+                  <span className="font-bold text-white font-mono">
+                    {formatNumber(today.tokensUsed || 0)}
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      (All-time: {formatNumber(lifetime.totalTokens || 0)})
+                    </span>
+                  </span>
+                </div>
+                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-purple-500 h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          (today.tokensUsed || 0) > 0 ? 5 : 0,
+                          plan?.maxTokensPerDay && plan.maxTokensPerDay > 0
+                            ? ((today.tokensUsed || 0) / plan.maxTokensPerDay) * 100
+                            : ((today.tokensUsed || 0) / 100000) * 100
+                        )
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Item 3: Credit Balance Health Reserve */}
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-medium mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Available Credits</span>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border ${creditHealthStatus.color}`}>
+                      {creditHealthStatus.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white font-mono">
+                      {creditBalance.toFixed(2)} credits
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleBuyCredits}
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer transition hover:underline"
+                    >
+                      + Top up
+                    </button>
+                  </div>
+                </div>
+                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${creditHealthStatus.barColor}`}
+                    style={{
+                      width: `${Math.min(100, Math.max(creditBalance > 0 ? 6 : 0, (creditBalance / 1000) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[9.5px] text-slate-500 mt-1">
+                  <span>Pay-as-you-go balance • Never expires</span>
+                  <span>Deducted per token generation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM ROW: Recent Activity Telemetry Table */}
+        <div className="rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg overflow-hidden flex flex-col">
+          <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between shrink-0 bg-[#151726]/50">
+            <div className="flex items-center gap-2">
+              <FiClock className="text-indigo-400 text-xs" />
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                Recent Activity
+              </h3>
+            </div>
+            <span className="text-[10.5px] text-slate-400 font-medium">
+              Showing last {recentTransactions.length} events
+            </span>
+          </div>
+
+          <div className="overflow-x-auto max-h-[320px] overflow-y-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 z-10 bg-[#161828] border-b border-white/[0.06]">
+                <tr className="text-[9.5px] uppercase font-bold tracking-wider text-slate-400">
+                  <th className="px-5 py-2.5">Time</th>
+                  <th className="px-5 py-2.5">Activity</th>
+                  <th className="px-5 py-2.5">Model</th>
+                  <th className="px-5 py-2.5 text-right">Tokens</th>
+                  <th className="px-5 py-2.5 text-right">Credits</th>
+                  <th className="px-5 py-2.5 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04] text-[11px]">
+                {recentTransactions.length > 0 ? (
+                  recentTransactions.map((tx) => {
+                    const info = getTransactionInfo(tx);
+                    const formattedDate = new Date(tx.createdAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    });
+                    const formattedTime = new Date(tx.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+
+                    return (
+                      <tr
+                        key={tx._id}
+                        className="hover:bg-white/[0.02] transition"
+                      >
+                        {/* Time */}
+                        <td className="px-5 py-2.5 text-slate-400 whitespace-nowrap text-[10.5px] font-mono">
+                          {formattedDate}, {formattedTime}
+                        </td>
+
+                        {/* Activity */}
+                        <td className="px-5 py-2.5 font-medium text-slate-200">
+                          <div className="flex items-center gap-1.5">
+                            {info.isPositive ? (
+                              <span className="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-[10px] shrink-0">
+                                <FiArrowDownRight />
+                              </span>
+                            ) : (
+                              <span className="w-5 h-5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-[10px] shrink-0">
+                                <FiCpu />
+                              </span>
+                            )}
+                            <span>{info.activity}</span>
+                          </div>
+                        </td>
+
+                        {/* Model */}
+                        <td className="px-5 py-2.5 text-slate-300">
+                          {info.modelDisplay !== "—" ? (
+                            <span className="font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1">
+                              <span>{info.modelDisplay}</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 text-[10px] font-mono">—</span>
+                          )}
+                        </td>
+
+                        {/* Tokens */}
+                        <td
+                          className="px-5 py-2.5 text-right font-mono text-slate-300"
+                          title={
+                            info.promptTokens !== null && info.completionTokens !== null
+                              ? `${info.promptTokens} in / ${info.completionTokens} out tokens`
+                              : ""
+                          }
+                        >
+                          {info.tokens !== null ? (
+                            <span className="font-semibold text-purple-300">
+                              {formatNumber(info.tokens)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">—</span>
+                          )}
+                        </td>
+
+                        {/* Credits */}
+                        <td
+                          className={`px-5 py-2.5 text-right font-mono font-bold ${
+                            info.isPositive ? "text-emerald-400" : "text-slate-200"
+                          }`}
+                        >
+                          {info.isPositive
+                            ? `+${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} credits`
+                            : `${tx.amount} credits`}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-5 py-2.5 text-right">
+                          <span
+                            className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
+                              info.isPositive
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                : "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                            }`}
+                          >
+                            {info.isPositive ? "Credit Added" : "Success"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-5 py-8 text-center text-slate-500 text-xs">
+                      No recent activity recorded for this account.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

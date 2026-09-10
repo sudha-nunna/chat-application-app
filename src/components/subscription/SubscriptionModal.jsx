@@ -111,7 +111,8 @@ const SubscriptionModal = () => {
       </div>
 
       {/* Body Container */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar max-w-6xl mx-auto w-full flex flex-col justify-start">
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar w-full">
+        <div className="max-w-6xl mx-auto w-full flex flex-col justify-start space-y-6">
         {/* Feedback banner */}
         {feedback && (
           <div
@@ -148,6 +149,7 @@ const SubscriptionModal = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Footer */}

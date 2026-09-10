@@ -28,6 +28,7 @@ import {
   FiPlay,
 } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
+import { extractPreviewableCode } from "../../utils/codeExportUtils";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -66,7 +67,7 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
-const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStreaming, ...props }) => {
+const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStreaming, fullContent, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
   const isMultiLine = String(children).includes("\n");
   const [isCopied, setIsCopied] = useState(false);
@@ -75,6 +76,32 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
     navigator.clipboard.writeText(String(children));
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const rawCode = String(children).trim();
+  const lang = (match ? match[1] : "").toLowerCase();
+
+  const handleOpenArtifact = () => {
+    if (fullContent && typeof fullContent === "string") {
+      const project = extractPreviewableCode(fullContent);
+      if (project) {
+        window.dispatchEvent(
+          new CustomEvent("open-artifact", {
+            detail: project,
+          })
+        );
+        return;
+      }
+    }
+    window.dispatchEvent(
+      new CustomEvent("open-artifact", {
+        detail: {
+          code: rawCode,
+          language: lang || "html",
+          title: "Interactive Preview",
+        },
+      })
+    );
   };
 
   if (inline || (!match && !isMultiLine && !isStreaming)) {
@@ -94,8 +121,6 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
     );
   }
 
-  const rawCode = String(children).trim();
-  const lang = (match ? match[1] : "").toLowerCase();
   const isPreviewable =
     ["html", "jsx", "tsx", "javascript", "js", "css"].includes(lang) ||
     /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode) ||
@@ -134,17 +159,7 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
           </div>
 
           <button
-            onClick={() => {
-              window.dispatchEvent(
-                new CustomEvent("open-artifact", {
-                  detail: {
-                    code: rawCode,
-                    language: lang || "html",
-                    title: "Live Code Preview",
-                  },
-                })
-              );
-            }}
+            onClick={handleOpenArtifact}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
             title="Open Live Preview"
           >
@@ -191,17 +206,7 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
 
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => {
-                window.dispatchEvent(
-                  new CustomEvent("open-artifact", {
-                    detail: {
-                      code: rawCode,
-                      language: lang || "html",
-                      title: "Interactive Preview",
-                    },
-                  })
-                );
-              }}
+              onClick={handleOpenArtifact}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95"
               title="Open in Right Panel Live Sandbox"
             >
@@ -392,7 +397,7 @@ const MessageBubble = ({
             ? "w-full max-w-full"
             : "self-end ml-auto w-fit max-w-[85%] md:max-w-[70%]"
           : "mr-auto w-full max-w-full"
-      } my-2.5 min-w-0`}
+      } my-1 sm:my-1.5 min-w-0`}
     >
       {/* Bubble Container & Actions */}
       <div
@@ -618,25 +623,25 @@ const MessageBubble = ({
                 ),
                 h1: ({ node, ...props }) => (
                   <h1
-                    className={`text-[19px] font-bold tracking-tight mt-5 mb-2.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-3.5 mb-1.5 text-[16.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h2: ({ node, ...props }) => (
                   <h2
-                    className={`text-[16px] font-bold tracking-tight mt-4 mb-2 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-3 mb-1 text-[15.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h3: ({ node, ...props }) => (
                   <h3
-                    className={`text-[14.5px] font-semibold tracking-tight mt-3 mb-1.5 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-2.5 mb-1 text-[14.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h4: ({ node, ...props }) => (
                   <h4
-                    className={`text-[14px] font-semibold tracking-tight mt-2.5 mb-1 break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-2 mb-0.5 text-[14px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
@@ -653,11 +658,11 @@ const MessageBubble = ({
                   </div>
                 ),
                 code: (props) => (
-                  <CodeBlock {...props} isUser={isUser} isDark={isDark} isStreaming={isStreaming} />
+                  <CodeBlock {...props} isUser={isUser} isDark={isDark} isStreaming={isStreaming} fullContent={content} />
                 ),
                 p: ({ node, ...props }) => (
                   <p
-                    className={`mb-2.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
+                    className={`first:mt-0 mb-2 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
                     {...props}
                   />
                 ),
@@ -912,7 +917,7 @@ const MessageBubble = ({
 
         {/* Action Buttons for User Message (Visible on Hover) */}
         {isUser && !isEditing && (
-          <div className="flex items-center gap-1 mt-1 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 mt-0.5 justify-end h-0 overflow-visible opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity pt-1 z-10">
             {searchExecuted && (
               <div
                 className="p-1.5 rounded-lg text-accent-primary hover:bg-surface-secondary transition flex items-center justify-center cursor-help"
