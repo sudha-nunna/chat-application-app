@@ -55,8 +55,8 @@ const AuthModal = ({ onAuthSuccess }) => {
           </Link>
 
           <div className="hidden md:block relative z-10 mt-auto">
-            <h2 className="text-2xl md:text-4xl font-display font-medium text-white mb-4 leading-[1.1] tracking-tight">
-              Think. Reason.<br />Create.
+            <h2 className="text-xl md:text-2xl font-display font-medium text-white mb-4 leading-[1.1] tracking-tight">
+              Analyze. Think. Generate
             </h2>
             <p className="text-white/50 text-[15px] max-w-xs leading-relaxed">
               Your intelligent companion for coding, reasoning, and problem-solving.
@@ -99,11 +99,6 @@ const AuthModal = ({ onAuthSuccess }) => {
               />
             </div>
 
-            <div className="flex items-center gap-4 mb-5">
-              <div className="h-px bg-white/5 flex-1" />
-              <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">OR</span>
-              <div className="h-px bg-white/5 flex-1" />
-            </div>
 
             <div className="space-y-4 mb-4">
               <div className="flex items-center gap-3.5">
