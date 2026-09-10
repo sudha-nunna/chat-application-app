@@ -377,6 +377,21 @@ const MessageBubble = ({
         .trim() || "*(Response paused)*"
     : content;
 
+  const hasHighTrafficError = content && typeof content === "string" && (
+    content.includes("Provider API Rate Limit Exceeded") ||
+    content.includes("reached your session usage limit") ||
+    content.includes("upgrade for higher limits") ||
+    content.includes("The AI service is currently experiencing high usage limits") ||
+    content.includes("Unable to connect to the server at this time") ||
+    (content.includes('"error"') && (content.includes("429") || content.includes("usage limit") || content.includes("rate_limit") || content.includes("api_error"))) ||
+    content.includes("ECONNREFUSED") ||
+    content.includes("Network connection error") ||
+    content.includes("check that Ollama is running") ||
+    content.includes("check that your server node is running") ||
+    content.includes("Unable to process request") ||
+    content.includes("Stream connection error")
+  );
+
   const displayContent = formatMarkdownBreaks(
     isUser ? rawDisplayContent : sanitizeUserFacingMessage(rawDisplayContent)
   );
@@ -752,6 +767,27 @@ const MessageBubble = ({
               )}
             </div>
           )}
+
+          {/* High Traffic / Connection Error Interactive Retry Banner */}
+          {hasHighTrafficError && (
+            <div
+              className={`mt-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${"bg-rose-50 border-rose-300 text-rose-900 dark:bg-rose-900/10 dark:border-rose-800/30 dark:text-rose-400"}`}
+            >
+              <div className="flex items-center gap-2 text-xs font-medium">
+                <FiAlertTriangle className="text-rose-500 text-sm shrink-0" />
+                <span>Message failed due to high traffic or connection error.</span>
+              </div>
+              {onRetry && (
+                <button
+                  onClick={onRetry}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
+                >
+                  <FiRotateCw className="w-3.5 h-3.5" />
+                  Retry Request
+                </button>
+              )}
+            </div>
+          )}
           {/* Web Search Required Guidance Action Button */}
           {!isUser && (requiresWebSearch || /(don't have access to real-time|don't have real-time|switch on the .*web search|turn on the .*web search|enable web search|cannot provide real-time|real-time.*data.*(unable|cannot|don't)|live.*data.*(unable|cannot|don't)|no access to live)/i.test(content || "")) && (
             <div className="mt-3 pt-1">
@@ -806,7 +842,7 @@ const MessageBubble = ({
           )}
 
           {/* Action Buttons for AI Message — hidden during thinking/streaming */}
-          {!isUser && !hasPauseNotice && !isStreaming && !isThinking && content && (
+          {!isUser && !hasPauseNotice && !hasHighTrafficError && !isStreaming && !isThinking && content && (
             <div className="flex items-center gap-1.5 mt-2 opacity-100 transition-opacity text-text-muted">
               <button
                 onClick={() => handleCopy(rawDisplayContent)}

@@ -5,7 +5,7 @@ import { NobackEndCallObj, backEndCallGet } from "../services/authService";
 import { useTanStackData, useTanStackQueryClient } from "../hooks/useTanStackData";
 import PlanCard from "../components/subscription/PlanCard";
 import { useTheme } from "../context/ThemeContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { redirectToStripe } from "../utils/stripeService";
 import {
   FiZap,
@@ -15,12 +15,14 @@ import {
   FiActivity,
   FiArrowRight,
   FiMenu,
+  FiX,
 } from "react-icons/fi";
 
 const SubscriptionPage = () => {
   const { currentPlan, upgradePlan, downgradePlan } = useSubscription();
   const { plans, loading: plansLoading, error: plansError, refreshPlans } = usePlans();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   const queryClient = useTanStackQueryClient();
   const token = localStorage.getItem("token");
@@ -153,12 +155,26 @@ const SubscriptionPage = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="px-3.5 py-1.5 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center gap-2">
+          <div className="px-3.5 py-1.5 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center gap-2 hidden sm:flex">
             <span className="text-xs text-text-muted font-medium">Balance:</span>
             <span className="text-sm font-extrabold text-accent-primary font-mono">
               {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
             </span>
           </div>
+          
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate("/chat");
+              }
+            }}
+            className="w-8 h-8 rounded-xl flex items-center justify-center bg-surface-secondary/70 hover:bg-surface-secondary text-text-muted hover:text-text-primary transition cursor-pointer border border-border-primary/60 dark:border-white/10 shadow-xs"
+            title="Close Page"
+          >
+            <FiX className="text-sm" />
+          </button>
         </div>
       </div>
 
@@ -277,11 +293,10 @@ const SubscriptionPage = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => handlePurchaseCredits(pack.packId, pack)}
-                    disabled={actionLoading}
-                    className="w-full py-2 rounded-xl text-xs font-bold bg-accent-primary hover:bg-indigo-600 text-white transition cursor-pointer shadow-sm"
+                    disabled
+                    className="w-full py-2 rounded-xl text-xs font-bold bg-gray-400 dark:bg-gray-700 text-white cursor-not-allowed shadow-sm"
                   >
-                    {actionLoading ? "Redirecting..." : "Purchase Pack"}
+                    Purchase Pack
                   </button>
                 </div>
               ))}

@@ -19,11 +19,13 @@ import { backEndCallGet } from "../../services/authService";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { useTanStackData, useTanStackQueryClient } from "../../hooks/useTanStackData";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTheme } from "../../context/ThemeContext";
 
 const CreditsModal = ({ isPage = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isUsageRoute = location.pathname.startsWith("/usage") || isPage;
+  const { isDark } = useTheme();
 
   const {
     isCreditsModalOpen,
@@ -303,28 +305,70 @@ const CreditsModal = ({ isPage = false }) => {
           ? { label: "Low", color: "text-rose-400 bg-rose-500/10 border-rose-500/20", barColor: "bg-rose-500" }
           : { label: "Depleted", color: "text-rose-500 bg-rose-500/20 border-rose-500/30", barColor: "bg-rose-600" };
 
+  // ─── Theme-aware class tokens ─────────────────────────────────────────────
+  const bg            = isDark ? "bg-[#0b0c13]"         : "bg-gray-50";
+  const bgCard        = isDark ? "bg-[#131422]"         : "bg-white";
+  const bgHeader      = isDark ? "bg-[#11121c]/90"      : "bg-white/90";
+  const bgTableHead   = isDark ? "bg-[#161828]"         : "bg-gray-100";
+  const bgRowHover    = isDark ? "hover:bg-white/[0.02]" : "hover:bg-gray-50";
+  const bgTableRow    = isDark ? "divide-white/[0.04]"  : "divide-gray-100";
+  const border        = isDark ? "border-white/[0.07]"  : "border-gray-200";
+  const borderH       = isDark ? "border-white/[0.08]"  : "border-gray-200";
+  const borderSub     = isDark ? "border-white/[0.06]"  : "border-gray-100";
+  const textBase      = isDark ? "text-slate-200"       : "text-gray-800";
+  const textMuted     = isDark ? "text-slate-400"       : "text-gray-500";
+  const textTitle     = isDark ? "text-white"           : "text-gray-900";
+  const textLabel     = isDark ? "text-slate-300"       : "text-gray-700";
+  const textDim       = isDark ? "text-slate-500"       : "text-gray-400";
+  const bgProgress    = isDark ? "bg-white/[0.06]"      : "bg-gray-200";
+  const bgRefBtn      = isDark ? "bg-[#1a1b2b] hover:bg-[#23253b]" : "bg-gray-100 hover:bg-gray-200";
+  const borderBtn     = isDark ? "border-white/10"      : "border-gray-300";
+  const bgCloseBtn    = isDark ? "bg-white/5 hover:bg-white/10" : "bg-gray-100 hover:bg-gray-200";
+  const tooltipBg     = isDark ? "bg-[#161728]/95"      : "bg-white/95";
+  const tooltipBorder = isDark ? "border-indigo-500/30" : "border-indigo-200";
+  const tooltipTxt    = isDark ? "text-white"           : "text-gray-900";
+  const tooltipMuted  = isDark ? "text-slate-400"       : "text-gray-500";
+  const tooltipDiv    = isDark ? "border-white/10"      : "border-gray-200";
+  const tooltipSep    = isDark ? "bg-white/10"          : "bg-gray-200";
+  const tooltipSub    = isDark ? "text-slate-500"       : "text-gray-400";
+  const gridLn        = isDark ? "text-white/[0.04]"    : "text-black/[0.06]";
+  const gridBase      = isDark ? "text-white/[0.06]"    : "text-black/[0.08]";
+  const xBorder       = isDark ? "border-white/[0.05]"  : "border-gray-200";
+  const xText         = isDark ? "text-slate-500"       : "text-gray-400";
+  const xToday        = isDark ? "text-slate-200"       : "text-gray-800";
+  const xHover        = isDark ? "hover:text-slate-300" : "hover:text-gray-600";
+  const dotStroke     = isDark ? "#0b0c13"              : "#f9fafb";
+  const mobileBtn     = isDark ? "border-white/10 hover:bg-white/5 text-slate-300 hover:text-white" : "border-gray-200 hover:bg-gray-100 text-gray-600 hover:text-gray-900";
+  const txTime        = isDark ? "text-slate-400"       : "text-gray-500";
+  const txAct         = isDark ? "text-slate-200"       : "text-gray-800";
+  const txModel       = isDark ? "text-slate-300"       : "text-gray-700";
+  const txTok         = isDark ? "text-slate-300"       : "text-gray-700";
+  const txEmpty       = isDark ? "text-slate-500"       : "text-gray-400";
+  const txNoData      = isDark ? "text-slate-500"       : "text-gray-400";
+  const tableRowBg    = isDark ? "bg-[#151726]/50"      : "bg-gray-50/80";
+
   return (
-    <div className="w-full h-full flex flex-col bg-[#0b0c13] text-slate-200 overflow-hidden font-sans select-none">
+    <div className={`w-full h-full flex flex-col ${bg} ${textBase} overflow-hidden font-sans select-none transition-colors`}>
       {/* Top Header Bar */}
-      <div className="py-3.5 px-6 md:px-8 border-b border-white/[0.08] bg-[#11121c]/90 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
+      <div className={`py-3.5 px-6 md:px-8 border-b ${borderH} ${bgHeader} backdrop-blur-md flex items-center justify-between shrink-0 z-20`}>
         <div className="flex items-center gap-3">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
-            className="md:hidden p-2 rounded-xl border border-white/10 flex items-center justify-center shrink-0 hover:bg-white/5 text-slate-300 hover:text-white transition"
+            className={`md:hidden p-2 rounded-xl border ${mobileBtn} flex items-center justify-center shrink-0 transition`}
             title="Toggle Sidebar"
           >
             <FiMenu className="text-base" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base md:text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                Credits & Usage Telemetry
+              <h1 className={`text-base md:text-lg font-bold tracking-tight ${textTitle} flex items-center gap-2`}>
+                Credits &amp; Usage Telemetry
               </h1>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                 {plan.name}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className={`text-[11px] ${textMuted}`}>
               Live consumption telemetry, balance quotas, and token activity.
             </p>
           </div>
@@ -333,10 +377,10 @@ const CreditsModal = ({ isPage = false }) => {
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleRefresh}
-            className="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#1a1b2b] hover:bg-[#23253b] text-slate-200 hover:text-white border border-white/10 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium ${bgRefBtn} ${textLabel} border ${borderBtn} transition flex items-center gap-1.5 cursor-pointer shadow-xs`}
             title="Refresh Metrics"
           >
-            <FiRefreshCw className={`text-xs ${loading ? "animate-spin text-indigo-400" : "text-slate-400"}`} />
+            <FiRefreshCw className={`text-xs ${loading ? "animate-spin text-indigo-400" : textMuted}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
@@ -350,7 +394,7 @@ const CreditsModal = ({ isPage = false }) => {
 
           <button
             onClick={handleClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer border border-white/10"
+            className={`w-8 h-8 rounded-xl flex items-center justify-center ${bgCloseBtn} ${textMuted} transition cursor-pointer border ${borderBtn}`}
             title="Close Panel"
           >
             <FiX className="text-sm" />
@@ -370,10 +414,10 @@ const CreditsModal = ({ isPage = false }) => {
         {/* TOP ROW: 3 Real-time Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {/* Card 1: Credits Balance */}
-          <div className="p-4 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/30 transition">
+          <div className={`p-4 rounded-2xl ${bgCard} border ${border} shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/30 transition`}>
             <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/10 transition" />
             <div className="flex items-center justify-between z-10">
-              <span className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span className={`text-[11.5px] font-semibold ${textMuted} uppercase tracking-wider`}>
                 Credits Balance
               </span>
               <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
@@ -382,7 +426,7 @@ const CreditsModal = ({ isPage = false }) => {
             </div>
             <div className="mt-3 z-10">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black tracking-tight text-white font-mono">
+                <span className={`text-2xl font-black tracking-tight ${textTitle} font-mono`}>
                   {creditBalance.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -390,7 +434,7 @@ const CreditsModal = ({ isPage = false }) => {
                 </span>
                 <span className="text-xs font-bold text-indigo-400 font-mono">credits</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+              <div className={`flex items-center justify-between text-[11px] ${textMuted} mt-1`}>
                 <span>Pay-as-you-go balance</span>
                 <button
                   onClick={handleBuyCredits}
@@ -403,10 +447,10 @@ const CreditsModal = ({ isPage = false }) => {
           </div>
 
           {/* Card 2: Tokens Used */}
-          <div className="p-4 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/30 transition">
+          <div className={`p-4 rounded-2xl ${bgCard} border ${border} shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/30 transition`}>
             <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-500/10 transition" />
             <div className="flex items-center justify-between z-10">
-              <span className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span className={`text-[11.5px] font-semibold ${textMuted} uppercase tracking-wider`}>
                 Tokens Consumed
               </span>
               <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-inner">
@@ -415,23 +459,23 @@ const CreditsModal = ({ isPage = false }) => {
             </div>
             <div className="mt-3 z-10">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black tracking-tight text-white font-mono">
+                <span className={`text-2xl font-black tracking-tight ${textTitle} font-mono`}>
                   {formatNumber(lifetime.totalTokens || today.tokensUsed)}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">tokens</span>
+                <span className={`text-xs ${textMuted} font-mono`}>tokens</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                <span>Today: <strong className="text-purple-300 font-mono">{formatNumber(today.tokensUsed || 0)}</strong></span>
+              <div className={`flex items-center justify-between text-[11px] ${textMuted} mt-1`}>
+                <span>Today: <strong className="text-purple-400 font-mono">{formatNumber(today.tokensUsed || 0)}</strong></span>
                 <span>Lifetime total</span>
               </div>
             </div>
           </div>
 
           {/* Card 3: Total AI Messages */}
-          <div className="p-4 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/30 transition sm:col-span-2 lg:col-span-1">
+          <div className={`p-4 rounded-2xl ${bgCard} border ${border} shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/30 transition sm:col-span-2 lg:col-span-1`}>
             <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/10 transition" />
             <div className="flex items-center justify-between z-10">
-              <span className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span className={`text-[11.5px] font-semibold ${textMuted} uppercase tracking-wider`}>
                 Total AI Messages
               </span>
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
@@ -440,12 +484,12 @@ const CreditsModal = ({ isPage = false }) => {
             </div>
             <div className="mt-3 z-10">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black tracking-tight text-white font-mono">
+                <span className={`text-2xl font-black tracking-tight ${textTitle} font-mono`}>
                   {(lifetime.totalRequests || 0).toLocaleString()}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">messages</span>
+                <span className={`text-xs ${textMuted} font-mono`}>messages</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+              <div className={`flex items-center justify-between text-[11px] ${textMuted} mt-1`}>
                 <span>Today: <strong className="text-emerald-400 font-mono">{today.messagesUsed || 0}</strong> msgs</span>
                 <span>All-time total</span>
               </div>
@@ -456,27 +500,27 @@ const CreditsModal = ({ isPage = false }) => {
         {/* MIDDLE ROW: 7-Day Usage Telemetry Trend & Credit Allocation */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Card A: 7-Day Rolling Daily Usage Trend */}
-          <div className="p-4.5 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col h-[270px] justify-between relative overflow-hidden">
+          <div className={`p-4 rounded-2xl ${bgCard} border ${border} shadow-lg flex flex-col h-[270px] justify-between relative overflow-hidden`}>
             {/* Header */}
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 rounded-md bg-indigo-500/15 flex items-center justify-center text-indigo-400">
                   <FiActivity className="text-xs" />
                 </div>
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                <h3 className={`text-[11px] font-bold uppercase tracking-wider ${textLabel}`}>
                   Daily Usage (Last 7 Days)
                 </h3>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">Day-by-day telemetry</span>
+              <span className={`text-[10px] ${textMuted} font-medium`}>Day-by-day telemetry</span>
             </div>
 
             {/* Metric Banner */}
             <div className="flex items-baseline justify-between mt-1 shrink-0">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-extrabold tracking-tight text-white font-mono">
+                <span className={`text-xl font-extrabold tracking-tight ${textTitle} font-mono`}>
                   {formatNumber(dailyUsageData.totalPeriodTokens)}
                 </span>
-                <span className="text-[11px] text-slate-400">tokens (7d actual)</span>
+                <span className={`text-[11px] ${textMuted}`}>tokens (7d actual)</span>
               </div>
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
@@ -489,12 +533,12 @@ const CreditsModal = ({ isPage = false }) => {
               {/* Creative Floating Glass Tooltip Card */}
               {hoveredDayPoint && (
                 <div
-                  className="absolute z-30 top-1 pointer-events-none bg-[#161728]/95 text-white px-3 py-2 rounded-xl shadow-2xl border border-indigo-500/30 backdrop-blur-md flex flex-col gap-1.5 -translate-x-1/2 min-w-[150px]"
+                  className={`absolute z-30 top-1 pointer-events-none ${tooltipBg} ${tooltipTxt} px-3 py-2 rounded-xl shadow-2xl border ${tooltipBorder} backdrop-blur-md flex flex-col gap-1.5 -translate-x-1/2 min-w-[150px]`}
                   style={{
                     left: `${Math.min(78, Math.max(22, (hoveredDayPoint.x / 360) * 100))}%`,
                   }}
                 >
-                  <div className="flex items-center justify-between text-[10.5px] font-semibold text-slate-400 border-b border-white/10 pb-1 w-full">
+                  <div className={`flex items-center justify-between text-[10.5px] font-semibold ${tooltipMuted} border-b ${tooltipDiv} pb-1 w-full`}>
                     <span>{hoveredDayPoint.shortDate} ({hoveredDayPoint.dayLabel})</span>
                     {hoveredDayPoint.dayLabel === "Today" && (
                       <span className="text-[8.5px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold">LIVE</span>
@@ -505,26 +549,26 @@ const CreditsModal = ({ isPage = false }) => {
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] text-indigo-400">⚡</span>
                       <div className="flex flex-col leading-none">
-                        <span className="font-bold text-white text-[10.5px] font-mono">{formatNumber(hoveredDayPoint.tokens)}</span>
-                        <span className="text-slate-500 text-[8.5px]">tokens</span>
+                        <span className={`font-bold ${tooltipTxt} text-[10.5px] font-mono`}>{formatNumber(hoveredDayPoint.tokens)}</span>
+                        <span className={`${tooltipSub} text-[8.5px]`}>tokens</span>
                       </div>
                     </div>
-                    <div className="w-px h-6 bg-white/10" />
+                    <div className={`w-px h-6 ${tooltipSep}`} />
                     {/* Messages */}
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] text-emerald-400">💬</span>
                       <div className="flex flex-col leading-none">
-                        <span className="font-bold text-white text-[10.5px] font-mono">{hoveredDayPoint.messages}</span>
-                        <span className="text-slate-500 text-[8.5px]">msgs</span>
+                        <span className={`font-bold ${tooltipTxt} text-[10.5px] font-mono`}>{hoveredDayPoint.messages}</span>
+                        <span className={`${tooltipSub} text-[8.5px]`}>msgs</span>
                       </div>
                     </div>
-                    <div className="w-px h-6 bg-white/10" />
+                    <div className={`w-px h-6 ${tooltipSep}`} />
                     {/* Credits */}
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] text-amber-400">🪙</span>
                       <div className="flex flex-col leading-none">
-                        <span className="font-bold text-white text-[10.5px] font-mono">{hoveredDayPoint.credits.toFixed(2)}</span>
-                        <span className="text-slate-500 text-[8.5px]">credits</span>
+                        <span className={`font-bold ${tooltipTxt} text-[10.5px] font-mono`}>{hoveredDayPoint.credits.toFixed(2)}</span>
+                        <span className={`${tooltipSub} text-[8.5px]`}>credits</span>
                       </div>
                     </div>
                   </div>
@@ -566,9 +610,9 @@ const CreditsModal = ({ isPage = false }) => {
                 </defs>
 
                 {/* Grid Guidelines */}
-                <line x1="20" y1="28" x2="340" y2="28" stroke="currentColor" className="text-white/[0.04]" strokeDasharray="3 3" />
-                <line x1="20" y1="62" x2="340" y2="62" stroke="currentColor" className="text-white/[0.04]" strokeDasharray="3 3" />
-                <line x1="20" y1="98" x2="340" y2="98" stroke="currentColor" className="text-white/[0.06]" />
+                <line x1="20" y1="28" x2="340" y2="28" stroke="currentColor" className={gridLn} strokeDasharray="3 3" />
+                <line x1="20" y1="62" x2="340" y2="62" stroke="currentColor" className={gridLn} strokeDasharray="3 3" />
+                <line x1="20" y1="98" x2="340" y2="98" stroke="currentColor" className={gridBase} />
 
                 {/* Professional Telemetry Pillars */}
                 {dailyUsageData.coords.map((pt) => {
@@ -647,7 +691,8 @@ const CreditsModal = ({ isPage = false }) => {
                           : isToday
                             ? "fill-indigo-400"
                             : "fill-indigo-500"
-                          } stroke-[#0b0c13] transition-all duration-150 cursor-pointer`}
+                          } transition-all duration-150 cursor-pointer`}
+                        stroke={dotStroke}
                         strokeWidth="2.5"
                       />
                       <circle
@@ -665,15 +710,15 @@ const CreditsModal = ({ isPage = false }) => {
             </div>
 
             {/* X-Axis Date Labels */}
-            <div className="flex justify-between px-2 text-[9.5px] font-medium text-slate-500 pt-1.5 shrink-0 border-t border-white/[0.05]">
+            <div className={`flex justify-between px-2 text-[9.5px] font-medium ${xText} pt-1.5 shrink-0 border-t ${xBorder}`}>
               {dailyUsageData.coords.map((pt) => (
                 <span
                   key={pt.dateKey}
                   className={`cursor-pointer transition ${hoveredDayPoint?.dateKey === pt.dateKey
                     ? "text-indigo-400 font-bold"
                     : pt.dayLabel === "Today"
-                      ? "text-slate-200 font-bold"
-                      : "hover:text-slate-300"
+                      ? `${xToday} font-bold`
+                      : xHover
                     }`}
                   onMouseEnter={() => setHoveredDayPoint(pt)}
                   onMouseLeave={() => setHoveredDayPoint(null)}
@@ -685,32 +730,32 @@ const CreditsModal = ({ isPage = false }) => {
           </div>
 
           {/* Card B: Quotas & Resource Allocation */}
-          <div className="p-4.5 rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg flex flex-col h-[270px] justify-between">
+          <div className={`p-4 rounded-2xl ${bgCard} border ${border} shadow-lg flex flex-col h-[270px] justify-between`}>
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-1.5">
                 <FiCreditCard className="text-indigo-400 text-xs" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
-                  Quota & Allocation
+                <h3 className={`text-[11px] font-bold uppercase tracking-wider ${textLabel}`}>
+                  Quota &amp; Allocation
                 </h3>
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">Resets 00:00 UTC</span>
+              <span className={`text-[10px] ${textMuted} font-mono`}>Resets 00:00 UTC</span>
             </div>
 
             <div className="flex-1 min-h-0 flex flex-col justify-around py-1 space-y-2">
               {/* Item 1: Daily Messages */}
               <div>
                 <div className="flex items-center justify-between text-[11px] font-medium mb-1">
-                  <span className="text-slate-400">Daily Messages</span>
-                  <span className="font-bold text-white font-mono">
+                  <span className={textMuted}>Daily Messages</span>
+                  <span className={`font-bold ${textTitle} font-mono`}>
                     {today.messagesUsed || 0} / {isUnlimited ? "Unlimited" : maxCap}
                     {!isUnlimited && (
-                      <span className="text-[10px] text-slate-400 font-normal ml-1.5">
+                      <span className={`text-[10px] ${textMuted} font-normal ml-1.5`}>
                         ({Math.max(0, maxCap - (today.messagesUsed || 0))} remaining)
                       </span>
                     )}
                   </span>
                 </div>
-                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                <div className={`w-full ${bgProgress} rounded-full h-1.5 overflow-hidden`}>
                   <div
                     className="bg-indigo-500 h-full rounded-full transition-all duration-500"
                     style={{
@@ -725,15 +770,15 @@ const CreditsModal = ({ isPage = false }) => {
               {/* Item 2: Tokens Consumed Today */}
               <div>
                 <div className="flex items-center justify-between text-[11px] font-medium mb-1">
-                  <span className="text-slate-400">Tokens Used Today</span>
-                  <span className="font-bold text-white font-mono">
+                  <span className={textMuted}>Tokens Used Today</span>
+                  <span className={`font-bold ${textTitle} font-mono`}>
                     {formatNumber(today.tokensUsed || 0)}
-                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                    <span className={`text-[10px] ${textMuted} font-normal ml-1`}>
                       (All-time: {formatNumber(lifetime.totalTokens || 0)})
                     </span>
                   </span>
                 </div>
-                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                <div className={`w-full ${bgProgress} rounded-full h-1.5 overflow-hidden`}>
                   <div
                     className="bg-purple-500 h-full rounded-full transition-all duration-500"
                     style={{
@@ -755,13 +800,13 @@ const CreditsModal = ({ isPage = false }) => {
               <div>
                 <div className="flex items-center justify-between text-[11px] font-medium mb-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Available Credits</span>
+                    <span className={textMuted}>Available Credits</span>
                     <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border ${creditHealthStatus.color}`}>
                       {creditHealthStatus.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white font-mono">
+                    <span className={`font-bold ${textTitle} font-mono`}>
                       {creditBalance.toFixed(2)} credits
                     </span>
                     <button
@@ -773,7 +818,7 @@ const CreditsModal = ({ isPage = false }) => {
                     </button>
                   </div>
                 </div>
-                <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                <div className={`w-full ${bgProgress} rounded-full h-1.5 overflow-hidden`}>
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${creditHealthStatus.barColor}`}
                     style={{
@@ -781,7 +826,7 @@ const CreditsModal = ({ isPage = false }) => {
                     }}
                   />
                 </div>
-                <div className="flex justify-between text-[9.5px] text-slate-500 mt-1">
+                <div className={`flex justify-between text-[9.5px] ${textDim} mt-1`}>
                   <span>Pay-as-you-go balance • Never expires</span>
                   <span>Deducted per token generation</span>
                 </div>
@@ -791,23 +836,23 @@ const CreditsModal = ({ isPage = false }) => {
         </div>
 
         {/* BOTTOM ROW: Recent Activity Telemetry Table */}
-        <div className="rounded-2xl bg-[#131422] border border-white/[0.07] shadow-lg overflow-hidden flex flex-col">
-          <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between shrink-0 bg-[#151726]/50">
+        <div className={`rounded-2xl ${bgCard} border ${border} shadow-lg overflow-hidden flex flex-col`}>
+          <div className={`px-5 py-3 border-b ${borderSub} flex items-center justify-between shrink-0 ${tableRowBg}`}>
             <div className="flex items-center gap-2">
               <FiClock className="text-indigo-400 text-xs" />
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+              <h3 className={`text-[11px] font-bold uppercase tracking-wider ${textLabel}`}>
                 Recent Activity
               </h3>
             </div>
-            <span className="text-[10.5px] text-slate-400 font-medium">
+            <span className={`text-[10.5px] ${textMuted} font-medium`}>
               Showing last {recentTransactions.length} events
             </span>
           </div>
 
           <div className="overflow-x-auto max-h-[320px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-10 bg-[#161828] border-b border-white/[0.06]">
-                <tr className="text-[9.5px] uppercase font-bold tracking-wider text-slate-400">
+              <thead className={`sticky top-0 z-10 ${bgTableHead} border-b ${borderSub}`}>
+                <tr className={`text-[9.5px] uppercase font-bold tracking-wider ${textMuted}`}>
                   <th className="px-5 py-2.5">Date/Time</th>
                   <th className="px-5 py-2.5">Activity</th>
                   <th className="px-5 py-2.5">Model</th>
@@ -816,7 +861,7 @@ const CreditsModal = ({ isPage = false }) => {
                   <th className="px-5 py-2.5 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04] text-[11px]">
+              <tbody className={`divide-y ${bgTableRow} text-[11px]`}>
                 {recentTransactions.length > 0 ? (
                   recentTransactions.map((tx) => {
                     const info = getTransactionInfo(tx);
@@ -832,15 +877,15 @@ const CreditsModal = ({ isPage = false }) => {
                     return (
                       <tr
                         key={tx._id}
-                        className="hover:bg-white/[0.02] transition"
+                        className={`${bgRowHover} transition`}
                       >
                         {/* Time */}
-                        <td className="px-5 py-2.5 text-slate-400 whitespace-nowrap text-[10.5px] font-mono">
+                        <td className={`px-5 py-2.5 ${txTime} whitespace-nowrap text-[10.5px] font-mono`}>
                           {formattedDate}, {formattedTime}
                         </td>
 
                         {/* Activity */}
-                        <td className="px-5 py-2.5 font-medium text-slate-200">
+                        <td className={`px-5 py-2.5 font-medium ${txAct}`}>
                           <div className="flex items-center gap-1.5">
                             {info.isPositive ? (
                               <span className="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-[10px] shrink-0">
@@ -856,19 +901,19 @@ const CreditsModal = ({ isPage = false }) => {
                         </td>
 
                         {/* Model */}
-                        <td className="px-5 py-2.5 text-slate-300">
+                        <td className={`px-5 py-2.5 ${txModel}`}>
                           {info.modelDisplay !== "—" ? (
-                            <span className="font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1">
+                            <span className="font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1">
                               <span>{info.modelDisplay}</span>
                             </span>
                           ) : (
-                            <span className="text-slate-500 text-[10px] font-mono">—</span>
+                            <span className={`${txEmpty} text-[10px] font-mono`}>—</span>
                           )}
                         </td>
 
                         {/* Tokens */}
                         <td
-                          className="px-5 py-2.5 text-right font-mono text-slate-300"
+                          className={`px-5 py-2.5 text-right font-mono ${txTok}`}
                           title={
                             info.promptTokens !== null && info.completionTokens !== null
                               ? `${info.promptTokens} in / ${info.completionTokens} out tokens`
@@ -876,18 +921,17 @@ const CreditsModal = ({ isPage = false }) => {
                           }
                         >
                           {info.tokens !== null ? (
-                            <span className="font-semibold text-purple-300">
+                            <span className="font-semibold text-purple-500">
                               {formatNumber(info.tokens)}
                             </span>
                           ) : (
-                            <span className="text-slate-600">—</span>
+                            <span className={txEmpty}>—</span>
                           )}
                         </td>
 
                         {/* Credits */}
                         <td
-                          className={`px-5 py-2.5 text-right font-mono font-bold ${info.isPositive ? "text-emerald-400" : "text-slate-200"
-                            }`}
+                          className={`px-5 py-2.5 text-right font-mono font-bold ${info.isPositive ? "text-emerald-400" : textLabel}`}
                         >
                           {info.isPositive
                             ? `+${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} credits`
@@ -910,7 +954,7 @@ const CreditsModal = ({ isPage = false }) => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-5 py-8 text-center text-slate-500 text-xs">
+                    <td colSpan="6" className={`px-5 py-8 text-center ${txNoData} text-xs`}>
                       No recent activity recorded for this account.
                     </td>
                   </tr>

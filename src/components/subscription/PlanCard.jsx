@@ -171,30 +171,18 @@ const PlanCard = ({
           </button>
         ) : isCurrent ? (
           <button
-            onClick={() => onSelect(planKey, plan)}
-            disabled={loading}
-            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 group/btn cursor-pointer ${
-              isRecommended
-                ? "bg-accent-primary hover:bg-indigo-600 text-white shadow-md shadow-accent-primary/25"
-                : "bg-surface-secondary dark:bg-[#1c1e2d] hover:bg-surface-tertiary dark:hover:bg-[#25283c] text-text-primary dark:text-white border border-border-primary dark:border-white/15"
-            }`}
+            disabled
+            className="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-surface-secondary dark:bg-[#1a1c29] text-zinc-500 dark:text-zinc-500 cursor-not-allowed flex items-center justify-center gap-1.5 border border-border-primary/20 dark:border-white/5 opacity-70"
           >
-            <FiZap className="text-amber-400 text-xs shrink-0" />
-            <span>Top Up {title} (${monthlyPrice})</span>
-            <FiArrowRight className="group-hover/btn:translate-x-1 transition-transform" />
+            <FiCheck className="text-zinc-400 text-xs shrink-0" />
+            <span>Current Plan</span>
           </button>
         ) : (
           <button
-            onClick={() => onSelect(planKey, plan)}
-            disabled={loading}
-            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 group/btn cursor-pointer ${
-              isRecommended
-                ? "bg-accent-primary hover:bg-indigo-600 text-white shadow-md shadow-accent-primary/25"
-                : "bg-surface-secondary dark:bg-[#1c1e2d] hover:bg-surface-tertiary dark:hover:bg-[#25283c] text-text-primary dark:text-white border border-border-primary dark:border-white/15"
-            }`}
+            disabled
+            className="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-surface-secondary dark:bg-[#1a1c29] text-zinc-500 dark:text-zinc-500 cursor-not-allowed flex items-center justify-center gap-1.5 border border-border-primary/20 dark:border-white/5 opacity-70"
           >
             <span>{planKey === "free" ? "Downgrade to Free" : `Buy ${title} ($${monthlyPrice})`}</span>
-            <FiArrowRight className="group-hover/btn:translate-x-1 transition-transform" />
           </button>
         )}
       </div>
