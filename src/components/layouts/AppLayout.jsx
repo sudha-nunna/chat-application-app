@@ -590,7 +590,7 @@ const AppLayout = ({ children }) => {
 
     try {
       await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/auth/pins`,
+        `${import.meta.env.VITE_API_URL}/auth/pins`,
         { pinnedItemIds: newPinnedIds },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
