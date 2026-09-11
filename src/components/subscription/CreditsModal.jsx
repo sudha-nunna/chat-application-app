@@ -852,7 +852,8 @@ const CreditsModal = ({ isPage = false }) => {
             </span>
           </div>
 
-          <div className="overflow-x-auto max-h-[320px] overflow-y-auto custom-scrollbar">
+          {/* Desktop Table View (md and up) */}
+          <div className="hidden md:block overflow-x-auto max-h-[320px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead className={`sticky top-0 z-10 ${bgTableHead} border-b ${borderSub}`}>
                 <tr className={`text-[9.5px] uppercase font-bold tracking-wider ${textMuted}`}>
@@ -964,6 +965,108 @@ const CreditsModal = ({ isPage = false }) => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card List View (< md screens) */}
+          <div className="block md:hidden p-3 space-y-2.5 max-h-[360px] overflow-y-auto custom-scrollbar">
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((tx) => {
+                const info = getTransactionInfo(tx);
+                const formattedDate = new Date(tx.createdAt).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                });
+                const formattedTime = new Date(tx.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                return (
+                  <div
+                    key={tx._id}
+                    className={`rounded-xl p-3 border ${borderSub} ${tableRowBg} flex flex-col gap-2 shadow-xs`}
+                  >
+                    {/* Header: Icon + Activity Title + Status Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {info.isPositive ? (
+                          <span className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xs shrink-0">
+                            <FiArrowDownRight />
+                          </span>
+                        ) : (
+                          <span className="w-6 h-6 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-xs shrink-0">
+                            <FiCpu />
+                          </span>
+                        )}
+                        <span className={`text-[12px] font-semibold truncate ${txAct}`}>
+                          {info.activity}
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-flex px-2 py-0.5 text-[9.5px] font-semibold rounded-full border shrink-0 ${
+                          info.isPositive
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            : "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                        }`}
+                      >
+                        {info.isPositive ? "Credit Added" : "Success"}
+                      </span>
+                    </div>
+
+                    {/* Details Row: Grid of Meta Info */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border-primary/40 dark:border-white/5 text-[11px]">
+                      <div>
+                        <span className={`text-[9px] uppercase tracking-wider block ${textMuted} font-semibold mb-0.5`}>
+                          Date / Time
+                        </span>
+                        <span className={`${txTime} font-mono text-[10.5px]`}>
+                          {formattedDate}, {formattedTime}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className={`text-[9px] uppercase tracking-wider block ${textMuted} font-semibold mb-0.5`}>
+                          Model
+                        </span>
+                        {info.modelDisplay !== "—" ? (
+                          <span className="font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded text-[9.5px] inline-block font-mono">
+                            {info.modelDisplay}
+                          </span>
+                        ) : (
+                          <span className={`${txEmpty} text-[10.5px] font-mono`}>—</span>
+                        )}
+                      </div>
+
+                      {info.tokens !== null && (
+                        <div>
+                          <span className={`text-[9px] uppercase tracking-wider block ${textMuted} font-semibold mb-0.5`}>
+                            Tokens
+                          </span>
+                          <span className="font-mono font-semibold text-purple-400 text-[10.5px]">
+                            {formatNumber(info.tokens)}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className={info.tokens === null ? "col-span-2" : ""}>
+                        <span className={`text-[9px] uppercase tracking-wider block ${textMuted} font-semibold mb-0.5`}>
+                          Credits
+                        </span>
+                        <span className={`font-mono font-bold text-[11px] ${info.isPositive ? "text-emerald-400" : textLabel}`}>
+                          {info.isPositive
+                            ? `+${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                            : `${tx.amount}`} credits
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className={`p-6 text-center rounded-xl border ${borderSub} ${tableRowBg} ${txNoData} text-xs`}>
+                No recent activity recorded for this account.
+              </div>
+            )}
           </div>
         </div>
       </div>

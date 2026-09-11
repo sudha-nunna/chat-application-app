@@ -1477,15 +1477,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me build a prototype.")
                         }
-                        className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                        className="flex-1 group flex flex-col p-3.5 sm:p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
                       >
-                        <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                          <FiCode className="text-[14px]" />
+                        <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiCode className="text-[13px] sm:text-[14px]" />
                         </div>
-                        <span className="text-[13px] font-normal mb-1.5 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                        <span className="text-[12.5px] sm:text-[13px] font-medium mb-1 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                           Build a prototype
                         </span>
-                        <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                        <span className="text-[11px] sm:text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
                           Turn an idea into a working interface
                         </span>
                       </button>
@@ -1494,15 +1494,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me analyze a document.")
                         }
-                        className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                        className="flex-1 group flex flex-col p-3.5 sm:p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
                       >
-                        <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                          <FiFileText className="text-[14px]" />
+                        <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiFileText className="text-[13px] sm:text-[14px]" />
                         </div>
-                        <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                        <span className="text-[12.5px] sm:text-[13px] mb-1 font-medium leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                           Analyze a document
                         </span>
-                        <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                        <span className="text-[11px] sm:text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
                           Find the signal in a long file
                         </span>
                       </button>
@@ -1511,15 +1511,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me explore a visual direction.")
                         }
-                        className="flex-1 group flex flex-col p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                        className="flex-1 group flex flex-col p-3.5 sm:p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
                       >
-                        <div className="w-7 h-7 rounded-[8px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-3 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                          <FiImage className="text-[14px]" />
+                        <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiImage className="text-[13px] sm:text-[14px]" />
                         </div>
-                        <span className="text-[13px] mb-1.5 font-normal leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
+                        <span className="text-[12.5px] sm:text-[13px] mb-1 font-medium leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
                           Create an image
                         </span>
-                        <span className="text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                        <span className="text-[11px] sm:text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
                           Explore a visual direction
                         </span>
                       </button>

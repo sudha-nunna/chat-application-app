@@ -27,6 +27,7 @@ import {
   FiZap,
 } from "react-icons/fi";
 import { TbPin, TbPinnedOff, TbRobotFace } from "react-icons/tb";
+import axios from "axios";
 import {
   backEndCallGet,
   NobackEndCall,
@@ -243,14 +244,13 @@ const AppLayout = ({ children }) => {
     }
   }, [isStudioRoute]);
 
-  const [pinnedItemIds, setPinnedItemIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem("pinnedChats");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
+  const [pinnedItemIds, setPinnedItemIds] = useState(user?.pinnedItemIds || []);
+
+  useEffect(() => {
+    if (user && user.pinnedItemIds) {
+      setPinnedItemIds(user.pinnedItemIds);
     }
-  });
+  }, [user?.pinnedItemIds]);
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [activeDropdownItem, setActiveDropdownItem] = useState(null);
@@ -259,10 +259,6 @@ const AppLayout = ({ children }) => {
   const [deleteModalItem, setDeleteModalItem] = useState(null);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
-
-  useEffect(() => {
-    localStorage.setItem("pinnedChats", JSON.stringify(pinnedItemIds));
-  }, [pinnedItemIds]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -579,14 +575,34 @@ const AppLayout = ({ children }) => {
     }
   };
 
-  const togglePin = (e, id) => {
+  const togglePin = async (e, id) => {
     e.stopPropagation();
-    setPinnedItemIds((prev) =>
-      prev.includes(id)
+    
+    // Optimistic UI update
+    let newPinnedIds;
+    setPinnedItemIds((prev) => {
+      newPinnedIds = prev.includes(id)
         ? prev.filter((pinnedId) => pinnedId !== id)
-        : [...prev, id],
-    );
+        : [...prev, id];
+      return newPinnedIds;
+    });
     setOpenDropdownId(null);
+
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/auth/pins`,
+        { pinnedItemIds: newPinnedIds },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      // Update local user context if necessary, or let query invalidation handle it
+      if (user) {
+        const updatedUser = { ...user, pinnedItemIds: newPinnedIds };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error("Failed to sync pins to server", error);
+    }
   };
 
   const handleLogout = () => {
@@ -1039,12 +1055,14 @@ const AppLayout = ({ children }) => {
                     className="w-5 h-5 object-contain"
                   />
                 </div>
-                <span className="text-[18px] font-serif font-medium text-text-primary leading-tight flex items-start gap-0.5 tracking-tight truncate">
-                  Codegene
-                  <sup className="text-[9px] mt-1 font-sans text-text-muted font-semibold tracking-wider">
+                <div className="flex items-baseline min-w-0">
+                  <span className="text-[18px] font-serif font-medium text-text-primary leading-tight tracking-tight truncate">
+                    Codegene
+                  </span>
+                  <span className="text-[9px] font-sans text-text-muted font-bold tracking-wider shrink-0 ml-0.5 -translate-y-2">
                     AI
-                  </sup>
-                </span>
+                  </span>
+                </div>
               </div>
             )}
             
