@@ -22,6 +22,9 @@ import {
   FiImage,
 } from "react-icons/fi";
 import { generateSandboxHtml, downloadFile } from "../../utils/codeExportUtils";
+import { VirtualFileSystem } from "../../utils/virtualFileSystem";
+import { SandpackProvider, SandpackPreview, SandpackConsole, SandpackLayout } from "@codesandbox/sandpack-react";
+import FileExplorerSidebar from "./FileExplorerSidebar";
 import { useTheme } from "../../context/ThemeContext";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -56,13 +59,60 @@ const ArtifactPreviewPanel = ({
   const editorLineNumbersRef = useRef(null);
   const editorTextareaRef = useRef(null);
 
-  // Multi-file tab selection
+  // Sidebar visibility & Virtual File System state
+  const [showSidebar, setShowSidebar] = useState(false);
+
+  // Maintain live VFS workspace instance
+  const [vfs, setVfs] = useState(() => {
+    if (artifact?.vfs) return artifact.vfs;
+    if (artifact?.files) return VirtualFileSystem.fromObject(artifact.files);
+    const fallback = new VirtualFileSystem();
+    const fileName = artifact?.activeFile || "App.jsx";
+    fallback.createFile(fileName, artifact?.code || "", artifact?.language || "jsx");
+    return fallback;
+  });
+
+  // Re-sync VFS when incoming artifact changes
+  useEffect(() => {
+    if (artifact?.vfs) {
+      setVfs(artifact.vfs);
+    } else if (artifact?.files) {
+      setVfs(VirtualFileSystem.fromObject(artifact.files));
+    }
+  }, [artifact]);
+
+  // Multi-file selection
   const [userSelectedFileName, setUserSelectedFileName] = useState(null);
 
   const selectedFileName =
-    userSelectedFileName && (artifact?.files?.[userSelectedFileName] || artifact?.fileNames?.includes(userSelectedFileName))
+    userSelectedFileName && vfs.hasFile(userSelectedFileName)
       ? userSelectedFileName
-      : artifact?.activeFile || (artifact?.fileNames && artifact.fileNames[0]) || "App.jsx";
+      : artifact?.activeFile || (artifact?.fileNames && artifact.fileNames[0]) || vfs.entryPath || "App.jsx";
+
+  const handleCreateFile = (filePath) => {
+    vfs.createFile(filePath, "", null);
+    setVfs(VirtualFileSystem.fromObject(vfs.toObject()));
+    setUserSelectedFileName(filePath);
+    setActiveTab("code");
+    setIsEditMode(true);
+  };
+
+  const handleRenameFile = (oldPath, newPath) => {
+    vfs.renameFile(oldPath, newPath);
+    setVfs(VirtualFileSystem.fromObject(vfs.toObject()));
+    if (selectedFileName === oldPath) {
+      setUserSelectedFileName(newPath);
+    }
+  };
+
+  const handleDeleteFile = (filePath) => {
+    vfs.deleteFile(filePath);
+    setVfs(VirtualFileSystem.fromObject(vfs.toObject()));
+    if (selectedFileName === filePath) {
+      const remaining = vfs.listFiles();
+      setUserSelectedFileName(remaining[0] || "App.jsx");
+    }
+  };
 
   // Listen for iframe postMessage events (Console Capture, Diagnostics & Image Telemetry)
   useEffect(() => {
@@ -159,7 +209,274 @@ const ArtifactPreviewPanel = ({
     }
   }, [artifact?.code, artifact?.isStreaming]);
 
-  // Real-time sandbox bundle derived from effectiveArtifact (incorporates user edits instantly)
+  // Pre-preview project dependency validator with Critical vs Warning classification
+  const validationResult = useMemo(() => {
+    const res = {
+      isValid: true,
+      criticalErrors: [],
+      warnings: [],
+      brokenChains: [],
+      unusedImports: [],
+      dependencyGraph: {},
+    };
+    if (!vfs) return res;
+
+    const filePaths = vfs.listFiles();
+    if (filePaths.length === 0) return res;
+
+    const normalize = (p) => {
+      if (!p) return "";
+      let clean = p.trim().replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "");
+      if (clean.startsWith("src/")) clean = clean.substring(4);
+      return clean;
+    };
+
+    const pathSet = new Set(filePaths.map((p) => normalize(p)));
+    const importedCount = new Map();
+    filePaths.forEach((p) => {
+      const norm = normalize(p);
+      importedCount.set(norm, 0);
+      res.dependencyGraph[norm] = [];
+    });
+
+    const resolvePath = (fromPath, specifier) => {
+      let spec = specifier.trim();
+      if (spec.startsWith("@/")) {
+        spec = spec.substring(2);
+      } else if (spec.startsWith("./") || spec.startsWith("../")) {
+        const parts = fromPath.split("/");
+        parts.pop(); // remove file basename
+        const specParts = spec.split("/");
+        for (const p of specParts) {
+          if (p === ".") continue;
+          if (p === "..") {
+            if (parts.length > 0) parts.pop();
+          } else {
+            parts.push(p);
+          }
+        }
+        spec = parts.join("/");
+      } else if (spec.startsWith("/")) {
+        spec = spec.substring(1);
+      }
+      return normalize(spec);
+    };
+
+    const isNonExecutableAsset = (pathStr) => {
+      return /\.(css|scss|sass|less|json|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|otf)$/i.test(pathStr);
+    };
+
+    const getAssetType = (pathStr) => {
+      if (/\.(css|scss|sass|less)$/i.test(pathStr)) return "CSS/Styles";
+      if (/\.(png|jpg|jpeg|gif|svg|webp|ico)$/i.test(pathStr)) return "Image/Asset";
+      if (/\.(woff|woff2|ttf|eot|otf)$/i.test(pathStr)) return "Font";
+      if (/\.json$/i.test(pathStr)) return "JSON";
+      return "Static Asset";
+    };
+
+    const importRegex = /(?:from\s+['"]([^'"]+)['"]|import\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\))/g;
+
+    filePaths.forEach((filePath) => {
+      const file = vfs.getFile(filePath);
+      if (!file || !file.content) return;
+
+      const normFrom = normalize(filePath);
+      const code = file.content;
+      let match;
+
+      while ((match = importRegex.exec(code)) !== null) {
+        const specifier = match[1] || match[2] || match[3];
+        if (!specifier) continue;
+
+        // Check relative / local project imports
+        if (specifier.startsWith(".") || specifier.startsWith("/") || specifier.startsWith("@/")) {
+          const resolved = resolvePath(normFrom, specifier);
+
+          const extensions = ["", ".jsx", ".tsx", ".js", ".ts", ".css", ".scss", ".json", ".html"];
+          let found = false;
+          let matchedPath = "";
+
+          for (const ext of extensions) {
+            const testPath = resolved.endsWith(ext) ? resolved : resolved + ext;
+            if (pathSet.has(testPath)) {
+              found = true;
+              matchedPath = testPath;
+              break;
+            }
+          }
+
+          if (!found) {
+            const indexFiles = ["/index.jsx", "/index.tsx", "/index.js", "/index.ts"];
+            for (const idx of indexFiles) {
+              if (pathSet.has(resolved + idx)) {
+                found = true;
+                matchedPath = resolved + idx;
+                break;
+              }
+            }
+          }
+
+          if (found) {
+            importedCount.set(matchedPath, (importedCount.get(matchedPath) || 0) + 1);
+            if (res.dependencyGraph[normFrom]) {
+              res.dependencyGraph[normFrom].push({
+                path: matchedPath,
+                isMissing: false,
+                isWarning: false,
+              });
+            }
+          } else {
+            const isWarning = isNonExecutableAsset(specifier) || isNonExecutableAsset(resolved);
+
+            if (res.dependencyGraph[normFrom]) {
+              res.dependencyGraph[normFrom].push({
+                path: resolved,
+                isMissing: true,
+                isWarning: isWarning,
+              });
+            }
+
+            if (isWarning) {
+              res.warnings.push({
+                from: normFrom,
+                imported: specifier,
+                resolved: resolved,
+                type: getAssetType(resolved || specifier),
+              });
+            } else {
+              res.criticalErrors.push({
+                from: normFrom,
+                imported: specifier,
+                resolved: resolved,
+              });
+              res.brokenChains.push({
+                from: normFrom,
+                imported: specifier,
+                resolved: resolved,
+              });
+            }
+          }
+        }
+      }
+    });
+
+    // Calculate unused imports
+    filePaths.forEach((p) => {
+      const norm = normalize(p);
+      const count = importedCount.get(norm) || 0;
+      const isEntry =
+        /^app\.(jsx|tsx|js)/i.test(norm) ||
+        /^index\.(html|jsx|js)/i.test(norm) ||
+        /^main\.(jsx|js)/i.test(norm) ||
+        /^styles\.css$/i.test(norm) ||
+        /^vite\.config\./i.test(norm);
+
+      if (count === 0 && !isEntry) {
+        res.unusedImports.push(norm);
+      }
+    });
+
+    res.isValid = res.criticalErrors.length === 0;
+    return res;
+  }, [vfs, effectiveArtifact]);
+
+  // Real-time sandbox bundle mounted strictly from physical VFS files
+  const sandpackFiles = useMemo(() => {
+    const files = {};
+    if (!effectiveArtifact) return files;
+
+    // Add default Vite config
+    files["/vite.config.js"] = `
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+});
+`;
+
+    let hasUserIndexJs = false;
+    let primaryHtmlPath = null;
+
+    if (effectiveArtifact.files) {
+      Object.values(effectiveArtifact.files).forEach((f) => {
+        let normPath = f.name;
+        if (normPath.startsWith("src/")) normPath = normPath.substring(4);
+        if (normPath.startsWith("/src/")) normPath = normPath.substring(5);
+        let name = normPath.startsWith("/") ? normPath : "/" + normPath;
+        files[name] = f.code;
+
+        if (name === "/index.js" || name === "/src/index.js") {
+          hasUserIndexJs = true;
+        }
+
+        if (name.endsWith(".html")) {
+          if (!primaryHtmlPath || name === "/index.html" || name === "/register.html") {
+            primaryHtmlPath = name;
+          }
+        }
+      });
+    } else if (effectiveArtifact.code) {
+      const isHtml = effectiveArtifact.language === "html" || effectiveArtifact.language === "htm";
+      if (isHtml) {
+        files["/index.html"] = effectiveArtifact.code;
+        primaryHtmlPath = "/index.html";
+      } else {
+        const ext = effectiveArtifact.language === "ts" || effectiveArtifact.language === "tsx" ? "tsx" : "jsx";
+        files["/App." + ext] = effectiveArtifact.code;
+      }
+    }
+
+    // Override Sandpack's default vanilla index.js script if user did not provide custom index.js
+    // This prevents `document.getElementById('app').innerHTML` null errors on static HTML projects
+    if (!hasUserIndexJs) {
+      files["/index.js"] = "";
+    }
+
+    // Map primary HTML file to /index.html for static/vanilla previews if not set
+    if (primaryHtmlPath && !files["/index.html"]) {
+      files["/index.html"] = files[primaryHtmlPath];
+    }
+
+    return files;
+  }, [effectiveArtifact]);
+
+  // Dynamically resolve npm dependencies based on import statements across all files
+  const sandpackDependencies = useMemo(() => {
+    const deps = {
+      "lucide-react": "^0.263.1",
+      "framer-motion": "^10.16.4",
+      "clsx": "^2.0.0",
+      "tailwind-merge": "^2.0.0"
+    };
+    if (!effectiveArtifact) return deps;
+
+    const importRegex = /import\s+(?:[\s\S]*?)from\s+['"]([^'"]+)['"]/g;
+    const codes = effectiveArtifact.files ? Object.values(effectiveArtifact.files).map(f => f.code) : [effectiveArtifact.code];
+
+    codes.forEach(code => {
+      if (!code) return;
+      let match;
+      while ((match = importRegex.exec(code)) !== null) {
+        let pkg = match[1];
+        // If it's a bare module import (npm package)
+        if (!pkg.startsWith(".") && !pkg.startsWith("/") && !pkg.startsWith("@/")) {
+          // Extract base package name handling scoped packages
+          if (pkg.startsWith("@")) {
+            pkg = pkg.split("/").slice(0, 2).join("/");
+          } else {
+            pkg = pkg.split("/")[0];
+          }
+          if (pkg && pkg !== "react" && pkg !== "react-dom" && pkg !== "vite") {
+            deps[pkg] = "latest";
+          }
+        }
+      }
+    });
+    
+    return deps;
+  }, [effectiveArtifact]);
+
   const sandboxHtml = useMemo(() => {
     if (!effectiveArtifact || effectiveArtifact.isStreaming) return "";
     return generateSandboxHtml(effectiveArtifact);
@@ -170,6 +487,10 @@ const ArtifactPreviewPanel = ({
       ...prev,
       [selectedFileName]: newCode,
     }));
+    if (vfs) {
+      vfs.updateFile(selectedFileName, newCode);
+      setVfs(VirtualFileSystem.fromObject(vfs.toObject()));
+    }
   };
 
   const handleRevertCurrentFile = () => {
@@ -364,10 +685,27 @@ const ArtifactPreviewPanel = ({
 
         {/* Center: Tabs & Viewport Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* File Explorer Sidebar Toggle */}
+          <button
+            onClick={() => setShowSidebar(!showSidebar)}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
+              showSidebar
+                ? "bg-accent-primary/15 text-accent-primary font-bold border border-accent-primary/30"
+                : "text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5"
+            }`}
+            title="Toggle File Explorer Sidebar"
+          >
+            <FiFolder className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Files</span>
+          </button>
+
           {/* Preview / Code Tab Toggle */}
           <div className="flex items-center p-0.5 rounded-lg bg-black/5 dark:bg-white/5 border border-border-primary/40 dark:border-white/5 shrink-0">
             <button
-              onClick={() => setActiveTab("preview")}
+              onClick={() => {
+                setActiveTab("preview");
+                setShowSidebar(false);
+              }}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
                 activeTab === "preview"
                   ? "bg-white dark:bg-white/20 text-accent-primary dark:text-white shadow-xs"
@@ -379,7 +717,10 @@ const ArtifactPreviewPanel = ({
               <span>Preview</span>
             </button>
             <button
-              onClick={() => setActiveTab("code")}
+              onClick={() => {
+                setActiveTab("code");
+                setShowSidebar(true);
+              }}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
                 activeTab === "code"
                   ? "bg-white dark:bg-white/20 text-accent-primary dark:text-white shadow-xs"
@@ -508,8 +849,24 @@ const ArtifactPreviewPanel = ({
       )}
 
       {/* Main Content Area: Preview Iframe OR Code Editor */}
-      <div className="flex-1 w-full h-full overflow-hidden relative flex flex-col bg-zinc-100 dark:bg-[#07080b]">
-        <div className="flex-1 w-full h-full overflow-hidden relative flex items-center justify-center">
+      <div className="flex-1 w-full h-full overflow-hidden relative flex flex-row bg-zinc-100 dark:bg-[#07080b]">
+        {showSidebar && (
+          <FileExplorerSidebar
+            vfs={vfs}
+            activeFilePath={selectedFileName}
+            onSelectFile={(path) => {
+              setUserSelectedFileName(path);
+              setActiveTab("code");
+            }}
+            onCreateFile={handleCreateFile}
+            onRenameFile={handleRenameFile}
+            onDeleteFile={handleDeleteFile}
+            editedFiles={editedFiles}
+            isDark={isDark}
+          />
+        )}
+        <div className="flex-1 w-full h-full overflow-hidden relative flex items-center justify-center min-w-0">
+
           {activeTab === "preview" ? (
             <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
               {/* Floating Canvas Viewport Mode Switcher */}
@@ -558,15 +915,188 @@ const ArtifactPreviewPanel = ({
                     <p className="text-sm font-medium text-text-primary">Generating preview...</p>
                     <p className="text-xs text-text-muted mt-1">Live preview will render once code generation finishes</p>
                   </div>
+                ) : !validationResult.isValid ? (
+                  <div className="w-full h-full flex flex-col p-6 bg-zinc-950 text-white font-mono overflow-auto custom-scrollbar">
+                    <div className="flex items-center gap-3 border-b border-red-500/30 pb-4 mb-6 shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-lg border border-red-500/30 shrink-0">
+                        ✕
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold text-red-400">Project validation failed.</h2>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                          Critical executable code dependencies (.js, .jsx, .ts, .tsx, components, hooks, services) are missing. Preview stopped.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Critical Errors */}
+                    {validationResult.criticalErrors.length > 0 && (
+                      <div className="mb-6 shrink-0">
+                        <h3 className="text-xs uppercase font-bold text-red-400 tracking-wider mb-2 flex items-center gap-2">
+                          Critical Errors ({validationResult.criticalErrors.length}):
+                        </h3>
+                        <ul className="space-y-1 bg-red-950/20 border border-red-500/20 rounded-lg p-3 text-xs text-red-300">
+                          {validationResult.criticalErrors.map((err, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-red-500 font-bold">•</span>
+                              <code className="font-mono bg-black/40 px-1.5 py-0.5 rounded text-red-200">{err.resolved}</code>
+                              <span className="text-red-400/80 text-[11px]">(imported in {err.from})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Warnings (Non-blocking) */}
+                    {validationResult.warnings.length > 0 && (
+                      <div className="mb-6 shrink-0">
+                        <h3 className="text-xs uppercase font-bold text-amber-400 tracking-wider mb-2 flex items-center gap-2">
+                          Warnings ({validationResult.warnings.length}):
+                        </h3>
+                        <ul className="space-y-1 bg-amber-950/20 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-300">
+                          {validationResult.warnings.map((warn, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-amber-500 font-bold">•</span>
+                              <code className="font-mono bg-black/40 px-1.5 py-0.5 rounded text-amber-200">{warn.resolved}</code>
+                              <span className="text-amber-400/80 text-[11px]">({warn.type} missing in {warn.from})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Broken Dependency Chain */}
+                    {validationResult.brokenChains.length > 0 && (
+                      <div className="mb-6 shrink-0">
+                        <h3 className="text-xs uppercase font-bold text-amber-400 tracking-wider mb-2">
+                          Broken Dependency Chain:
+                        </h3>
+                        <div className="space-y-2 bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs font-mono">
+                          {validationResult.brokenChains.map((chain, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-zinc-300">
+                              <span className="text-zinc-500 font-bold">•</span>
+                              <div>
+                                <span className="text-white font-semibold">{chain.from}</span>
+                                <span className="text-zinc-500 px-1.5">➔</span>
+                                <span className="text-red-400 font-semibold">{chain.imported}</span>
+                                <span className="text-red-500/80 text-[11px] ml-1.5">(missing)</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dependency Graph */}
+                    {Object.keys(validationResult.dependencyGraph).length > 0 && (
+                      <div className="mb-6 shrink-0">
+                        <h3 className="text-xs uppercase font-bold text-zinc-400 tracking-wider mb-2">
+                          Dependency Graph:
+                        </h3>
+                        <div className="space-y-2 bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs font-mono max-h-48 overflow-y-auto custom-scrollbar">
+                          {Object.entries(validationResult.dependencyGraph).map(([file, deps], idx) => (
+                            <div key={idx} className="space-y-1">
+                              <div className="text-zinc-200 font-bold flex items-center gap-1.5">
+                                <span className="text-accent-primary">📄</span> {file}
+                              </div>
+                              {deps.length > 0 ? (
+                                <div className="pl-4 space-y-0.5">
+                                  {deps.map((dep, dIdx) => (
+                                    <div key={dIdx} className="text-zinc-400 flex items-center gap-1.5">
+                                      <span>└──</span>
+                                      <span className={dep.isMissing ? (dep.isWarning ? "text-amber-400" : "text-red-400 font-semibold") : "text-zinc-300"}>
+                                        {dep.path}
+                                      </span>
+                                      {dep.isMissing && (
+                                        <span className={dep.isWarning ? "text-amber-500/80 text-[11px]" : "text-red-500/80 text-[11px]"}>
+                                          {dep.isWarning ? "(warning)" : "(missing)"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="pl-4 text-zinc-600 italic text-[11px]">No local dependencies</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Unused Imports */}
+                    {validationResult.unusedImports.length > 0 && (
+                      <div className="shrink-0">
+                        <h3 className="text-xs uppercase font-bold text-zinc-400 tracking-wider mb-2">
+                          Unused Imports ({validationResult.unusedImports.length}):
+                        </h3>
+                        <ul className="space-y-1 bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-400">
+                          {validationResult.unusedImports.map((file, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-zinc-600">•</span>
+                              <span>{file}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <iframe
-                    ref={iframeRef}
-                    key={refreshKey}
-                    title={artifact?.title || "Live Preview"}
-                    srcDoc={sandboxHtml}
-                    sandbox="allow-scripts allow-forms allow-modals allow-same-origin"
-                    className="w-full h-full border-0 bg-white rounded-inherit"
-                  />
+                  <>
+                    {validationResult.warnings.length > 0 && (
+                      <div className="absolute top-2 left-4 z-20 flex items-center gap-2 px-2.5 py-1 rounded-md bg-amber-500/10 dark:bg-amber-950/60 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-[11px] font-mono shadow-xs backdrop-blur-md">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                        <span>{validationResult.warnings.length} non-critical asset {validationResult.warnings.length === 1 ? "warning" : "warnings"} ({validationResult.warnings.map(w => w.type).join(", ")}) — Preview Active</span>
+                      </div>
+                    )}
+                    <style>{`
+                      .sp-wrapper, .sp-layout {
+                        height: 100% !important;
+                        min-height: 100% !important;
+                        width: 100% !important;
+                        border: none !important;
+                        border-radius: 0 !important;
+                        flex: 1 !important;
+                      }
+                      .sp-preview {
+                        height: 100% !important;
+                        min-height: 100% !important;
+                        flex: 1 !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                      }
+                      .sp-preview-container {
+                        height: 100% !important;
+                        min-height: 100% !important;
+                        flex: 1 !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                      }
+                      .sp-preview-iframe {
+                        height: 100% !important;
+                        min-height: 100% !important;
+                        flex: 1 !important;
+                      }
+                    `}</style>
+                    <SandpackProvider 
+                    key={`${refreshKey}-${Object.keys(sandpackDependencies).sort().join(',')}`}
+                    template={effectiveArtifact?.isWebProject || Boolean(sandpackFiles['/index.html'] && !sandpackFiles['/App.jsx'] && !sandpackFiles['/App.tsx']) ? "vanilla" : "vite-react"} 
+                    theme={isDark ? "dark" : "light"}
+                    files={sandpackFiles}
+                    customSetup={{
+                      dependencies: sandpackDependencies
+                    }}
+                  >
+                    <SandpackLayout style={{ height: '100%', width: '100%', flex: 1, border: 'none', borderRadius: 0 }}>
+                      <SandpackPreview 
+                        showNavigator={false} 
+                        showRefreshButton={false} 
+                        showOpenInCodeSandbox={false}
+                        style={{ height: '100%', width: '100%', flex: 1 }}
+                      />
+                    </SandpackLayout>
+                  </SandpackProvider>
+                  </>
                 )}
               </div>
             </div>

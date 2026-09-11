@@ -237,7 +237,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         const now = Date.now();
         if (now - lastArtifactUpdateRef.current > 350) {
           lastArtifactUpdateRef.current = now;
-          const parsed = extractPreviewableCode(streamingReply);
+          const parsed = extractPreviewableCode(streamingReply, activeArtifact);
           if (parsed) {
             setActiveArtifact(parsed);
             if (window.innerWidth >= 768) {
@@ -255,7 +255,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           const content = messages[i].content;
           if (lastParsedContentRef.current !== content) {
             lastParsedContentRef.current = content;
-            const parsed = extractPreviewableCode(content);
+            const parsed = extractPreviewableCode(content, activeArtifact);
             if (parsed) {
               setActiveArtifact(parsed);
               if (window.innerWidth >= 768) {
