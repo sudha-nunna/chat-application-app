@@ -240,7 +240,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           const parsed = extractPreviewableCode(streamingReply);
           if (parsed) {
             setActiveArtifact(parsed);
-            setIsArtifactOpen(true);
+            if (window.innerWidth >= 768) {
+              setIsArtifactOpen(true);
+            }
           }
         }
       }
@@ -256,7 +258,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             const parsed = extractPreviewableCode(content);
             if (parsed) {
               setActiveArtifact(parsed);
-              setIsArtifactOpen(true);
+              if (window.innerWidth >= 768) {
+                setIsArtifactOpen(true);
+              }
             }
           }
           break;
@@ -446,13 +450,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             // Network stream complete: flush all remaining queued tokens immediately!
             step = qLen;
           } else if (qLen > 40) {
-            step = Math.ceil(qLen / 3);
+            step = Math.ceil(qLen / 1.5);
           } else if (qLen > 15) {
-            step = Math.ceil(qLen / 4);
+            step = Math.ceil(qLen / 2);
           } else if (qLen > 5) {
-            step = 3;
+            step = 6;
           } else {
-            step = 2;
+            step = 4;
           }
 
           const words = tokenQueueRef.current.splice(0, step).join("");
@@ -1264,7 +1268,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       <div
         className={`px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0 backdrop-blur-md ${"bg-interactive-base dark:bg-[#0D0E15] border-border-primary dark:border-border-primary"}`}
       >
-        <div className="flex items-center gap-2 truncate">
+        <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
           <button
             onClick={() => {
               if (onToggleMobileSidebar) {
@@ -1278,7 +1282,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           >
             <FiMenu className="text-lg" />
           </button>
-          <span className="font-normal tracking-wide text-text-primary dark:text-[#e5e5e5]">
+          <span className="font-normal tracking-wide text-text-primary dark:text-[#e5e5e5] truncate">
             {chatTitle}
           </span>
           {(() => {
@@ -1337,7 +1341,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             }
             if (suffix) {
               return (
-                <span className="text-[13px] font-serif italic text-[#7c83f6] ml-1">
+                <span className="text-[13px] font-serif italic text-[#7c83f6] ml-1 shrink-0 hidden sm:inline-block">
                   — {suffix}
                 </span>
               );

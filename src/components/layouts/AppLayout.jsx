@@ -1026,159 +1026,34 @@ const AppLayout = ({ children }) => {
           style={!isMobile && !isSidebarCollapsed ? { width: `${sidebarWidth}px` } : undefined}
           className={`flex flex-col h-full ${isSidebarCollapsed && !isMobile ? "overflow-visible px-1" : "overflow-hidden"} ${isResizingSidebar ? "transition-none" : "transition-all duration-300"} bg-surface-secondary shrink-0 select-none relative ${isMobile ? "w-full" : isSidebarCollapsed ? "w-[65px] border-r border-border-primary z-[60]" : "border-r border-border-primary z-20"}`}
         >
-          {isMobile ? (
-            <div className="p-4 border-b border-border-primary/40 flex items-center gap-3 shrink-0 relative">
-              <div
-                className="profile-btn flex items-center justify-between w-full cursor-pointer group"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsProfileDropdownOpen(!isProfileDropdownOpen);
-                }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 bg-accent-primary rounded-xl flex items-center justify-center shrink-0">
-                    <img
-                      src="/mini-logo2.png"
-                      alt="Codegene Logo"
-                      className="w-5 h-5 object-contain"
-                    />
-                  </div>
-                  <span className="text-[18px] font-serif font-medium text-text-primary leading-tight flex items-start gap-0.5 tracking-tight">
-                    Codegene
-                    <sup className="text-[9px] mt-1 font-sans text-text-muted font-semibold tracking-wider">
-                      AI
-                    </sup>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11.5px] px-2 py-0.5 rounded-full bg-accent-primary/10 text-accent-primary font-medium border border-accent-primary/20">
-                    {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
-                  </span>
-                  <FiChevronDown
-                    className={`text-text-primary/70 text-lg shrink-0 group-hover:text-text-primary transition-transform duration-200 ${
-                      isProfileDropdownOpen ? "rotate-180" : ""
-                    }`}
+          
+          <div
+            className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed && !isMobile ? "justify-center px-2!" : "justify-between"}`}
+          >
+            {(!isSidebarCollapsed || isMobile) && (
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 bg-accent-primary rounded-xl flex items-center justify-center shrink-0">
+                  <img
+                    src="/mini-logo2.png"
+                    alt="Codegene Logo"
+                    className="w-5 h-5 object-contain"
                   />
                 </div>
+                <span className="text-[18px] font-serif font-medium text-text-primary leading-tight flex items-start gap-0.5 tracking-tight truncate">
+                  Codegene
+                  <sup className="text-[9px] mt-1 font-sans text-text-muted font-semibold tracking-wider">
+                    AI
+                  </sup>
+                </span>
               </div>
-
-              {isProfileDropdownOpen && (
-                <div
-                  ref={profileDropdownRef}
-                  className="profile-dropdown absolute top-[calc(100%-4px)] left-4 right-4 mt-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary"
-                >
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      setIsMobileMenuOpen(false);
-                      navigate("/usage");
-                    }}
-                    className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-surface-secondary dark:hover:bg-white/5 transition rounded-lg mx-1 mb-1"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <UserAvatar
-                        user={user}
-                        className="w-8 h-8 text-[12px]"
-                        borderClassName="border border-border-primary"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[13px] font-bold truncate tracking-wide text-text-primary">
-                          {user?.name || "User Name"}
-                        </span>
-                        <span className="text-[11.5px] text-text-muted truncate leading-tight mt-0.5 font-normal flex items-center gap-1">
-                          <span className="font-semibold text-accent-primary">
-                            {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits}
-                          </span>{" "}
-                          Credits
-                        </span>
-                      </div>
-                    </div>
-                    <FiChevronRight className="text-text-primary/70 text-sm shrink-0" />
-                  </div>
-
-                  <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      setIsMobileMenuOpen(false);
-                      navigate("/subscription");
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    <FiZap className="text-sm" /> Upgrade plan
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      setIsMobileMenuOpen(false);
-                      navigate("/usage");
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    <FiCreditCard className="text-sm" /> Credits usage
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleTheme();
-                      setIsProfileDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    {isDark ? (
-                      <FiSun className="text-sm" />
-                    ) : (
-                      <FiMoon className="text-sm" />
-                    )}{" "}
-                    Appearance
-                  </button>
-
-                  <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      handleLogout();
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-medium hover:bg-surface-secondary dark:hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    <FiLogOut className="text-sm" /> Log out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
+            )}
+            
             <div
-              className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed ? "justify-center px-2!" : "justify-between"}`}
+              className={`flex gap-1 shrink-0 ${isSidebarCollapsed && !isMobile ? "w-full justify-center" : ""}`}
             >
-              {!isSidebarCollapsed && (
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-accent-primary rounded-xl flex items-center justify-center shrink-0">
-                    <img
-                      src="/mini-logo2.png"
-                      alt="Codegene Logo"
-                      className="w-5 h-5 object-contain"
-                    />
-                  </div>
-                  <span className="text-[18px] font-serif font-medium text-text-primary leading-tight flex items-start gap-0.5 tracking-tight">
-                    Codegene
-                    <sup className="text-[9px] mt-1 font-sans text-text-muted font-semibold tracking-wider">
-                      AI
-                    </sup>
-                  </span>
-                </div>
-              )}
-              <div
-                className={`flex gap-1 ${isSidebarCollapsed ? "w-full justify-center" : ""}`}
-              >
+              {!isMobile ? (
                 <button
-                  onClick={() => {
-                    setIsSidebarCollapsed(!isSidebarCollapsed);
-                  }}
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                   className={`rounded-lg hover:bg-surface-secondary text-text-primary transition cursor-pointer group relative flex items-center justify-center ${isSidebarCollapsed ? "w-8 h-8 p-1" : "p-1.5"}`}
                 >
                   {isSidebarCollapsed ? (
@@ -1193,16 +1068,22 @@ const AppLayout = ({ children }) => {
                   ) : (
                     <FiSidebar className="text-sm" />
                   )}
-                  {isSidebarCollapsed && !isMobile && (
+                  {isSidebarCollapsed && (
                     <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
                       Toggle Sidebar
                     </div>
                   )}
                 </button>
-              </div>
+              ) : (
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="rounded-lg hover:bg-surface-secondary text-text-primary transition cursor-pointer p-1.5"
+                >
+                  <FiX className="text-xl" />
+                </button>
+              )}
             </div>
-          )}
-
+          </div>
           {/* Gemini-style Segmented Switcher: [ Chat | Agent ] */}
           {/* <div
             className={`pt-2.5 pb-1 shrink-0 ${
@@ -1343,151 +1224,77 @@ const AppLayout = ({ children }) => {
             )}
           </div>
 
-          {/* Profile Dropdown at bottom of sidebar (Desktop only) */}
-          {!isMobile && (
-            <div className="mt-auto px-2 py-3 border-t border-border-primary/40 relative shrink-0 z-30 bg-surface-secondary">
-              {isProfileDropdownOpen && (
-                <div
-                  ref={profileDropdownRef}
-                  className={`profile-dropdown absolute bottom-full left-4 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[220px]`}
-                >
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      navigate("/usage");
-                    }}
-                    className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <UserAvatar
-                        user={user}
-                        className="w-8 h-8 text-[12px]"
-                        borderClassName="border border-border-primary"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[13px] font-bold truncate tracking-wide">
-                          {user?.name || "Nunna Sudha"}
-                        </span>
-                        <span className="text-[11.5px] text-text-muted truncate leading-tight mt-0.5 font-normal flex items-center gap-1">
-                          <span className="font-medium text-accent-primary">
-                            {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits}
-                          </span>{" "}
-                          Credits
-                        </span>
-                      </div>
-                    </div>
-                    <FiChevronRight className="text-text-primary/70 text-sm shrink-0" />
-                  </div>
-
-                  <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      navigate("/subscription");
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    <FiZap className="text-sm" /> Upgrade plan
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      navigate("/usage");
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    <FiCreditCard className="text-sm" /> Credits usage
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleTheme();
-                      setIsProfileDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    {isDark ? (
-                      <FiSun className="text-sm" />
-                    ) : (
-                      <FiMoon className="text-sm" />
-                    )}{" "}
-                    Appearance
-                  </button>
-
-                  <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsProfileDropdownOpen(false);
-                      handleLogout();
-                    }}
-                    className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
-                  >
-                    <FiLogOut className="text-sm" /> Log out
-                  </button>
-                </div>
-              )}
-
+          {/* Profile Dropdown at bottom of sidebar */}
+          <div className="mt-auto px-2 py-3 border-t border-border-primary/40 relative shrink-0 z-30 bg-surface-secondary">
+            {isProfileDropdownOpen && (
               <div
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className={`profile-btn p-1.5 rounded-xl transition hover:bg-black/5 dark:hover:bg-white/5 bg-transparent flex items-center cursor-pointer w-full group ${isSidebarCollapsed ? "px-0 justify-center" : "justify-between"
-                  }`}
-                title="Profile & Settings"
+                ref={profileDropdownRef}
+                className="profile-dropdown absolute bottom-full left-4 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[220px]"
               >
-                <div className="flex items-center min-w-0">
-                  <div className="flex items-center shrink-0">
-                    <UserAvatar
-                      user={user}
-                      className="w-8 h-8 text-[12px]"
-                      borderClassName="border border-border-primary/50"
-                    />
-                  </div>
-
-                  {!isSidebarCollapsed && (
-                    <div className="flex-col whitespace-nowrap overflow-hidden ml-2.5 flex transition-opacity duration-300 items-start leading-none min-w-0">
-                      <p className="text-[13px] font-normal truncate text-text-primary">
-                        {user?.name || "User"}
-                      </p>
-                      <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
-                        {typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits
-                      </p>
+                <div
+                  onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsMobileMenuOpen(false); navigate("/usage"); }}
+                  className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar user={user} className="w-8 h-8 text-[12px]" borderClassName="border border-border-primary" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[13px] font-bold truncate tracking-wide">{user?.name || "Nunna Sudha"}</span>
+                      <span className="text-[11.5px] text-text-muted truncate leading-tight mt-0.5 font-normal flex items-center gap-1">
+                        <span className="font-medium text-accent-primary">{typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits}</span>{" "}Credits
+                      </span>
                     </div>
-                  )}
+                  </div>
+                  <FiChevronRight className="text-text-primary/70 text-sm shrink-0" />
                 </div>
-
+                <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
+                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsMobileMenuOpen(false); navigate("/subscription"); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                  <FiZap className="text-sm" /> Upgrade plan
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsMobileMenuOpen(false); navigate("/usage"); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                  <FiCreditCard className="text-sm" /> Credits usage
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); toggleTheme(); setIsProfileDropdownOpen(false); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                  {isDark ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}{" "}Appearance
+                </button>
+                <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
+                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                  <FiLogOut className="text-sm" /> Log out
+                </button>
+              </div>
+            )}
+            <div
+              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              className={`profile-btn p-1.5 rounded-xl transition hover:bg-black/5 dark:hover:bg-white/5 bg-transparent flex items-center cursor-pointer w-full group ${isSidebarCollapsed ? "px-0 justify-center" : "justify-between"}`}
+              title="Profile & Settings"
+            >
+              <div className="flex items-center min-w-0">
+                <div className="flex items-center shrink-0">
+                  <UserAvatar user={user} className="w-8 h-8 text-[12px]" borderClassName="border border-border-primary/50" />
+                </div>
                 {!isSidebarCollapsed && (
-                  <div className="shrink-0 ml-auto pl-2 text-text-muted">
-                    <FiChevronUp
-                      className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""
-                        }`}
-                    />
+                  <div className="flex-col whitespace-nowrap overflow-hidden ml-2.5 flex transition-opacity duration-300 items-start leading-none min-w-0">
+                    <p className="text-[13px] font-normal truncate text-text-primary">{user?.name || "User"}</p>
+                    <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">{typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits</p>
                   </div>
                 )}
               </div>
+              {!isSidebarCollapsed && (
+                <div className="shrink-0 ml-auto pl-2 text-text-muted">
+                  <FiChevronUp className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""}`} />
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* Draggable resize border handle */}
+          {/* Draggable resize border handle (desktop only) */}
           {!isMobile && !isSidebarCollapsed && (
             <div
               onMouseDown={handleMouseDownResize}
               onDoubleClick={handleDoubleClickReset}
-              className={`absolute top-0 -right-1 w-[8px] h-full cursor-col-resize z-50 group transition-all flex items-center justify-center ${isResizingSidebar
-                ? "bg-accent-primary/20"
-                : "hover:bg-accent-primary/10"
-                }`}
+              className={`absolute top-0 -right-1 w-[8px] h-full cursor-col-resize z-50 group transition-all flex items-center justify-center ${isResizingSidebar ? "bg-accent-primary/20" : "hover:bg-accent-primary/10"}`}
               title="Drag left/right to adjust sidebar width (Double-click to reset)"
             >
-              <div
-                className={`w-[2px] h-full transition-colors ${isResizingSidebar
-                  ? "bg-accent-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]"
-                  : "bg-transparent group-hover:bg-accent-primary"
-                  }`}
-              />
+              <div className={`w-[2px] h-full transition-colors ${isResizingSidebar ? "bg-accent-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]" : "bg-transparent group-hover:bg-accent-primary"}`} />
             </div>
           )}
         </div>
@@ -1496,9 +1303,7 @@ const AppLayout = ({ children }) => {
   };
 
   if (location.pathname === "/") {
-    if (isAuthenticated) {
-      return <Navigate to="/chat" replace />;
-    }
+    if (isAuthenticated) return <Navigate to="/chat" replace />;
     return <Navigate to="/login" replace />;
   }
 
@@ -1520,29 +1325,22 @@ const AppLayout = ({ children }) => {
   }
 
   return (
-    <div
-      className={`flex flex-col md:flex-row h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary`}
-    >
-      <ModeTransitionOverlay
-        isVisible={isModeTransitioning}
-        targetMode={transitionTargetMode}
-      />
+    <div className="flex flex-col md:flex-row h-[100dvh] w-screen overflow-hidden bg-surface-primary text-text-primary">
+      <ModeTransitionOverlay isVisible={isModeTransitioning} targetMode={transitionTargetMode} />
 
-      {/* Main Sidebar (Desktop) */}
+      {/* Desktop Sidebar */}
       <div className="hidden md:flex h-full z-30 relative">
         {renderSecondarySidebar()}
       </div>
 
-      <div
-        className={`md:hidden fixed inset-0 z-50 flex transition-all duration-300 ${isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
-      >
+      {/* Mobile Sidebar Overlay */}
+      <div className={`md:hidden fixed inset-0 z-50 flex transition-all duration-300 ${isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}>
         <div
-          className={`fixed inset-0 bg-accent-primary/10 transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100" : "opacity-0"}`}
+          className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100" : "opacity-0"}`}
           onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
-        <div
-          className={`relative w-[320px] max-w-[85vw] h-full shadow-2xl flex flex-col bg-surface-secondary overflow-hidden transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
-        >
+        />
+        {/* Sidebar panel — narrower on mobile: 260px / max 75vw */}
+        <div className={`relative w-[260px] max-w-[75vw] h-full shadow-2xl flex flex-col bg-surface-secondary overflow-hidden transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <div className="flex-1 overflow-hidden flex flex-col relative w-full h-full">
             {renderSecondarySidebar(true)}
           </div>
@@ -1560,8 +1358,6 @@ const AppLayout = ({ children }) => {
         )}
       </main>
 
-      {/* <FloatingExternalBotWidget /> */}
-
       {isCreateModalOpen && (
         <CreateBotModal
           onClose={() => setIsCreateModalOpen(false)}
@@ -1572,90 +1368,40 @@ const AppLayout = ({ children }) => {
       {/* Global Search Modal */}
       {isSearchModalOpen && (
         <div className="fixed inset-0 z-[100] flex justify-center items-start pt-32">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsSearchModalOpen(false)}
-          ></div>
-
-          <div
-            className={`relative w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden ${"bg-surface-primary border border-border-primary text-text-primary"}`}
-          >
-            <div
-              className={`flex items-center px-4 py-3 border-b ${"border-border-primary"}`}
-            >
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsSearchModalOpen(false)}></div>
+          <div className={`relative w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden ${"bg-surface-primary border border-border-primary text-text-primary"}`}>
+            <div className={`flex items-center px-4 py-3 border-b ${"border-border-primary"}`}>
               <FiSearch className="text-xl text-text-primary mr-3" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search chats, agents, or messages..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-none outline-none text-base placeholder:text-text-muted"
-              />
-              <button
-                onClick={() => setIsSearchModalOpen(false)}
-                className="p-1.5 ml-2 rounded-lg hover:bg-interactive-active transition"
-              >
-                <FiX className="text-lg" />
-              </button>
+              <input ref={searchInputRef} type="text" placeholder="Search chats, agents, or messages..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-transparent border-none outline-none text-base placeholder:text-text-muted" />
+              <button onClick={() => setIsSearchModalOpen(false)} className="p-1.5 ml-2 rounded-lg hover:bg-interactive-active transition"><FiX className="text-lg" /></button>
             </div>
-
             <div className="max-h-[50vh] overflow-y-auto custom-scrollbar p-2">
-              {!searchQuery && (
-                <div className="p-8 text-center text-sm text-text-primary">
-                  Start typing to search your chats and agents...
-                </div>
-              )}
-
+              {!searchQuery && <div className="p-8 text-center text-sm text-text-primary">Start typing to search your chats and agents...</div>}
               {searchQuery && filteredSearchBots.length > 0 && (
                 <div className="mb-4">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted px-3 py-1 mb-1">
-                    AI Agents
-                  </div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted px-3 py-1 mb-1">AI Agents</div>
                   {filteredSearchBots.map((bot) => (
-                    <div
-                      key={bot._id}
-                      onClick={() => handleSelectItem(bot._id, "bot")}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition ${"hover:bg-surface-secondary dark:hover:bg-interactive-active"}`}
-                    >
-                      <div className="w-6 h-6 rounded-md bg-interactive-base flex items-center justify-center text-text-primary dark:text-white shrink-0">
-                        <TbRobotFace className="text-sm" />
-                      </div>
+                    <div key={bot._id} onClick={() => handleSelectItem(bot._id, "bot")} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition ${"hover:bg-surface-secondary dark:hover:bg-interactive-active"}`}>
+                      <div className="w-6 h-6 rounded-md bg-interactive-base flex items-center justify-center text-text-primary dark:text-white shrink-0"><TbRobotFace className="text-sm" /></div>
                       <span className="text-sm font-medium">{bot.name ? (bot.name.charAt(0).toUpperCase() + bot.name.slice(1)) : "Bot"}</span>
                     </div>
                   ))}
                 </div>
               )}
-
               {searchQuery && filteredSearchChats.length > 0 && (
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted px-3 py-1 mb-1">
-                    Conversations
-                  </div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted px-3 py-1 mb-1">Conversations</div>
                   {filteredSearchChats.map((chat) => (
-                    <div
-                      key={chat._id}
-                      onClick={() => handleSelectItem(chat._id, "chat")}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition ${"hover:bg-surface-secondary dark:hover:bg-interactive-active"}`}
-                    >
-                      <div className="w-6 h-6 rounded-md border border-border-primary flex items-center justify-center text-text-primary shrink-0">
-                        <FiMessageSquare className="text-xs" />
-                      </div>
-                      <span className="text-sm font-medium">
-                        {chat.title || "New Conversation"}
-                      </span>
+                    <div key={chat._id} onClick={() => handleSelectItem(chat._id, "chat")} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition ${"hover:bg-surface-secondary dark:hover:bg-interactive-active"}`}>
+                      <div className="w-6 h-6 rounded-md border border-border-primary flex items-center justify-center text-text-primary shrink-0"><FiMessageSquare className="text-xs" /></div>
+                      <span className="text-sm font-medium">{chat.title || "New Conversation"}</span>
                     </div>
                   ))}
                 </div>
               )}
-
-              {searchQuery &&
-                filteredSearchBots.length === 0 &&
-                filteredSearchChats.length === 0 && (
-                  <div className="p-8 text-center text-sm text-text-primary">
-                    No results found for "{searchQuery}"
-                  </div>
-                )}
+              {searchQuery && filteredSearchBots.length === 0 && filteredSearchChats.length === 0 && (
+                <div className="p-8 text-center text-sm text-text-primary">No results found for "{searchQuery}"</div>
+              )}
             </div>
           </div>
         </div>
@@ -1674,25 +1420,15 @@ const AppLayout = ({ children }) => {
                 e.stopPropagation();
                 const currentBotId = activeDropdownItem._id;
                 try {
-                  const res = await NobackEndCallObj(
-                    `/bots/${currentBotId}/conversations`,
-                    {
-                      title: "New Conversation",
-                    },
-                    "post",
-                  );
+                  const res = await NobackEndCallObj(`/bots/${currentBotId}/conversations`, { title: "New Conversation" }, "post");
                   const newConvId = res?._id || res?.data?._id;
                   setOpenDropdownId(null);
                   setActiveDropdownItem(null);
                   setExpandedBotId(currentBotId);
-                  queryClient.invalidateQueries({
-                    queryKey: ["botConversations", currentBotId],
-                  });
+                  queryClient.invalidateQueries({ queryKey: ["botConversations", currentBotId] });
                   navigate(`/bots/${currentBotId}?convId=${newConvId}`);
                   setIsMobileMenuOpen(false);
-                } catch (err) {
-                  console.error("Failed to create new conversation:", err);
-                }
+                } catch (err) { console.error("Failed to create new conversation:", err); }
               }}
               className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition flex items-center gap-2.5 text-[13px] font-medium cursor-pointer"
             >
@@ -1702,11 +1438,7 @@ const AppLayout = ({ children }) => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setEditTitleValue(
-                activeDropdownType === "chat"
-                  ? activeDropdownItem.title || "New Conversation"
-                  : activeDropdownItem.name,
-              );
+              setEditTitleValue(activeDropdownType === "chat" ? activeDropdownItem.title || "New Conversation" : activeDropdownItem.name);
               setEditingItemId(activeDropdownItem._id);
               setOpenDropdownId(null);
               setActiveDropdownItem(null);
@@ -1716,32 +1448,14 @@ const AppLayout = ({ children }) => {
             <FiEdit2 className="text-sm" /> Rename
           </button>
           <button
-            onClick={(e) => {
-              togglePin(e, activeDropdownItem._id);
-              setActiveDropdownItem(null);
-            }}
+            onClick={(e) => { togglePin(e, activeDropdownItem._id); setActiveDropdownItem(null); }}
             className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
           >
-            {pinnedItemIds.includes(activeDropdownItem._id) ? (
-              <>
-                <TbPinnedOff className="text-sm" /> Unpin
-              </>
-            ) : (
-              <>
-                <TbPin className="text-sm" /> Pin
-              </>
-            )}
+            {pinnedItemIds.includes(activeDropdownItem._id) ? <><TbPinnedOff className="text-sm" /> Unpin</> : <><TbPin className="text-sm" /> Pin</>}
           </button>
           <div className="h-px bg-border-primary/40 my-1"></div>
           <button
-            onClick={(e) => {
-              handleDeleteItem(
-                e,
-                activeDropdownItem._id,
-                activeDropdownType,
-                activeDropdownItem,
-              );
-            }}
+            onClick={(e) => { handleDeleteItem(e, activeDropdownItem._id, activeDropdownType, activeDropdownItem); }}
             className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-600 dark:text-red-400 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
           >
             <FiTrash2 className="text-sm" /> Delete
@@ -1752,39 +1466,21 @@ const AppLayout = ({ children }) => {
       {/* Delete Confirmation Modal */}
       {deleteModalItem && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
-            onClick={() => setDeleteModalItem(null)}
-          />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200" onClick={() => setDeleteModalItem(null)} />
           <div className="relative w-full max-w-sm rounded-2xl bg-surface-primary dark:bg-[#1a1b26] border border-border-primary dark:border-white/10 p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center gap-3.5 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-                <FiTrash2 className="w-5 h-5" />
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0"><FiTrash2 className="w-5 h-5" /></div>
               <div>
-                <h3 className="text-base font-semibold text-text-primary">
-                  Delete Chat?
-                </h3>
-                <p className="text-xs text-text-muted mt-0.5">
-                  This action cannot be undone.
-                </p>
+                <h3 className="text-base font-semibold text-text-primary">Delete Chat?</h3>
+                <p className="text-xs text-text-muted mt-0.5">This action cannot be undone.</p>
               </div>
             </div>
-
             <p className="text-sm text-text-muted my-4 leading-relaxed">
               Are you sure you want to delete{" "}
-              <span className="font-medium text-text-primary">
-                "{deleteModalItem.title || "this conversation"}"
-              </span>
-              ?
+              <span className="font-medium text-text-primary">"{deleteModalItem.title || "this conversation"}"</span>?
             </p>
-
             <div className="flex items-center justify-end gap-2.5 mt-5">
-              <button
-                type="button"
-                onClick={() => setDeleteModalItem(null)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-text-primary bg-surface-secondary hover:bg-black/5 dark:hover:bg-white/5 border border-border-primary transition cursor-pointer"
-              >
+              <button type="button" onClick={() => setDeleteModalItem(null)} className="px-4 py-2 rounded-xl text-xs font-medium text-text-primary bg-surface-secondary hover:bg-black/5 dark:hover:bg-white/5 border border-border-primary transition cursor-pointer">
                 Cancel
               </button>
               <button
@@ -1795,36 +1491,23 @@ const AppLayout = ({ children }) => {
                   if (target.type === "chat") {
                     deleteChatMutation.mutate(target.id);
                   } else if (target.type === "botConversation") {
-                    // Optimistic instant removal from cache (0ms latency)
-                    queryClient.setQueryData(
-                      ["botConversations", target.botId],
-                      (oldConvs) => {
-                        if (!Array.isArray(oldConvs)) return [];
-                        return oldConvs.filter((c) => c._id !== target.id);
-                      }
-                    );
-                    if (searchParams.get("convId") === target.id) {
-                      navigate(`/bots/${target.botId}`);
-                    }
+                    queryClient.setQueryData(["botConversations", target.botId], (oldConvs) => {
+                      if (!Array.isArray(oldConvs)) return [];
+                      return oldConvs.filter((c) => c._id !== target.id);
+                    });
+                    if (searchParams.get("convId") === target.id) navigate(`/bots/${target.botId}`);
                     try {
-                      await backEndCallObjDel(
-                        `/bots/${target.botId}/conversations`,
-                        target.id,
-                      );
+                      await backEndCallObjDel(`/bots/${target.botId}/conversations`, target.id);
                     } catch (err) {
                       console.error("Failed to delete conversation:", err);
-                      queryClient.invalidateQueries({
-                        queryKey: ["botConversations", target.botId],
-                      });
+                      queryClient.invalidateQueries({ queryKey: ["botConversations", target.botId] });
                     }
                   }
                 }}
                 disabled={deleteChatMutation.isPending || deleteChatMutation.isLoading}
                 className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-red-600 hover:bg-red-700 transition cursor-pointer shadow-sm flex items-center gap-1.5"
               >
-                {deleteChatMutation.isPending || deleteChatMutation.isLoading
-                  ? "Deleting..."
-                  : "Confirm"}
+                {deleteChatMutation.isPending || deleteChatMutation.isLoading ? "Deleting..." : "Confirm"}
               </button>
             </div>
           </div>

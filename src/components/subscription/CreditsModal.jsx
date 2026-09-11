@@ -350,34 +350,34 @@ const CreditsModal = ({ isPage = false }) => {
   return (
     <div className={`w-full h-full flex flex-col ${bg} ${textBase} overflow-hidden font-sans select-none transition-colors`}>
       {/* Top Header Bar */}
-      <div className={`py-3.5 px-6 md:px-8 border-b ${borderH} ${bgHeader} backdrop-blur-md flex items-center justify-between shrink-0 z-20`}>
-        <div className="flex items-center gap-3">
+      <div className={`py-3 sm:py-3.5 px-3 sm:px-6 md:px-8 border-b ${borderH} ${bgHeader} backdrop-blur-md flex items-center justify-between shrink-0 z-20 gap-2`}>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))}
-            className={`md:hidden p-2 rounded-xl border ${mobileBtn} flex items-center justify-center shrink-0 transition`}
+            className={`md:hidden p-1.5 sm:p-2 rounded-xl border ${mobileBtn} flex items-center justify-center shrink-0 transition`}
             title="Toggle Sidebar"
           >
             <FiMenu className="text-base" />
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className={`text-base md:text-lg font-bold tracking-tight ${textTitle} flex items-center gap-2`}>
-                Credits &amp; Usage Telemetry
+          <div className="min-w-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2">
+              <h1 className={`text-sm sm:text-base md:text-lg font-bold tracking-tight ${textTitle} truncate`}>
+                Credits &amp; Usage
               </h1>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+              <span className="text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shrink-0">
                 {plan.name}
               </span>
             </div>
-            <p className={`text-[11px] ${textMuted}`}>
+            <p className={`text-[10px] sm:text-[11px] ${textMuted} truncate hidden sm:block`}>
               Live consumption telemetry, balance quotas, and token activity.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <button
             onClick={handleRefresh}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium ${bgRefBtn} ${textLabel} border ${borderBtn} transition flex items-center gap-1.5 cursor-pointer shadow-xs`}
+            className={`px-2 sm:px-3 py-1.5 rounded-xl text-xs font-medium ${bgRefBtn} ${textLabel} border ${borderBtn} transition flex items-center gap-1.5 cursor-pointer shadow-xs`}
             title="Refresh Metrics"
           >
             <FiRefreshCw className={`text-xs ${loading ? "animate-spin text-indigo-400" : textMuted}`} />
@@ -386,10 +386,11 @@ const CreditsModal = ({ isPage = false }) => {
 
           <button
             onClick={handleBuyCredits}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer"
+            className="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer"
+            title="Buy Credits"
           >
             <FiShoppingBag className="text-xs" />
-            <span>Buy Credits</span>
+            <span className="hidden sm:inline">Buy Credits</span>
           </button>
 
           <button
@@ -402,8 +403,8 @@ const CreditsModal = ({ isPage = false }) => {
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-5 md:px-8 py-5 space-y-4 custom-scrollbar">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden custom-scrollbar px-4 sm:px-6 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8 relative z-10">
         {error && (
           <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-2">
             <FiAlertTriangle className="text-sm shrink-0" />
@@ -535,7 +536,7 @@ const CreditsModal = ({ isPage = false }) => {
                 <div
                   className={`absolute z-30 top-1 pointer-events-none ${tooltipBg} ${tooltipTxt} px-3 py-2 rounded-xl shadow-2xl border ${tooltipBorder} backdrop-blur-md flex flex-col gap-1.5 -translate-x-1/2 min-w-[150px]`}
                   style={{
-                    left: `${Math.min(78, Math.max(22, (hoveredDayPoint.x / 360) * 100))}%`,
+                    left: `clamp(95px, ${(hoveredDayPoint.x / 360) * 100}%, calc(100% - 95px))`,
                   }}
                 >
                   <div className={`flex items-center justify-between text-[10.5px] font-semibold ${tooltipMuted} border-b ${tooltipDiv} pb-1 w-full`}>
@@ -759,9 +760,11 @@ const CreditsModal = ({ isPage = false }) => {
                   <div
                     className="bg-indigo-500 h-full rounded-full transition-all duration-500"
                     style={{
-                      width: isUnlimited
+                      width: (today.messagesUsed || 0) === 0
+                        ? "0%"
+                        : isUnlimited
                         ? `${Math.min(100, Math.max(8, ((today.messagesUsed || 0) / 100) * 100))}%`
-                        : `${Math.min(100, Math.round(((today.messagesUsed || 0) / maxCap) * 100))}%`,
+                        : `${Math.min(100, Math.max(8, ((today.messagesUsed || 0) / maxCap) * 100))}%`,
                     }}
                   />
                 </div>
@@ -901,13 +904,13 @@ const CreditsModal = ({ isPage = false }) => {
                         </td>
 
                         {/* Model */}
-                        <td className={`px-5 py-2.5 ${txModel}`}>
+                        <td className={`px-4 sm:px-5 py-2.5 ${txModel} whitespace-nowrap`}>
                           {info.modelDisplay !== "—" ? (
-                            <span className="font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1">
+                            <span className="font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1 whitespace-nowrap">
                               <span>{info.modelDisplay}</span>
                             </span>
                           ) : (
-                            <span className={`${txEmpty} text-[10px] font-mono`}>—</span>
+                            <span className={`${txEmpty} text-[10px] font-mono whitespace-nowrap`}>—</span>
                           )}
                         </td>
 

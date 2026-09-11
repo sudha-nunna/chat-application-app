@@ -141,11 +141,11 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
               <FiCode className="w-5 h-5 animate-pulse" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs sm:text-sm font-semibold truncate">
                   Writing Code in Code Preview...
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                   LIVE
                 </span>
@@ -158,11 +158,11 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
 
           <button
             onClick={handleOpenArtifact}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
             title="Open Live Preview"
           >
             <FiEye className="w-3.5 h-3.5" />
-            <span>Open Preview</span>
+            <span className="hidden sm:inline">Open Preview</span>
           </button>
         </div>
       </div>
@@ -185,14 +185,14 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
               <FiLayers className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs sm:text-sm font-semibold truncate">
                   Interactive Web Preview
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary font-bold uppercase font-mono">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary font-bold uppercase font-mono shrink-0">
                   {lang || "html"}
                 </span>
-                <span className="text-[10px] text-text-muted">
+                <span className="text-[10px] text-text-muted shrink-0 hidden sm:inline">
                   ({lineCount} lines)
                 </span>
               </div>
@@ -205,11 +205,11 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleOpenArtifact}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
               title="Open in Right Panel Live Sandbox"
             >
               <FiEye className="w-3.5 h-3.5" />
-              <span>Open Preview</span>
+              <span className="hidden sm:inline">Open Preview</span>
             </button>
             <button
               onClick={handleCopy}
@@ -279,7 +279,7 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
           </div>
         </div>
       )}
-      <div className="custom-scrollbar overflow-x-auto w-full">
+      <div className="custom-scrollbar overflow-x-auto w-full min-w-0">
         <SyntaxHighlighter
           style={isDark ? vscDarkPlus : oneLight}
           language={match ? match[1] : "text"}
@@ -603,7 +603,7 @@ const MessageBubble = ({
               remarkPlugins={[remarkGfm]}
               components={{
                 table: ({ node, ...props }) => (
-                  <div className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm">
+                  <div className="w-full max-w-full overflow-x-auto my-4 rounded-xl border border-border-primary dark:border-white/10 bg-surface-primary dark:bg-[#16171d] custom-scrollbar shadow-sm min-w-0">
                     <table
                       className="w-full border-collapse text-left text-[13px] min-w-full table-auto"
                       {...props}

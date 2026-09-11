@@ -70,7 +70,9 @@ const SharedChatPage = () => {
           const parsed = extractPreviewableCode(messages[i].content);
           if (parsed) {
             setActiveArtifact(parsed);
-            setIsArtifactOpen(true);
+            if (window.innerWidth >= 768) {
+              setIsArtifactOpen(true);
+            }
             break;
           }
         }
