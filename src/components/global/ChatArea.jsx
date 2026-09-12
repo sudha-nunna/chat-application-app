@@ -230,6 +230,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
   const lastParsedContentRef = useRef("");
 
+  // Close preview panel and reset parsing ref when switching chats
+  useEffect(() => {
+    setIsArtifactOpen(false);
+    lastParsedContentRef.current = "";
+  }, [currentChatId]);
+
   // Automatically detect artifacts from latest assistant message or streaming reply
   useEffect(() => {
     if (streamingReply) {
@@ -253,17 +259,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].role === "assistant" && messages[i].content) {
           const content = messages[i].content;
-          if (lastParsedContentRef.current !== content) {
-            lastParsedContentRef.current = content;
-            const parsed = extractPreviewableCode(content);
-            if (parsed) {
+          const parsed = extractPreviewableCode(content);
+          if (parsed) {
+            if (lastParsedContentRef.current !== content) {
+              lastParsedContentRef.current = content;
               setActiveArtifact(parsed);
-              if (window.innerWidth >= 768) {
-                setIsArtifactOpen(true);
-              }
             }
+            break;
           }
-          break;
         }
       }
     }
@@ -800,20 +803,19 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     lastParsedContentRef.current = "";
     lastArtifactUpdateRef.current = 0;
 
-    // Detect if prompt is requesting web code / UI creation, or if Dev Mode is active
+    // Detect if prompt is explicitly requesting web code / UI creation
     const isBackendQuery =
       /(backend|express|server\.js|api route|database schema|sql query|git command|install package)/i.test(cleanText) &&
       !/(frontend|ui|page|landing|dashboard|component|react)/i.test(cleanText);
 
-    const isCodeOrWebPrompt =
-      isDevModeActive ||
-      (!isBackendQuery &&
-        /(landing page|website|web page|webpage|dashboard|component|react ui|html|css|tailwind|portfolio|admin panel|ui|frontend|app preview|clone|design a|build a.*page|create a.*page|create a.*app|generate a.*page|make a.*page)/i.test(
-          cleanText
-        ));
+    const isExplicitWebPrompt =
+      !isBackendQuery &&
+      /(landing page|website|web page|webpage|dashboard|component|react ui|html|css|tailwind|portfolio|admin panel|ui|frontend|app preview|clone|design a|build a.*page|create a.*page|create a.*app|generate a.*page|make a.*page)/i.test(
+        cleanText
+      );
 
-    // Immediately open the preview pane so user sees the live generation in real-time
-    if (isCodeOrWebPrompt && !continuationContext) {
+    // Immediately open the preview pane for explicit web/UI generation requests so user sees live streaming
+    if (isExplicitWebPrompt && !continuationContext) {
       setIsArtifactOpen(true);
       setActiveArtifact({
         code: `<!-- Generating live code preview... -->\n<div class="flex items-center justify-center min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans p-6 text-center">\n  <div>\n    <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/10 animate-pulse">\n      ⚡\n    </div>\n    <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">Generating Web App...</h1>\n    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">\n      Codegene AI is writing the code. It will stream live directly here in real-time.\n    </p>\n    <div class="inline-flex items-center gap-2 mt-5 px-3.5 py-1.5 rounded-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-mono">\n      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>\n      Streaming live\n    </div>\n  </div>\n</div>`,
@@ -821,6 +823,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         title: "Generating...",
         isStreaming: true,
       });
+    } else if (!isDevModeActive && !isExplicitWebPrompt) {
+      // Auto-close preview panel on casual conversational messages ("hi", "hello", "thanks", etc.)
+      // Note: activeArtifact is kept intact in memory so user can reopen it at any time.
+      setIsArtifactOpen(false);
     }
 
     // Cancel any active speech readout and clear audio pipeline BEFORE setting voice flags
