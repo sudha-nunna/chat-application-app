@@ -55,6 +55,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const isVoiceConversationModeRef = useRef(false);
   const streamFollowUpsRef = useRef([]);
   const lastArtifactUpdateRef = useRef(0);
+  const isExplicitWebPromptRef = useRef(false);
 
   // Streaming speech queue & buffer refs for sentence-by-sentence TTS
   const streamingSpeechQueueRef = useRef([]);
@@ -238,8 +239,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
   // Automatically detect artifacts from latest assistant message or streaming reply
   useEffect(() => {
+    const isArtifactRequested = isDevModeActive || isExplicitWebPromptRef.current;
+
     if (streamingReply) {
-      if (streamingReply.includes("```")) {
+      if (streamingReply.includes("```") && isArtifactRequested) {
         const now = Date.now();
         if (now - lastArtifactUpdateRef.current > 350) {
           lastArtifactUpdateRef.current = now;
@@ -256,6 +259,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     }
 
     if (Array.isArray(messages) && messages.length > 0) {
+      // If currently generating a new web app request, do NOT overwrite activeArtifact with past historical artifacts
+      if (isGeneratingRef.current && isArtifactRequested) {
+        return;
+      }
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].role === "assistant" && messages[i].content) {
           const content = messages[i].content;
@@ -277,45 +284,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       const next = typeof newState === "boolean" ? newState : !prev;
       if (next) {
         setIsWebSearchActive(false);
-        setIsArtifactOpen(true);
-        window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: true } }));
-        if (!activeArtifact) {
-          setActiveArtifact({
-            code: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <title>Live Code Preview</title>
-</head>
-<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex items-center justify-center min-h-screen p-6 font-sans">
-  <div class="max-w-md text-center">
-    <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/10">
-      ⚡
-    </div>
-    <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">Code Preview Ready</h1>
-    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
-      Dev Mode is active. Ask Codegene to build any landing page, website, or React component. Code will stream directly here!
-    </p>
-    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-mono">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      Sandbox Ready
-    </div>
-  </div>
-</body>
-</html>`,
-            language: "html",
-            title: "Live Code Preview Sandbox",
-            isStarter: true,
-          });
-        }
-      } else {
-        if (activeArtifact?.isStarter) {
-          setIsArtifactOpen(false);
-          setActiveArtifact(null);
-          window.dispatchEvent(new CustomEvent("setSidebarCollapsed", { detail: { collapsed: false } }));
-        }
       }
       return next;
     });
@@ -803,19 +771,30 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     lastParsedContentRef.current = "";
     lastArtifactUpdateRef.current = 0;
 
-    // Detect if prompt is explicitly requesting web code / UI creation
+    // Detect if prompt is an educational question / Q&A query
+    const isQuestion =
+      /^(how|why|what|when|where|who|can|could|should|would|is|are|do|does|did|explain)\b/i.test(cleanText);
+
+    // Detect if prompt is explicitly asking for backend / server tasks
     const isBackendQuery =
       /(backend|express|server\.js|api route|database schema|sql query|git command|install package)/i.test(cleanText) &&
       !/(frontend|ui|page|landing|dashboard|component|react)/i.test(cleanText);
 
-    const isExplicitWebPrompt =
-      !isBackendQuery &&
-      /(landing page|website|web page|webpage|dashboard|component|react ui|html|css|tailwind|portfolio|admin panel|ui|frontend|app preview|clone|design a|build a.*page|create a.*page|create a.*app|generate a.*page|make a.*page)/i.test(
-        cleanText
-      );
+    // Detect explicit web app / page / component creation intent
+    const isCreationIntent =
+      /(landing page|website|web page|webpage|dashboard|component|react ui|html|css|tailwind|portfolio|admin panel|ui|frontend|app preview|clone|login page|signup page|register page|form page|crm|ecommerce|ecommerce app|contact page|about page|pricing page|navbar|header|footer|sidebar|design|build|create|generate|make)/i.test(cleanText);
 
-    // Immediately open the preview pane for explicit web/UI generation requests so user sees live streaming
-    if (isExplicitWebPrompt && !continuationContext) {
+    let isExplicitWebPrompt = !isBackendQuery && isCreationIntent;
+
+    // Question guardrail: Educational / Q&A queries stay in normal chat mode unless explicitly requesting creation
+    if (isQuestion && !/(build me|create me|design me|make me|generate me|write a code for|build a|create a|design a|make a|generate a)/i.test(cleanText)) {
+      isExplicitWebPrompt = false;
+    }
+
+    isExplicitWebPromptRef.current = isExplicitWebPrompt;
+
+    // Immediately open the preview pane for explicit web/UI generation requests or Dev Mode requests at prompt send time
+    if ((isExplicitWebPrompt || isDevModeActive) && !continuationContext) {
       setIsArtifactOpen(true);
       setActiveArtifact({
         code: `<!-- Generating live code preview... -->\n<div class="flex items-center justify-center min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans p-6 text-center">\n  <div>\n    <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/10 animate-pulse">\n      ⚡\n    </div>\n    <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white">Generating Web App...</h1>\n    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">\n      Codegene AI is writing the code. It will stream live directly here in real-time.\n    </p>\n    <div class="inline-flex items-center gap-2 mt-5 px-3.5 py-1.5 rounded-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-mono">\n      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>\n      Streaming live\n    </div>\n  </div>\n</div>`,
@@ -824,8 +803,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         isStreaming: true,
       });
     } else if (!isDevModeActive && !isExplicitWebPrompt) {
-      // Auto-close preview panel on casual conversational messages ("hi", "hello", "thanks", etc.)
-      // Note: activeArtifact is kept intact in memory so user can reopen it at any time.
+      // Auto-close preview panel on casual / non-web prompts to prevent preview flashing
       setIsArtifactOpen(false);
     }
 

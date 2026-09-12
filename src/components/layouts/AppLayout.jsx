@@ -25,9 +25,11 @@ import {
   FiCheck,
   FiSidebar,
   FiZap,
+  FiShare2,
 } from "react-icons/fi";
 import { TbPin, TbPinnedOff, TbRobotFace } from "react-icons/tb";
 import axios from "axios";
+import ShareModal from "../global/ShareModal";
 import {
   backEndCallGet,
   NobackEndCall,
@@ -257,6 +259,7 @@ const AppLayout = ({ children }) => {
   const [activeDropdownType, setActiveDropdownType] = useState(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [deleteModalItem, setDeleteModalItem] = useState(null);
+  const [shareModalData, setShareModalData] = useState(null);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
@@ -1465,12 +1468,29 @@ const AppLayout = ({ children }) => {
           >
             <FiEdit2 className="text-sm" /> Rename
           </button>
-          <button
-            onClick={(e) => { togglePin(e, activeDropdownItem._id); setActiveDropdownItem(null); }}
-            className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
-          >
-            {pinnedItemIds.includes(activeDropdownItem._id) ? <><TbPinnedOff className="text-sm" /> Unpin</> : <><TbPin className="text-sm" /> Pin</>}
-          </button>
+          {activeDropdownType === "chat" ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareModalData({
+                  chatId: activeDropdownItem._id,
+                  chatTitle: activeDropdownItem.title || "New Conversation",
+                });
+                setOpenDropdownId(null);
+                setActiveDropdownItem(null);
+              }}
+              className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
+            >
+              <FiShare2 className="text-sm" /> Share
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { togglePin(e, activeDropdownItem._id); setActiveDropdownItem(null); }}
+              className="w-full text-left px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-2.5 text-[13px] font-medium"
+            >
+              {pinnedItemIds.includes(activeDropdownItem._id) ? <><TbPinnedOff className="text-sm" /> Unpin</> : <><TbPin className="text-sm" /> Pin</>}
+            </button>
+          )}
           <div className="h-px bg-border-primary/40 my-1"></div>
           <button
             onClick={(e) => { handleDeleteItem(e, activeDropdownItem._id, activeDropdownType, activeDropdownItem); }}
@@ -1530,6 +1550,17 @@ const AppLayout = ({ children }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Modal */}
+      {shareModalData && (
+        <ShareModal
+          isOpen={Boolean(shareModalData)}
+          onClose={() => setShareModalData(null)}
+          chatId={shareModalData.chatId}
+          chatTitle={shareModalData.chatTitle}
+          hasMessages={true}
+        />
       )}
     </div>
   );

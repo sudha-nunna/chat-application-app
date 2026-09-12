@@ -29,11 +29,11 @@ const ShareModal = ({ isOpen, onClose, chatId, chatTitle, hasMessages = true }) 
   if (!isShareable) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       >
         <div
-          className={`relative w-full max-w-md rounded-2xl p-6 shadow-2xl border transition-all ${
+          className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-5 sm:p-6 shadow-2xl border transition-all ${
             isDark
               ? "bg-[#181924] border-white/10 text-white"
               : "bg-surface-primary border-border-primary text-text-primary"
@@ -117,11 +117,11 @@ const ShareModal = ({ isOpen, onClose, chatId, chatTitle, hasMessages = true }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className={`relative w-full max-w-md rounded-2xl p-6 shadow-2xl border transition-all ${
+        className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-5 sm:p-6 shadow-2xl border transition-all ${
           isDark
             ? "bg-[#181924] border-white/10 text-white"
             : "bg-surface-primary border-border-primary text-text-primary"
@@ -200,7 +200,7 @@ const ShareModal = ({ isOpen, onClose, chatId, chatTitle, hasMessages = true }) 
           </span>
           <button
             onClick={onClose}
-            className="hover:text-text-primary transition cursor-pointer font-medium"
+            className="px-4 py-1.5 text-xs font-semibold rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 active:scale-95 transition cursor-pointer shadow-xs"
           >
             Done
           </button>

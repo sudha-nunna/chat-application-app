@@ -125,40 +125,45 @@ const CodeBlock = ({ node, inline, className, children, isUser, isDark, isStream
     /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*\s*=\s*\(|return\s*\(\s*<)/.test(rawCode);
   const lineCount = rawCode.split("\n").length;
 
-  // While code is actively streaming: render an animated status card instead of streaming raw code into chat!
+  // While code is actively streaming: render a sleek brand-styled preview card with LIVE indicator
   if (isStreaming) {
     return (
       <div
         className={`my-3 w-full p-4 rounded-2xl border transition-all shadow-xs animate-in fade-in duration-200 ${
           isDark
-            ? "bg-[#10131d] border-emerald-500/30 text-white"
-            : "bg-emerald-50/60 border-emerald-300 text-slate-900"
+            ? "bg-[#13141f] border-accent-primary/30 text-white"
+            : "bg-surface-secondary/80 border-accent-primary/30 text-text-primary"
         }`}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
-              <FiCode className="w-5 h-5 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0">
+              <FiLayers className="w-5 h-5 animate-pulse" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs sm:text-sm font-semibold truncate">
-                  Writing Code in Code Preview...
+                  Interactive Web Preview
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-accent-primary/15 text-accent-primary font-bold font-mono shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-ping" />
                   LIVE
                 </span>
+                {lang && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary font-bold uppercase font-mono shrink-0 hidden sm:inline">
+                    {lang}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-text-muted truncate mt-0.5">
-                Streaming code directly into the right-hand Code Preview panel
+                Streaming code directly into the right-hand Code Preview panel...
               </p>
             </div>
           </div>
 
           <button
             onClick={handleOpenArtifact}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-accent-primary text-white hover:bg-accent-primary/90 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 shrink-0"
             title="Open Live Preview"
           >
             <FiEye className="w-3.5 h-3.5" />
