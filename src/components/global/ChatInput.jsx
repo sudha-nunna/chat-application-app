@@ -322,12 +322,14 @@ const ChatInput = ({
   const silenceTimerRef = useRef(null);
   const latestTranscriptRef = useRef("");
   const recognitionRef = useRef(null);
+  const isListeningRef = useRef(false);
 
   const stopVoiceSession = useCallback(async () => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
+    isListeningRef.current = false;
     setIsListening(false);
     if (recognitionRef.current) {
       try {
@@ -379,16 +381,34 @@ const ChatInput = ({
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
+      const isMobileDevice =
+        typeof window !== "undefined" &&
+        (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+
       const rec = new SpeechRecognition();
-      rec.continuous = true;
+      // On mobile/Android, continuous: true causes Google Speech engine to drop out. Use continuous: false with auto-restart on onend.
+      rec.continuous = !isMobileDevice;
       rec.lang = "en-US";
       rec.interimResults = true;
 
       rec.onstart = () => {
+        isListeningRef.current = true;
         setIsListening(true);
       };
 
       rec.onend = () => {
+        // On Android / mobile Chrome, single-utterance mode is used.
+        // If user is still in voice session and silence timer hasn't fired, auto-restart recognition!
+        if (isListeningRef.current && !silenceTimerRef.current) {
+          try {
+            rec.start();
+            return;
+          } catch (e) {
+            console.warn("Speech recognition auto-restart notice:", e);
+          }
+        }
+
+        isListeningRef.current = false;
         setIsListening(false);
         // If silence timer was armed, trigger auto-submit immediately upon recognition stop
         if (silenceTimerRef.current) {
@@ -423,8 +443,13 @@ const ChatInput = ({
       };
 
       rec.onerror = (event) => {
-        if (event.error !== "no-speech" && event.error !== "aborted") {
-          console.warn("Speech recognition warning:", event.error);
+        const err = event.error;
+        if (err === "no-speech" || err === "aborted") {
+          return;
+        }
+        console.warn("Speech recognition warning:", err);
+        if (err === "not-allowed" || err === "service-not-allowed") {
+          setVisionWarning("Microphone permission denied or insecure origin. Please check browser permissions or use HTTPS.");
         }
         stopVoiceSession();
       };
@@ -493,9 +518,17 @@ const ChatInput = ({
           window.speechSynthesis.resume();
         } catch (e) {}
       }
-      await voiceRecorderRef.current?.startRecording().catch((err) => {
-        console.warn("MediaRecorder start notice:", err.message);
-      });
+      const isMobileDevice =
+        typeof window !== "undefined" &&
+        (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+
+      // On desktop, record audio via MediaRecorder concurrently. On mobile, skip MediaRecorder to avoid hardware mic lock.
+      if (!isMobileDevice) {
+        await voiceRecorderRef.current?.startRecording().catch((err) => {
+          console.warn("MediaRecorder start notice:", err.message);
+        });
+      }
+
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -506,6 +539,7 @@ const ChatInput = ({
           } catch (e) {}
         }, 50);
       }
+      isListeningRef.current = true;
       setIsListening(true);
     } catch (err) {
       console.warn("Voice start error:", err);
