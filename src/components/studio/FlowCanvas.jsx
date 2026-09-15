@@ -13,6 +13,7 @@ export default function FlowCanvas({
   nodes,
   connections,
   selectedNodeId,
+  activeRunningNodeId,
   onSelectNode,
   onUpdateNodeData,
   onDeleteNode,
@@ -38,10 +39,42 @@ export default function FlowCanvas({
   // Zoom handlers
   const handleZoomIn = () => setZoom((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(2))));
   const handleZoomOut = () => setZoom((prev) => Math.max(0.3, Number((prev - 0.1).toFixed(2))));
-  const handleFitView = () => {
-    setPan({ x: 80, y: 100 });
-    setZoom(0.85);
-  };
+  // Dynamic bounding-box calculation to center and fit conversation flow graph on canvas
+  const handleFitView = useCallback(() => {
+    if (!nodes || nodes.length === 0) {
+      setPan({ x: 80, y: 100 });
+      setZoom(0.85);
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach((node) => {
+      const nodeW = node.type === "begin" || node.type === "ending" ? 120 : 260;
+      const nodeH = node.type === "begin" || node.type === "ending" ? 40 : 180;
+      if (node.x < minX) minX = node.x;
+      if (node.y < minY) minY = node.y;
+      if (node.x + nodeW > maxX) maxX = node.x + nodeW;
+      if (node.y + nodeH > maxY) maxY = node.y + nodeH;
+    });
+
+    const graphWidth = Math.max(300, maxX - minX);
+    const graphHeight = Math.max(200, maxY - minY);
+    const graphCenterX = minX + graphWidth / 2;
+    const graphCenterY = minY + graphHeight / 2;
+
+    const containerW = containerRef.current?.clientWidth || 1000;
+    const containerH = containerRef.current?.clientHeight || 700;
+
+    const scaleX = (containerW - 160) / graphWidth;
+    const scaleY = (containerH - 160) / graphHeight;
+    const targetZoom = Math.max(0.45, Math.min(1.0, Math.min(scaleX, scaleY)));
+
+    const targetPanX = containerW / 2 - graphCenterX * targetZoom;
+    const targetPanY = containerH / 2 - graphCenterY * targetZoom;
+
+    setZoom(Number(targetZoom.toFixed(2)));
+    setPan({ x: Math.round(targetPanX), y: Math.round(targetPanY) });
+  }, [nodes]);
 
   // Wheel zoom & pan
   const handleWheel = (e) => {
@@ -210,6 +243,7 @@ export default function FlowCanvas({
             key={node.id}
             node={node}
             isSelected={selectedNodeId === node.id}
+            isActiveRunning={activeRunningNodeId === node.id}
             onSelect={onSelectNode}
             onUpdateData={onUpdateNodeData}
             onDelete={onDeleteNode}
@@ -217,6 +251,19 @@ export default function FlowCanvas({
             onAddTransition={onAddTransition}
           />
         ))}
+      </div>
+
+      {/* Floating Top Re-Center & Focus Flow Button */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+        <button
+          type="button"
+          onClick={handleFitView}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-primary/95 dark:bg-surface-secondary/95 backdrop-blur-md border border-accent-primary/40 text-accent-primary hover:bg-accent-primary hover:text-white transition-all cursor-pointer shadow-md text-xs font-semibold group"
+          title="Scroll and center conversation flow graph on canvas"
+        >
+          <FiMaximize className="text-xs group-hover:scale-110 transition-transform" />
+          <span>Center Conversation Flow</span>
+        </button>
       </div>
 
       {/* 2. Floating MiniMap Preview (Bottom Right / Center) */}

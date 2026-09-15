@@ -265,7 +265,7 @@ const BotChatTab = ({ bot }) => {
     setLoading(false);
   };
 
-  const handleSendMessage = async (e, textOverride = null) => {
+  const handleSendMessage = async (e, textOverride = null, isReload = false, userMsgIndex = -1) => {
     if (e && e.preventDefault) e.preventDefault();
     const userText = textOverride !== null ? textOverride : input;
     if (!userText || !userText.trim() || loading) return;
@@ -295,7 +295,11 @@ const BotChatTab = ({ bot }) => {
     const tempBotMsg = { role: "assistant", content: "", sources: [] };
 
     isAutoScrollEnabledRef.current = true;
-    setMessages((prev) => [...prev, tempUserMsg, tempBotMsg]);
+    if (isReload && userMsgIndex >= 0) {
+      setMessages((prev) => [...prev.slice(0, userMsgIndex + 1), tempBotMsg]);
+    } else {
+      setMessages((prev) => [...prev, tempUserMsg, tempBotMsg]);
+    }
 
     const controller = new AbortController();
     setAbortController(controller);
@@ -735,9 +739,13 @@ const BotChatTab = ({ bot }) => {
                           </div>
                           <button
                             onClick={() => {
-                              const userMsg = [...messages.slice(0, index)].reverse().find(m => m.role === "user");
+                              const userMsgIndex = messages.reduce(
+                                (lastIdx, m, idx) => (m.role === "user" && idx < index ? idx : lastIdx),
+                                -1
+                              );
+                              const userMsg = userMsgIndex >= 0 ? messages[userMsgIndex] : [...messages.slice(0, index)].reverse().find(m => m.role === "user");
                               if (userMsg) {
-                                handleSendMessage(null, userMsg.content);
+                                handleSendMessage(null, userMsg.content, true, userMsgIndex);
                               }
                             }}
                             className="px-3 py-1.5 bg-amber-900 hover:bg-amber-600 text-text-primary font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"

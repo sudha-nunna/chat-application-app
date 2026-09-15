@@ -109,7 +109,8 @@ export default function TestDrawer({
   nodes = [],
   voiceProfile,
   globalPrompt = "",
-  model = "glm-5.3-flash:cloud"
+  model = "glm-5.3-flash:cloud",
+  onActiveNodeChange
 }) {
   const [activeTab, setActiveTab] = useState("llm"); // "llm" matches Image 2 by default; "audio" | "variables"
   const [drawerWidth, setDrawerWidth] = useState(330); // Adjustable width like info panel
@@ -154,12 +155,12 @@ export default function TestDrawer({
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll chat to bottom smoothly whenever messages or thinking state change
+  // Sync current active executing node with canvas visual trace
   useEffect(() => {
-    if (activeTab === "llm") {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (onActiveNodeChange) {
+      onActiveNodeChange(currentRunningNode?.id || null);
     }
-  }, [chatMessages, isThinking, activeTab]);
+  }, [currentRunningNode, onActiveNodeChange]);
 
   // Active welcome node helper
   const welcomeNode = nodes.find((n) => n.id === "welcome-node") || nodes[1] || nodes[0];
@@ -682,33 +683,12 @@ export default function TestDrawer({
         {activeTab === "audio" ? (
           /* TAB 1: TEST AUDIO (Matches Screenshot 2) */
           <div className="flex flex-col h-full justify-between space-y-4">
-            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-4">
+            <div className="flex flex-col items-center justify-center pt-6 pb-2 space-y-3">
               {/* Large Microphone Icon Graphic */}
               <div className="relative flex flex-col items-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!isTestRunning) {
-                      handleToggleRunTest();
-                    } else if (isAssistantSpeaking) {
-                      // Manual barge-in interrupt on click
-                      stopSpeech();
-                      if (activeAudioPlayerRef.current) {
-                        try {
-                          activeAudioPlayerRef.current.pause();
-                          activeAudioPlayerRef.current.currentTime = 0;
-                        } catch {
-                          /* ignore audio pause error */
-                        }
-                      }
-                      setIsAssistantSpeaking(false);
-                      voiceManagerRef.current?.setAssistantSpeaking(false);
-                      voiceManagerRef.current?.startListening();
-                    } else if (isMicListening && interimSpokenText.trim()) {
-                      // Force commit speech without waiting 2s
-                      voiceManagerRef.current?.commitImmediate?.();
-                    }
-                  }}
+                  onClick={handleToggleRunTest}
                   className={`w-24 h-24 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
                     !isTestRunning
                       ? "bg-surface-secondary text-text-muted/60 border border-border-primary/60 hover:border-accent-primary hover:text-accent-primary"
@@ -720,10 +700,8 @@ export default function TestDrawer({
                   }`}
                   title={
                     !isTestRunning
-                      ? "Click to start call"
-                      : isAssistantSpeaking
-                      ? "AI is speaking. Speak or click to interrupt (Barge-In)"
-                      : "Microphone active. Speak freely, 2s pause will auto-respond"
+                      ? "Click to Start Test Audio"
+                      : "Click to Stop Test Audio"
                   }
                 >
                   {isAssistantSpeaking ? (
@@ -755,7 +733,7 @@ export default function TestDrawer({
                     {isAssistantSpeaking ? (
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[11px] font-semibold">
                         <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                        AI Speaking... (Speak to interrupt)
+                        AI Speaking... (Click Mic or Stop button to end)
                       </div>
                     ) : isMicListening ? (
                       <div className="space-y-1">
@@ -776,10 +754,33 @@ export default function TestDrawer({
                     )}
                   </div>
                 )}
+
+                {/* Inline Start/Stop Action Button directly under Mic */}
+                <button
+                  type="button"
+                  onClick={handleToggleRunTest}
+                  className={`mt-3 px-5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
+                    isTestRunning
+                      ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20"
+                      : "bg-accent-primary hover:opacity-90 text-white shadow-accent-primary/20"
+                  }`}
+                >
+                  {isTestRunning ? (
+                    <>
+                      <FiSquare className="text-xs" />
+                      <span>Stop Test</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiPlay className="text-xs" />
+                      <span>Start Test</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Starting Node Dropdown */}
-              <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+              <div className="flex items-center gap-1.5 text-xs text-text-secondary pt-1">
                 <span>Starting Node:</span>
                 <span className="font-bold text-text-primary flex items-center gap-1">
                   Begin <FiChevronDown className="text-xs text-text-muted" />
@@ -815,14 +816,14 @@ export default function TestDrawer({
             )}
 
             {/* Bottom: Warning Notice & Run Test Button */}
-            <div className="space-y-3 pt-4 border-t border-border-primary/40">
+            <div className="space-y-3 pt-3 border-t border-border-primary/40">
               {/* Notice Box */}
               <div className="p-2.5 rounded-xl bg-surface-secondary/60 border border-border-primary/50 text-[11px] text-text-muted flex items-start gap-2 leading-relaxed">
                 <FiInfo className="text-xs text-text-muted shrink-0 mt-0.5" />
                 <span>Please note call transfer is not supported in Webcall.</span>
               </div>
 
-              {/* Run Test Button */}
+              {/* Bottom Action Button */}
               <button
                 type="button"
                 onClick={handleToggleRunTest}
@@ -835,12 +836,12 @@ export default function TestDrawer({
                 {isTestRunning ? (
                   <>
                     <FiSquare className="text-xs" />
-                    <span>End Test</span>
+                    <span>Stop Test</span>
                   </>
                 ) : (
                   <>
                     <FiPlay className="text-xs text-accent-primary" />
-                    <span>Run Test</span>
+                    <span>Start Test</span>
                   </>
                 )}
               </button>

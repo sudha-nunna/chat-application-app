@@ -132,7 +132,10 @@ export default function SelectVoiceModal({ isOpen, onClose, selectedVoiceId, onS
       audio.onerror = () => {
         setLoadingVoiceId(null);
         if (abortController.signal.aborted) return;
+        setPlayingVoiceId(voice.id);
         speakText(voice.sample || voice.name, {
+          voice,
+          voiceId: voice.id,
           gender: voice.gender,
           onEnd: () => setPlayingVoiceId(null),
           onError: () => setPlayingVoiceId(null)
@@ -145,7 +148,10 @@ export default function SelectVoiceModal({ isOpen, onClose, selectedVoiceId, onS
       }).catch(() => {
         setLoadingVoiceId(null);
         if (abortController.signal.aborted) return;
+        setPlayingVoiceId(voice.id);
         speakText(voice.sample || voice.name, {
+          voice,
+          voiceId: voice.id,
           gender: voice.gender,
           onEnd: () => setPlayingVoiceId(null),
           onError: () => setPlayingVoiceId(null)

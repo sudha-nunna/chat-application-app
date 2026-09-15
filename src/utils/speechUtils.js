@@ -225,10 +225,10 @@ export function splitIntoSentences(text) {
 }
 
 /**
- * Select the highest-quality, most human-sounding English voice available on the device.
- * Prioritizes Neural, Premium, and Enhanced voices (macOS Ava/Samantha Enhanced, Google, Microsoft Natural).
+ * Select the highest-quality, most human-sounding English voice matching requested voice parameters.
+ * Supports distinct male vs female, US vs UK vs AU accents, and specific voice personas (Alex, Cimo, Chloe, Michael, etc.).
  */
-export function getBestNaturalVoice() {
+export function getBestNaturalVoice(voiceSpec = {}) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     return null;
   }
@@ -236,62 +236,56 @@ export function getBestNaturalVoice() {
   const voices = window.speechSynthesis.getVoices() || [];
   if (voices.length === 0) return null;
 
+  const voiceId = (voiceSpec.voiceId || voiceSpec.id || voiceSpec.name || "").toLowerCase();
+  const gender = (voiceSpec.gender || "").toLowerCase();
+  const accent = (voiceSpec.accent || "").toLowerCase();
+
+  const isMale = gender === "male" || ["alex", "michael", "david"].includes(voiceId);
+  const isUk = accent.includes("uk") || accent.includes("gb") || ["chloe", "emily", "david"].includes(voiceId);
+  const isAu = accent.includes("au") || voiceId === "michael";
+
+  // 1. Try exact name match if system voice matches studio name
+  if (voiceSpec.name) {
+    const exactMatch = voices.find((v) => v.name.toLowerCase().includes(voiceSpec.name.toLowerCase()));
+    if (exactMatch) return exactMatch;
+  }
+
   const englishVoices = voices.filter((v) => v.lang && v.lang.startsWith("en"));
-  if (englishVoices.length === 0) return voices[0] || null;
+  const pool = englishVoices.length > 0 ? englishVoices : voices;
 
-  // Tier 1: Apple & Edge Premium/Enhanced/Neural Human Voices (macOS / Windows / Safari / Edge)
-  const tier1Keywords = [
-    "Ava (Premium)",
-    "Ava (Enhanced)",
-    "Samantha (Enhanced)",
-    "Zoe (Premium)",
-    "Allison (Enhanced)",
-    "Tom (Enhanced)",
-    "Siri",
-    "Serena (Premium)",
-    "Kate (Enhanced)",
-    "Oliver (Enhanced)",
-    "Daniel (Enhanced)",
-    "Microsoft Jenny Online (Natural)",
-    "Microsoft Guy Online (Natural)",
-    "Microsoft Aria Online (Natural)",
-  ];
-
-  for (const keyword of tier1Keywords) {
-    const found = englishVoices.find((v) => v.name.includes(keyword));
-    if (found) return found;
+  // 2. Filter pool by Gender preference
+  let candidates = pool;
+  if (isMale) {
+    const maleVoices = pool.filter((v) =>
+      /male|guy|david|alex|tom|daniel|oliver|fred|george|mark|ryan|william/i.test(v.name)
+    );
+    if (maleVoices.length > 0) candidates = maleVoices;
+  } else if (gender === "female" || ["cimo", "chloe", "sarah", "emily", "sophia"].includes(voiceId)) {
+    const femaleVoices = pool.filter((v) =>
+      /female|ava|samantha|zoe|allison|serena|kate|jenny|aria|zira|karen|victoria|siri/i.test(v.name)
+    );
+    if (femaleVoices.length > 0) candidates = femaleVoices;
   }
 
-  // Tier 2: Any voice explicitly tagged as "Enhanced", "Premium", or "Natural"
-  const tier2 = englishVoices.find(
-    (v) =>
-      v.name.includes("Enhanced") ||
-      v.name.includes("Premium") ||
-      v.name.includes("Natural") ||
-      v.name.includes("Neural")
+  // 3. Filter by Accent (UK, AU, US)
+  if (isUk) {
+    const ukVoices = candidates.filter((v) =>
+      v.lang.includes("GB") || v.lang.includes("uk") || /uk|british|en-gb/i.test(v.name)
+    );
+    if (ukVoices.length > 0) return ukVoices[0];
+  }
+  if (isAu) {
+    const auVoices = candidates.filter((v) =>
+      v.lang.includes("AU") || /au|australian|en-au/i.test(v.name)
+    );
+    if (auVoices.length > 0) return auVoices[0];
+  }
+
+  // 4. Return top natural candidate from filtered pool
+  const naturalChoice = candidates.find((v) =>
+    /natural|neural|premium|enhanced|google|microsoft/i.test(v.name)
   );
-  if (tier2) return tier2;
-
-  // Tier 3: Google High-Quality Voices (Chrome on Mac/Windows/Android)
-  const tier3Keywords = [
-    "Google US English",
-    "Google UK English Female",
-    "Google UK English Male",
-  ];
-  for (const keyword of tier3Keywords) {
-    const found = englishVoices.find((v) => v.name.includes(keyword));
-    if (found) return found;
-  }
-
-  // Tier 4: Standard clean system voices (Samantha, Alex, Victoria, Daniel, Karen)
-  const tier4Keywords = ["Samantha", "Alex", "Victoria", "Daniel", "Karen"];
-  for (const keyword of tier4Keywords) {
-    const found = englishVoices.find((v) => v.name.includes(keyword));
-    if (found) return found;
-  }
-
-  // Tier 5: Default en-US or any English voice
-  return englishVoices.find((v) => v.lang === "en-US") || englishVoices[0];
+  return naturalChoice || candidates[0] || voices[0];
 }
 
 /**
@@ -350,7 +344,7 @@ export function isSpeechSpeaking() {
  */
 export function speakText(
   rawText,
-  { onStart, onEnd, onError, onWordBoundary, rate = 0.96, pitch = 1.0, voice = null } = {}
+  { onStart, onEnd, onError, onWordBoundary, rate = 0.96, pitch = 1.0, voice = null, gender = null, voiceId = null } = {}
 ) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     console.warn("SpeechSynthesis is not supported in this browser.");
@@ -408,13 +402,30 @@ export function speakText(
 
     const utterance = new SpeechSynthesisUtterance(currentUnit.text);
     utterance.lang = "en-US";
-    utterance.rate = rate;
-    utterance.pitch = pitch;
 
-    // Pick specified voice or top-tier natural voice
-    const pickedVoice = voice || getBestNaturalVoice();
+    // Dynamic voice profile pacing & pitch overrides
+    const vId = (voiceId || (typeof voice === "object" && voice ? voice.id || voice.voiceId || voice.name : "") || "").toLowerCase();
+    let finalRate = rate;
+    let finalPitch = pitch;
+
+    if (vId === "alex") { finalPitch = 0.92; finalRate = 1.04; }
+    else if (vId === "chloe") { finalPitch = 1.0; finalRate = 0.94; }
+    else if (vId === "cimo") { finalPitch = 1.05; finalRate = 1.0; }
+    else if (vId === "sarah") { finalPitch = 0.98; finalRate = 0.92; }
+    else if (vId === "michael") { finalPitch = 0.88; finalRate = 0.98; }
+    else if (vId === "emily") { finalPitch = 1.02; finalRate = 0.95; }
+    else if (vId === "david") { finalPitch = 0.82; finalRate = 0.88; }
+    else if (vId === "sophia") { finalPitch = 1.08; finalRate = 0.92; }
+
+    utterance.rate = finalRate;
+    utterance.pitch = finalPitch;
+
+    // Pick specified voice or top-tier natural matching voice
+    const voiceSpec = typeof voice === "object" && voice ? voice : { voiceId: vId, gender };
+    const pickedVoice = (typeof voice === "object" && voice && voice.voiceURI) ? voice : getBestNaturalVoice(voiceSpec);
     if (pickedVoice) {
       utterance.voice = pickedVoice;
+      if (pickedVoice.lang) utterance.lang = pickedVoice.lang;
     }
 
     utterance.onstart = () => {

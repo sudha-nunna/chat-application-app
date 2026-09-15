@@ -1,19 +1,27 @@
 import {
   FiMessageSquare,
   FiPlus,
-  FiTrash2
+  FiTrash2,
+  FiPhoneCall,
+  FiSend,
+  FiCode
 } from "react-icons/fi";
 import {
   TbRobot,
   TbMathSymbols,
   TbGitFork,
   TbBraces,
-  TbPercentage
+  TbPercentage,
+  TbDialpad,
+  TbArrowsRightLeft,
+  TbPlugConnected,
+  TbFileDescription
 } from "react-icons/tb";
 
 export default function CanvasNode({
   node,
   isSelected,
+  isActiveRunning,
   onSelect,
   onUpdateData,
   onDelete,
@@ -25,6 +33,7 @@ export default function CanvasNode({
     pink: {
       border: "border-pink-300/80 dark:border-pink-500/40",
       selectedRing: "ring-2 ring-pink-500 shadow-lg shadow-pink-500/10",
+      activeGlow: "ring-4 ring-pink-500/60 shadow-xl shadow-pink-500/30 animate-pulse",
       headerText: "text-pink-700 dark:text-pink-300",
       cardBg: "bg-[#fffafa] dark:bg-[#201518]",
       headerBg: "bg-pink-50 dark:bg-pink-900/30",
@@ -33,6 +42,7 @@ export default function CanvasNode({
     yellow: {
       border: "border-amber-300/80 dark:border-amber-500/40",
       selectedRing: "ring-2 ring-amber-500 shadow-lg shadow-amber-500/10",
+      activeGlow: "ring-4 ring-amber-500/60 shadow-xl shadow-amber-500/30 animate-pulse",
       headerText: "text-amber-800 dark:text-amber-300",
       cardBg: "bg-[#fffdfa] dark:bg-[#211d14]",
       headerBg: "bg-amber-50 dark:bg-amber-900/30",
@@ -41,6 +51,7 @@ export default function CanvasNode({
     blue: {
       border: "border-blue-300/80 dark:border-blue-500/40",
       selectedRing: "ring-2 ring-blue-500 shadow-lg shadow-blue-500/10",
+      activeGlow: "ring-4 ring-blue-500/60 shadow-xl shadow-blue-500/30 animate-pulse",
       headerText: "text-blue-700 dark:text-blue-300",
       cardBg: "bg-[#f8faff] dark:bg-[#141b26]",
       headerBg: "bg-blue-50 dark:bg-blue-900/30",
@@ -49,6 +60,7 @@ export default function CanvasNode({
     green: {
       border: "border-emerald-300/80 dark:border-emerald-500/40",
       selectedRing: "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/10",
+      activeGlow: "ring-4 ring-emerald-500/60 shadow-xl shadow-emerald-500/30 animate-pulse",
       headerText: "text-emerald-700 dark:text-emerald-300",
       cardBg: "bg-[#f8fcf9] dark:bg-[#132018]",
       headerBg: "bg-emerald-50 dark:bg-emerald-900/30",
@@ -57,6 +69,7 @@ export default function CanvasNode({
     mint: {
       border: "border-teal-300/80 dark:border-teal-500/40",
       selectedRing: "ring-2 ring-teal-500 shadow-lg shadow-teal-500/10",
+      activeGlow: "ring-4 ring-teal-500/60 shadow-xl shadow-teal-500/30 animate-pulse",
       headerText: "text-teal-700 dark:text-teal-300",
       cardBg: "bg-[#f5fdfa] dark:bg-[#12201d]",
       headerBg: "bg-teal-50 dark:bg-teal-900/30",
@@ -65,6 +78,7 @@ export default function CanvasNode({
     purple: {
       border: "border-purple-300/80 dark:border-purple-500/40",
       selectedRing: "ring-2 ring-purple-500 shadow-lg shadow-purple-500/10",
+      activeGlow: "ring-4 ring-purple-500/60 shadow-xl shadow-purple-500/30 animate-pulse",
       headerText: "text-purple-700 dark:text-purple-300",
       cardBg: "bg-[#faf8ff] dark:bg-[#1d1627]",
       headerBg: "bg-purple-50 dark:bg-purple-900/30",
@@ -73,6 +87,7 @@ export default function CanvasNode({
     slate: {
       border: "border-slate-300/80 dark:border-slate-500/40",
       selectedRing: "ring-2 ring-slate-500 shadow-lg shadow-slate-500/10",
+      activeGlow: "ring-4 ring-slate-500/60 shadow-xl shadow-slate-500/30 animate-pulse",
       headerText: "text-slate-700 dark:text-slate-300",
       cardBg: "bg-[#f8fafc] dark:bg-[#181a1f]",
       headerBg: "bg-slate-100 dark:bg-slate-800/40",
@@ -81,6 +96,38 @@ export default function CanvasNode({
   };
 
   const style = colorStyles[node.color || "pink"] || colorStyles.pink;
+
+  // Render Icon based on Node Type
+  const renderNodeIcon = () => {
+    switch (node.type) {
+      case "conversation":
+        return <FiMessageSquare className={`text-xs ${style.accent}`} />;
+      case "subagent":
+        return <TbRobot className={`text-xs ${style.accent}`} />;
+      case "function":
+        return <TbMathSymbols className={`text-xs ${style.accent}`} />;
+      case "call_transfer":
+        return <FiPhoneCall className={`text-xs ${style.accent}`} />;
+      case "press_digit":
+        return <TbDialpad className={`text-xs ${style.accent}`} />;
+      case "logic_split":
+        return <TbGitFork className={`text-xs ${style.accent}`} />;
+      case "agent_transfer":
+        return <TbArrowsRightLeft className={`text-xs ${style.accent}`} />;
+      case "in_call_sms":
+        return <FiSend className={`text-xs ${style.accent}`} />;
+      case "extract_variable":
+        return <TbBraces className={`text-xs ${style.accent}`} />;
+      case "code":
+        return <FiCode className={`text-xs ${style.accent}`} />;
+      case "mcp":
+        return <TbPlugConnected className={`text-xs ${style.accent}`} />;
+      case "note":
+        return <TbFileDescription className={`text-xs ${style.accent}`} />;
+      default:
+        return <FiMessageSquare className={`text-xs ${style.accent}`} />;
+    }
+  };
 
   // 1. Begin Pill Node
   if (node.type === "begin") {
@@ -92,12 +139,16 @@ export default function CanvasNode({
           onSelect(node.id);
         }}
         onMouseDown={(e) => onStartDrag(e, node.id)}
-        className={`absolute select-none cursor-grab active:cursor-grabbing z-10 transition-shadow ${
-          isSelected ? "ring-2 ring-purple-500 shadow-md" : ""
+        className={`absolute select-none cursor-grab active:cursor-grabbing z-10 transition-all ${
+          isActiveRunning
+            ? "ring-4 ring-purple-500/70 shadow-lg shadow-purple-500/30 animate-pulse"
+            : isSelected
+            ? "ring-2 ring-purple-500 shadow-md"
+            : ""
         }`}
       >
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/40 text-purple-600 dark:text-purple-300 text-xs font-semibold shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-purple-500" />
+          <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
           <span>Begin</span>
           {/* Outgoing port */}
           <div
@@ -119,8 +170,12 @@ export default function CanvasNode({
           onSelect(node.id);
         }}
         onMouseDown={(e) => onStartDrag(e, node.id)}
-        className={`absolute select-none cursor-grab active:cursor-grabbing z-10 transition-shadow ${
-          isSelected ? "ring-2 ring-teal-500 shadow-md" : ""
+        className={`absolute select-none cursor-grab active:cursor-grabbing z-10 transition-all ${
+          isActiveRunning
+            ? "ring-4 ring-teal-500/70 shadow-lg shadow-teal-500/30 animate-pulse"
+            : isSelected
+            ? "ring-2 ring-teal-500 shadow-md"
+            : ""
         }`}
       >
         {/* Incoming port */}
@@ -136,7 +191,50 @@ export default function CanvasNode({
     );
   }
 
-  // 3. Full Flow Cards
+  // 3. Note Node (Canvas Sticky Note)
+  if (node.type === "note") {
+    return (
+      <div
+        style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(node.id);
+        }}
+        className={`absolute w-[200px] p-3 rounded-2xl border border-amber-300/80 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-950/40 shadow-sm backdrop-blur-md select-none transition-shadow z-10 group ${
+          isSelected ? "ring-2 ring-amber-500" : ""
+        }`}
+      >
+        <div
+          onMouseDown={(e) => onStartDrag(e, node.id)}
+          className="flex items-center justify-between pb-1 mb-1 border-b border-amber-200/50 dark:border-amber-800/40 cursor-grab active:cursor-grabbing"
+        >
+          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+            <TbFileDescription />
+            <span>Note</span>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(node.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 p-0.5 text-amber-700 dark:text-amber-400 hover:text-red-500 transition cursor-pointer"
+          >
+            <FiTrash2 className="text-xs" />
+          </button>
+        </div>
+        <textarea
+          rows={3}
+          value={node.data?.text || ""}
+          onChange={(e) => onUpdateData(node.id, { text: e.target.value })}
+          placeholder="Add canvas note / documentation..."
+          className="w-full text-[11px] bg-transparent text-amber-900 dark:text-amber-200 resize-none focus:outline-hidden placeholder:text-amber-800/40"
+        />
+      </div>
+    );
+  }
+
+  // 4. Full Flow Cards
   const transitions = node.data?.transitions || [];
 
   return (
@@ -146,8 +244,12 @@ export default function CanvasNode({
         e.stopPropagation();
         onSelect(node.id);
       }}
-      className={`absolute w-[240px] sm:w-[260px] rounded-2xl border ${style.border} ${style.cardBg} shadow-sm backdrop-blur-md select-none transition-shadow z-10 group ${
-        isSelected ? style.selectedRing : "hover:shadow-md"
+      className={`absolute w-[240px] sm:w-[260px] rounded-2xl border ${style.border} ${style.cardBg} shadow-sm backdrop-blur-md select-none transition-all z-10 group ${
+        isActiveRunning
+          ? style.activeGlow
+          : isSelected
+          ? style.selectedRing
+          : "hover:shadow-md"
       }`}
     >
       {/* Incoming Connection Port (Left Center) */}
@@ -170,12 +272,7 @@ export default function CanvasNode({
         className={`px-3.5 py-2.5 rounded-t-2xl flex items-center justify-between border-b ${style.border} ${style.headerBg} cursor-grab active:cursor-grabbing`}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {node.type === "conversation" && <FiMessageSquare className={`text-xs ${style.accent}`} />}
-          {node.type === "function" && <TbMathSymbols className={`text-xs ${style.accent}`} />}
-          {node.type === "logic_split" && <TbGitFork className={`text-xs ${style.accent}`} />}
-          {node.type === "extract_variable" && <TbBraces className={`text-xs ${style.accent}`} />}
-          {node.type === "subagent" && <TbRobot className={`text-xs ${style.accent}`} />}
-
+          {renderNodeIcon()}
           <span className={`text-xs font-bold ${style.headerText} truncate`}>
             {node.title}
           </span>
@@ -200,27 +297,57 @@ export default function CanvasNode({
 
       {/* Card Body / Prompt */}
       <div className="p-3 space-y-2.5">
-        {node.data?.text !== undefined ? (
-          <textarea
-            rows={3}
-            value={node.data.text}
-            onChange={(e) => {
-              onUpdateData(node.id, { text: e.target.value });
-            }}
-            placeholder="Type message or instruction. Type @ to add dynamic variables..."
-            className="w-full text-[11px] leading-relaxed p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-text-primary resize-none focus:outline-hidden focus:border-accent-primary focus:bg-surface-primary placeholder:text-text-muted/60"
-          />
+        {node.type === "conversation" || node.type === "subagent" ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-text-muted">
+              <span className="px-1.5 py-0.5 rounded bg-surface-secondary text-text-secondary border border-border-primary/40 font-mono">
+                Prompt
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-surface-secondary/70 text-text-muted border border-border-primary/40 font-mono">
+                Static Sentence
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              value={node.data?.text || ""}
+              onChange={(e) => {
+                onUpdateData(node.id, { text: e.target.value });
+              }}
+              placeholder="Type prompt or message. Type @ to insert variables..."
+              className="w-full text-[11px] leading-relaxed p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-text-primary resize-none focus:outline-hidden focus:border-accent-primary focus:bg-surface-primary placeholder:text-text-muted/60"
+            />
+          </div>
         ) : node.type === "function" ? (
           <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
-            {node.data?.functionName || "⚡ Execute API / Backend Tool"}
+            {node.data?.functionName || "⚡ Execute API / Tool Call"}
+          </div>
+        ) : node.type === "call_transfer" ? (
+          <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
+            📞 Transfer to: {node.data?.phone || "+1 (800) 555-0199"}
+          </div>
+        ) : node.type === "press_digit" ? (
+          <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
+            🔢 Collect DTMF Digits
           </div>
         ) : node.type === "logic_split" ? (
           <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
-            {node.data?.condition || "🔀 Evaluate Conditional Routing"}
+            🔀 {node.data?.condition || "Evaluate Conditional Branching"}
+          </div>
+        ) : node.type === "in_call_sms" ? (
+          <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
+            📲 Send In-Call SMS
           </div>
         ) : node.type === "extract_variable" ? (
           <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
-            {node.data?.variableName || "{ } Extract Slots & Entities"}
+            {node.data?.variableName || "{ } Extract Custom Slot Entities"}
+          </div>
+        ) : node.type === "code" ? (
+          <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 truncate">
+            &lt;/&gt; Inline JS Execution
+          </div>
+        ) : node.type === "mcp" ? (
+          <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
+            🔌 Model Context Protocol Server
           </div>
         ) : (
           <div className="p-2 text-[11px] text-text-muted">
@@ -270,3 +397,4 @@ export default function CanvasNode({
     </div>
   );
 }
+

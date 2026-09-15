@@ -12,6 +12,7 @@ import { TbSparkles } from "react-icons/tb";
 export default function FlowHeader({
   agentName,
   onNameChange,
+  onOpenTestDrawer,
   onOpenConductor,
   onSave,
   isSaving,
@@ -150,7 +151,18 @@ export default function FlowHeader({
           )}
         </div>
 
-        {/* Save Draft Button (Replaces Test) */}
+        {/* Test Button (Opens Test & Simulation Drawer) */}
+        <button
+          type="button"
+          onClick={onOpenTestDrawer}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-primary hover:bg-surface-secondary text-text-primary border border-border-primary/70 transition cursor-pointer shadow-2xs"
+          title="Open interactive call & LLM test drawer"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Test</span>
+        </button>
+
+        {/* Save Draft Button */}
         <button
           type="button"
           onClick={onSave}

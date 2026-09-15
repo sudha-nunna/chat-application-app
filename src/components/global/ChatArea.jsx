@@ -751,7 +751,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     editIndex = undefined,
     isVoiceSubmission = false,
     enableSearch = false,
-    continuationContext = null
+    continuationContext = null,
+    isAssistantReload = false
   ) => {
     if (isGeneratingRef.current) {
       console.warn("⚠️ Request blocked because generation is already active.");
@@ -839,6 +840,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setMessages((prev) => prev.slice(0, continuationContext.messageIndex));
       currentStreamingTextRef.current = continuationContext.baseContent || "";
       setStreamingReply(continuationContext.baseContent || "");
+    } else if (isAssistantReload && editIndex !== undefined && editIndex >= 0) {
+      // ChatGPT-style Regeneration: keep user query in history at editIndex, trim old assistant response, do NOT add duplicate user message!
+      setMessages((prev) => prev.slice(0, editIndex + 1));
+      currentStreamingTextRef.current = "";
+      setStreamingReply("");
     } else if (editIndex !== undefined && editIndex >= 0) {
       setMessages((prev) => [...prev.slice(0, editIndex), userMsgObj]);
       currentStreamingTextRef.current = "";
@@ -1537,6 +1543,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                       .reverse()
                       .find((msg) => msg.role === "user")
                     : null;
+                  const prevUserMsgIdx = !isUserMsg
+                    ? messages.reduce(
+                      (lastIdx, msg, idx) => (msg.role === "user" && idx < index ? idx : lastIdx),
+                      -1
+                    )
+                    : -1;
 
                   const isSearchActuallyExecuted = isUserMsg
                     ? Boolean(
@@ -1589,7 +1601,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                               handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index, false, m.enableSearch)
                             : prevUserMsg
                               ? (newContent) =>
-                                handleSendSubmit(newContent || prevUserMsg.content, null, undefined, prevUserMsg.attachments, undefined, false, prevUserMsg.enableSearch)
+                                handleSendSubmit(
+                                  newContent || prevUserMsg.content,
+                                  null,
+                                  undefined,
+                                  prevUserMsg.attachments,
+                                  prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
+                                  false,
+                                  prevUserMsg.enableSearch,
+                                  null,
+                                  true
+                                )
                               : undefined
                         }
                         isStoppedMidway={m.isStoppedMidway}

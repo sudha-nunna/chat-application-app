@@ -50,6 +50,13 @@ import {
 } from "../hooks/useTanStackData";
 import { speakText, stopSpeech } from "../utils/speechUtils";
 import VoiceConversationManager from "../components/avatar/VoiceConversationManager";
+import FlowCanvas from "../components/studio/FlowCanvas";
+import FlowHeader from "../components/studio/FlowHeader";
+import NodePalette from "../components/studio/NodePalette";
+import TestDrawer from "../components/studio/TestDrawer";
+import ConductorModal from "../components/studio/ConductorModal";
+import SelectVoiceModal from "../components/studio/SelectVoiceModal";
+import { STUDIO_VOICES, PRESET_VOICES, getVoiceProfileById, NODE_TEMPLATES } from "../components/studio/studioConstants";
 
 const EMPTY_ARRAY = Object.freeze([]);
 
@@ -151,45 +158,7 @@ const BOT_TYPES = [
   }
 ];
 
-// Preset Voice Profiles for Voice Studio
-const PRESET_VOICES = [
-  {
-    id: "default-en",
-    name: "Sarah",
-    persona: "Warm Female",
-    accent: "English (US)",
-    gender: "female",
-    sampleText: "Hello there! I'm Sarah. I speak with a warm, natural tone and I'm ready to converse with you.",
-    color: "from-pink-500 to-rose-500"
-  },
-  {
-    id: "energetic-male",
-    name: "Alex",
-    persona: "Energetic Male",
-    accent: "English (US)",
-    gender: "male",
-    sampleText: "Hey! I'm Alex. Let's get things done quickly, efficiently, and with high energy.",
-    color: "from-blue-500 to-cyan-500"
-  },
-  {
-    id: "professional-female",
-    name: "Emily",
-    persona: "Professional Female",
-    accent: "English (UK)",
-    gender: "female",
-    sampleText: "Greetings. I'm Emily. I provide articulate, structured, and executive-level responses.",
-    color: "from-purple-500 to-indigo-500"
-  },
-  {
-    id: "casual-male",
-    name: "Michael",
-    persona: "Casual Male",
-    accent: "English (AU)",
-    gender: "male",
-    sampleText: "G'day! I'm Michael. Relaxed, easygoing, and here to make your day smoother.",
-    color: "from-emerald-500 to-teal-500"
-  }
-];
+
 
 const PRESET_AVATARS = [
   { icon: "🤖", label: "Assistant", color: "from-blue-500 to-indigo-600" },
@@ -241,6 +210,40 @@ const FALLBACK_MODELS = [
   }
 ];
 
+const DEFAULT_FLOW_NODES = [
+  { id: "begin", type: "begin", title: "Begin", x: 120, y: 220 },
+  {
+    id: "welcome-node",
+    type: "conversation",
+    title: "Welcome Node",
+    badge: "Start",
+    color: "pink",
+    x: 240,
+    y: 190,
+    data: {
+      text: "Hello! This is the customer support department. How can I help you today?",
+      transitions: [
+        { id: "t1", label: "= User wants to return the package" },
+        { id: "t2", label: "= User wants to check the order status" }
+      ]
+    }
+  },
+  {
+    id: "end-node",
+    type: "ending",
+    title: "End Call",
+    color: "mint",
+    x: 620,
+    y: 340,
+    data: {}
+  }
+];
+
+const DEFAULT_CONNECTIONS = [
+  { id: "c1", fromNode: "begin", toNode: "welcome-node" },
+  { id: "c2", fromNode: "welcome-node", toNode: "end-node", transitionIndex: 0 }
+];
+
 const AgentStudioPage = () => {
   const navigate = useNavigate();
   const { botId } = useParams();
@@ -277,8 +280,77 @@ const AgentStudioPage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Edit Mode Toggle (When false: minimal clean view; when true: edit form)
-  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  // Retell AI Visual Workflow State
+  const [studioViewMode, setStudioViewMode] = useState("workflow"); // "workflow" (Retell AI Visual Canvas) | "classic" (Legacy Form)
+  const [flowNodes, setFlowNodes] = useState(DEFAULT_FLOW_NODES);
+  const [flowConnections, setFlowConnections] = useState(DEFAULT_CONNECTIONS);
+  const [selectedNodeId, setSelectedNodeId] = useState("welcome-node");
+  const [activeRunningNodeId, setActiveRunningNodeId] = useState(null);
+  const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false);
+  const [isTestDrawerOpen, setIsTestDrawerOpen] = useState(false);
+  const [isConductorModalOpen, setIsConductorModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [environment, setEnvironment] = useState("Development");
+  const [lastSavedTime, setLastSavedTime] = useState(
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
+
+  // Node Manipulation Handlers
+  const handleAddNode = (type) => {
+    const template = NODE_TEMPLATES.find((n) => n.type === type) || NODE_TEMPLATES[0];
+    const newNodeId = `node_${Date.now().toString().slice(-4)}`;
+    const newNode = {
+      id: newNodeId,
+      type: template.type,
+      title: template.title,
+      color: template.color || "pink",
+      x: 350 + Math.floor(Math.random() * 80),
+      y: 200 + Math.floor(Math.random() * 80),
+      data: {
+        text: type === "conversation" ? "Type instructions or response..." : "",
+        transitions: type === "conversation" || type === "logic_split"
+          ? [{ id: `t_${Date.now()}`, label: "= Default transition" }]
+          : []
+      }
+    };
+    setFlowNodes((prev) => [...prev, newNode]);
+    setSelectedNodeId(newNodeId);
+  };
+
+  const handleUpdateNodeData = (nodeId, dataUpdate) => {
+    setFlowNodes((prev) =>
+      prev.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...dataUpdate } } : n))
+    );
+  };
+
+  const handleDeleteNode = (nodeId) => {
+    if (nodeId === "welcome-node" || nodeId === "begin") return;
+    setFlowNodes((prev) => prev.filter((n) => n.id !== nodeId));
+    setFlowConnections((prev) => prev.filter((c) => c.fromNode !== nodeId && c.toNode !== nodeId));
+    if (selectedNodeId === nodeId) setSelectedNodeId(null);
+  };
+
+  const handleAddTransition = (nodeId) => {
+    setFlowNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === nodeId) {
+          const currentTr = n.data?.transitions || [];
+          const newTr = {
+            id: `t_${Date.now()}`,
+            label: `= Option ${currentTr.length + 1}`
+          };
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              transitions: [...currentTr, newTr]
+            }
+          };
+        }
+        return n;
+      })
+    );
+  };
 
   // Form State
   const [name, setName] = useState("");
@@ -692,7 +764,7 @@ const AgentStudioPage = () => {
     let matchedVoice = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       const voices = window.speechSynthesis.getVoices() || [];
-      const preset = PRESET_VOICES.find((v) => v.id === selectedVoiceId);
+      const preset = getVoiceProfileById(selectedVoiceId);
       if (preset) {
         matchedVoice = voices.find(
           (v) =>
@@ -1114,7 +1186,7 @@ const AgentStudioPage = () => {
     }
 
     setError("");
-    const selectedVoiceObj = PRESET_VOICES.find((v) => v.id === selectedVoiceId) || PRESET_VOICES[0];
+    const selectedVoiceObj = getVoiceProfileById(selectedVoiceId);
 
     const payload = {
       name: name.trim(),
@@ -1505,6 +1577,92 @@ const AgentStudioPage = () => {
     );
   }
 
+  if (studioViewMode === "workflow") {
+    return (
+      <div className="flex flex-col h-screen w-full bg-[#fafbfc] dark:bg-[#0c0d0e] overflow-hidden select-none">
+        {/* Retell AI Studio Top Header Bar */}
+        <FlowHeader
+          agentName={name || (isEditMode ? "Conversational Agent" : "New Chat Bot")}
+          onNameChange={(newName) => setName(newName)}
+          onOpenTestDrawer={() => setIsTestDrawerOpen(true)}
+          onOpenConductor={() => setIsConductorModalOpen(true)}
+          onSave={handleSaveConfiguration}
+          isSaving={isSaving}
+          onPublish={handleSaveConfiguration}
+          isPublishing={isSaving}
+          lastSavedTime={lastSavedTime}
+          environment={environment}
+          onEnvironmentChange={(env) => setEnvironment(env)}
+        />
+
+        {/* Main Studio Body: Left Node Palette | Center Visual Node Canvas | Right Test Drawer */}
+        <div className="flex-1 flex w-full h-[calc(100vh-3.5rem)] overflow-hidden relative">
+          {/* Left Node Palette & Configuration Panel */}
+          <NodePalette
+            isCollapsed={isPaletteCollapsed}
+            onToggleCollapse={() => setIsPaletteCollapsed(!isPaletteCollapsed)}
+            onAddNode={handleAddNode}
+            agentId={botId}
+            voiceProfile={getVoiceProfileById(selectedVoiceId)}
+            onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+            selectedModel={selectedModel}
+            onModelChange={(newModel) => setSelectedModel(newModel)}
+            knowledgeSources={existingFiles}
+            onKnowledgeSourcesChange={() => {}}
+            onEnsureSavedAgentId={async () => botId}
+          />
+
+          {/* Center Pannable & Zoomable Node Flow Canvas */}
+          <FlowCanvas
+            nodes={flowNodes}
+            connections={flowConnections}
+            selectedNodeId={selectedNodeId}
+            activeRunningNodeId={activeRunningNodeId}
+            onSelectNode={setSelectedNodeId}
+            onUpdateNodeData={handleUpdateNodeData}
+            onDeleteNode={handleDeleteNode}
+            onAddTransition={handleAddTransition}
+            onNodesChange={setFlowNodes}
+          />
+
+          {/* Right Floating Test & Step Execution Trace Drawer */}
+          <TestDrawer
+            isOpen={isTestDrawerOpen}
+            onClose={() => setIsTestDrawerOpen(false)}
+            agentId={botId}
+            nodes={flowNodes}
+            voiceProfile={getVoiceProfileById(selectedVoiceId)}
+            globalPrompt={systemPrompt}
+            model={selectedModel}
+            onActiveNodeChange={setActiveRunningNodeId}
+          />
+        </div>
+
+        {/* AI Conductor & Voice Modal Dialogs */}
+        <ConductorModal
+          isOpen={isConductorModalOpen}
+          onClose={() => setIsConductorModalOpen(false)}
+          agentName={name || "Conversational Agent"}
+          nodes={flowNodes}
+          onApplySuggestedNodes={(newNodes, newConns) => {
+            setFlowNodes(newNodes);
+            if (newConns) setFlowConnections(newConns);
+          }}
+        />
+
+        <SelectVoiceModal
+          isOpen={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          selectedVoiceId={selectedVoiceId}
+          onSelectVoice={(voice) => {
+            setSelectedVoiceId(voice.id);
+            setIsVoiceModalOpen(false);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full flex flex-col bg-surface-primary text-text-primary overflow-hidden">
       {/* 1. TOP HEADER BAR */}
@@ -1808,7 +1966,7 @@ const AgentStudioPage = () => {
                     </span>
                     <span className="font-mono text-[10px] bg-surface-primary px-1.5 py-0.2 rounded border border-border-primary/50">
                       {botType === "VOICE"
-                        ? `Voice: ${PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.name || "Sarah"}`
+                        ? `Voice: ${getVoiceProfileById(selectedVoiceId)?.name || "Sarah"}`
                         : botType === "ACTION"
                           ? `${existingApis.length} APIs`
                           : `${existingFiles.length} Docs`}
@@ -1863,23 +2021,21 @@ const AgentStudioPage = () => {
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-text-primary text-[11px] truncate">
-                            {PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.name || "Sarah"} &bull;{" "}
+                            {getVoiceProfileById(selectedVoiceId)?.name || "Sarah"} &bull;{" "}
                             <span className="font-normal text-text-muted">
-                              {PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.persona || "Warm Female"}
+                              {getVoiceProfileById(selectedVoiceId)?.persona || "Warm Female"}
                             </span>
                           </p>
                           <p className="text-[9px] text-text-muted font-mono truncate">
                             Speed: {voiceSpeed}x &bull; Pitch: {voicePitch} &bull;{" "}
-                            {PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.accent || "English (US)"}
+                            {getVoiceProfileById(selectedVoiceId)?.accent || "English (US)"}
                           </p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() =>
-                          handlePlayVoicePreview(
-                            PRESET_VOICES.find((v) => v.id === selectedVoiceId) || PRESET_VOICES[0]
-                          )
+                          handlePlayVoicePreview(getVoiceProfileById(selectedVoiceId))
                         }
                         className="px-2 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-semibold text-[10px] transition cursor-pointer flex items-center gap-1 shrink-0"
                       >
@@ -2942,7 +3098,7 @@ const AgentStudioPage = () => {
                 </div>
                 <p className="text-[10px] text-text-muted truncate mt-0.2">
                   {botType === "VOICE"
-                    ? `Voice: ${PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.name || "Sarah"} (${voiceSpeed}x)`
+                    ? `Voice: ${getVoiceProfileById(selectedVoiceId)?.name || "Sarah"} (${voiceSpeed}x)`
                     : convId ? "Active Thread" : "New Session"}
                 </p>
               </div>
@@ -3094,7 +3250,7 @@ const AgentStudioPage = () => {
                       <span className="w-0.5 h-2.5 bg-violet-500 rounded-full animate-bounce [animation-delay:0.45s]" />
                     </div>
                     <span className="font-semibold text-[11px]">
-                      {PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.name || "Voice Agent"} is speaking...
+                      {getVoiceProfileById(selectedVoiceId)?.name || "Voice Agent"} is speaking...
                     </span>
                   </>
                 ) : voiceState === "LISTENING" ? (
@@ -3207,7 +3363,7 @@ const AgentStudioPage = () => {
                     <div className="flex items-center gap-2 text-[11px] text-text-muted">
                       <span>Voice Profile:</span>
                       <span className="font-semibold text-text-primary">
-                        {PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.name || "Sarah"} ({voiceSpeed}x)
+                        {getVoiceProfileById(selectedVoiceId)?.name || "Sarah"} ({voiceSpeed}x)
                       </span>
                     </div>
 
@@ -3293,7 +3449,7 @@ const AgentStudioPage = () => {
                               )}
                             </button>
                             <span className="text-[10px] text-text-muted font-mono">
-                              Voice: {PRESET_VOICES.find((v) => v.id === selectedVoiceId)?.name || "Sarah"}
+                              Voice: {getVoiceProfileById(selectedVoiceId)?.name || "Sarah"}
                             </span>
                           </div>
                         )}
