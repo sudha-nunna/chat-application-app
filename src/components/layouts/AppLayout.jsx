@@ -1105,8 +1105,8 @@ const AppLayout = ({ children }) => {
               )}
             </div>
           </div>
-          {/* Gemini-style Segmented Switcher: [ Chat | Agent ] */}
-          {/* <div
+          {/* Gemini-style Segmented Switcher: [ Chat | Agent ]
+          <div
             className={`pt-2.5 pb-1 shrink-0 ${
               isSidebarCollapsed && !isMobile ? "px-1" : "px-4"
             }`}
@@ -1146,9 +1146,8 @@ const AppLayout = ({ children }) => {
                 </button> 
                </div>
             ) : (
-              <div className="w-full bg-black/5 dark:bg-[#131520] p-1 rounded-xl border border-border-primary/60 dark:border-white/[0.08] flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]"> */}
-                {/* Chat Tab */}
-                {/* <button
+              <div className="w-full bg-black/5 dark:bg-[#131520] p-1 rounded-xl border border-border-primary/60 dark:border-white/[0.08] flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]">
+                <button
                   type="button"
                   onClick={handleExitAgentMode}
                   className={`group flex-1 py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
@@ -1165,10 +1164,9 @@ const AppLayout = ({ children }) => {
                     }`}
                   />
                   <span className="tracking-tight">Chat</span>
-                </button>  */}
+                </button>
 
-                {/* Agent Tab */}
-               {/* <button
+               <button
                   type="button"
                   onClick={handleEnterAgentMode}
                   className={`group flex-1 py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
@@ -1197,7 +1195,7 @@ const AppLayout = ({ children }) => {
                 </button>
              </div>
             )}
-          </div>  */}
+          </div> */}
 
           {/* Main Sidebar Content Area (takes remaining space, enables internal scrolling) */}
           <div className={`flex-1 min-h-0 flex flex-col ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-hidden"}`}>

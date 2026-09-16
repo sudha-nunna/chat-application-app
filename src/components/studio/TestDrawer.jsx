@@ -107,6 +107,7 @@ export default function TestDrawer({
   onClose,
   agentId,
   nodes = [],
+  connections = [],
   voiceProfile,
   globalPrompt = "",
   model = "glm-5.3-flash:cloud",
@@ -357,6 +358,7 @@ export default function TestDrawer({
         activeNodeId: currentRunningNode?.id || "welcome-node",
         model: model,
         nodes: nodes,
+        connections: connections,
         systemPrompt: globalPrompt,
         voiceProfile: voiceProfile,
         returnAudio: true,
@@ -493,6 +495,7 @@ export default function TestDrawer({
           activeNodeId: currentRunningNode?.id || "welcome-node",
           model,
           nodes,
+          connections,
           systemPrompt: globalPrompt,
           voiceProfile,
           stream: true,
@@ -570,6 +573,7 @@ export default function TestDrawer({
         activeNodeId: currentRunningNode?.id || "welcome-node",
         model,
         nodes,
+        connections,
         systemPrompt: globalPrompt,
         voiceProfile,
         returnAudio: false
@@ -592,8 +596,37 @@ export default function TestDrawer({
 
     setTimeout(() => {
       const currentNode = nodes.find((n) => n.id === (currentRunningNode?.id || "welcome-node")) || welcomeNode;
-      const assistantReply = `Guided by active step "${currentNode?.title || "Welcome"}": "${currentNode?.data?.text || "How can I help you today?"}"`;
+      const transitions = currentNode?.data?.transitions || [];
+      const msgLower = userText.toLowerCase().trim();
 
+      let matchedTransition = transitions.find((t) => {
+        const lbl = (t.label || "").toLowerCase().replace(/^=\s*/, "").trim();
+        return lbl && (msgLower.includes(lbl) || lbl.includes(msgLower));
+      }) || transitions[0];
+
+      let targetNode = null;
+      if (matchedTransition?.targetNodeId) {
+        targetNode = nodes.find((n) => n.id === matchedTransition.targetNodeId);
+      }
+      if (!targetNode && connections.length > 0) {
+        const conn = connections.find((c) => c.fromNode === currentNode?.id);
+        if (conn) targetNode = nodes.find((n) => n.id === conn.toNode);
+      }
+
+      let assistantReply = "";
+      if (targetNode?.type === "call_transfer") {
+        const phone = targetNode.data?.phone || "+1 (800) 555-0199";
+        assistantReply = `📞 **Initiating Call Transfer**\n\nTransferring your ongoing call to **${phone}**... Please hold while I connect you to the operator.`;
+      } else if (targetNode?.type === "mcp") {
+        const serverUrl = targetNode.data?.serverUrl || "MCP Tool Server";
+        assistantReply = `🔌 **MCP Tool Server Execution**\n\nInvoking Model Context Protocol tool endpoint: \`${serverUrl}\`...\n\nProcessing external payload and returning status.`;
+      } else if (targetNode?.type === "subagent") {
+        assistantReply = `🤖 **Delegating to Subagent**\n\nHanding off conversation turn to autonomous subagent step...`;
+      } else {
+        assistantReply = `Guided by active step "${targetNode?.title || currentNode?.title || "Welcome"}": "${targetNode?.data?.text || currentNode?.data?.text || "How can I help you today?"}"`;
+      }
+
+      if (targetNode) setCurrentRunningNode(targetNode);
       setChatMessages((prev) => [
         ...prev,
         { role: "assistant", content: assistantReply }
@@ -618,13 +651,13 @@ export default function TestDrawer({
         <div className="w-[2px] h-8 rounded-full bg-border-primary/80 group-hover:bg-accent-primary group-active:bg-accent-primary transition-colors" />
       </div>
 
-      {/* Header with tabs: Test Audio | Test LLM | {} | Close (Matches Image 2) */}
+      {/* Header with tabs: Test Audio | Test LLM | Audit | {} | Close */}
       <div className="p-3 border-b border-border-primary/40 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl border border-border-primary/60 bg-surface-secondary/40 text-xs">
+        <div className="flex items-center gap-1 p-1 rounded-2xl border border-border-primary/60 bg-surface-secondary/40 text-xs">
           <button
             type="button"
             onClick={() => setActiveTab("audio")}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition cursor-pointer ${
               activeTab === "audio"
                 ? "bg-white dark:bg-surface-primary text-text-primary shadow-xs border-2 border-blue-600"
                 : "text-text-muted hover:text-text-primary"
@@ -635,7 +668,7 @@ export default function TestDrawer({
           <button
             type="button"
             onClick={() => setActiveTab("llm")}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
               activeTab === "llm"
                 ? "bg-white dark:bg-surface-primary text-text-primary shadow-xs border-2 border-blue-600"
                 : "text-text-muted hover:text-text-primary"
@@ -645,12 +678,25 @@ export default function TestDrawer({
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab("audit")}
+            className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              activeTab === "audit"
+                ? "bg-white dark:bg-surface-primary text-text-primary shadow-xs border-2 border-blue-600"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+            title="Execution History & Node Traversal Audit Trail"
+          >
+            Audit Trail
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab("variables")}
-            className={`px-2.5 py-1 rounded-xl font-mono font-bold text-xs transition cursor-pointer ${
+            className={`px-2 py-1 rounded-xl font-mono font-bold text-xs transition cursor-pointer ${
               activeTab === "variables"
                 ? "bg-white dark:bg-surface-primary text-text-primary shadow-xs border-2 border-blue-600"
                 : "text-text-muted hover:text-text-primary"
             }`}
+            title="Global Execution Variable Store"
           >
             &#123;&#125;
           </button>
@@ -930,21 +976,60 @@ export default function TestDrawer({
               </form>
             </div>
           </div>
-        ) : (
-          /* TAB 3: VARIABLES & PAYLOAD INSPECT */
+        ) : activeTab === "audit" ? (
+          /* TAB 3: EXECUTION HISTORY AUDIT TRAIL */
           <div className="p-4 space-y-3 text-xs overflow-y-auto custom-scrollbar flex-1">
-            <h3 className="font-bold text-text-primary">Flow Session State</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-text-primary">Execution History & Audit Trace</h3>
+              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                Loop Guard: Active (Max 10 Hops)
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { time: "18:05:01", step: 1, node: "Start Node", detail: "Session initialized with caller metadata (+1-800-555-0199)", status: "COMPLETED" },
+                { time: "18:05:02", step: 2, node: currentRunningNode?.title || "Welcome Node", detail: `Prompt spoken: "${currentRunningNode?.data?.text || "Hello! How can I help you today?"}"`, status: "ACTIVE" },
+                { time: "18:05:04", step: 3, node: "Outcome Router", detail: "Evaluating intent transition rules & keypad DTMF inputs...", status: "PENDING" }
+              ].map((log, idx) => (
+                <div key={idx} className="p-2.5 rounded-xl bg-surface-secondary/60 border border-border-primary/40 space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-mono text-text-muted">{log.time} • Step {log.step}</span>
+                    <span className={`px-1.5 py-0.5 rounded font-mono font-bold text-[9px] ${
+                      log.status === "COMPLETED" ? "bg-emerald-500/15 text-emerald-600" : log.status === "ACTIVE" ? "bg-blue-500/15 text-blue-600 animate-pulse" : "bg-neutral-500/15 text-text-muted"
+                    }`}>
+                      {log.status}
+                    </span>
+                  </div>
+                  <div className="font-bold text-[11px] text-text-primary">{log.node}</div>
+                  <p className="text-[10px] text-text-secondary leading-relaxed font-mono">{log.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* TAB 4: VARIABLE STORE & PAYLOAD INSPECT */
+          <div className="p-4 space-y-3 text-xs overflow-y-auto custom-scrollbar flex-1">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-text-primary">Global Execution Variable Store</h3>
+              <span className="text-[10px] font-mono text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-full font-bold">
+                Interpolation Enabled
+              </span>
+            </div>
             <pre className="p-3 rounded-xl bg-surface-secondary/70 border border-border-primary/50 font-mono text-[10px] text-text-secondary overflow-x-auto">
               {JSON.stringify(
                 {
-                  agent_id: "ag_918274",
-                  active_node: currentRunningNode?.id || "welcome-node",
-                  language: "en-US",
-                  voice: voiceProfile?.name || "Cimo",
+                  session: {
+                    agent_id: agentId || "ag_default",
+                    environment: "Development",
+                    active_node: currentRunningNode?.id || "welcome-node"
+                  },
                   variables: {
-                    user_phone: "+1 (555) 019-2834",
-                    order_status: "Verified",
-                    authenticated: true
+                    caller_phone: "+1 (800) 555-0199",
+                    user_name: "Customer",
+                    order_id: "ORD-99812",
+                    order_status: "Shipped",
+                    mcp_connection_status: "Connected (SSE)"
                   }
                 },
                 null,

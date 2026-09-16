@@ -11,13 +11,17 @@ import CanvasNode from "./CanvasNode";
 
 export default function FlowCanvas({
   nodes,
-  connections,
+  connections = [],
   selectedNodeId,
   activeRunningNodeId,
   onSelectNode,
   onUpdateNodeData,
   onDeleteNode,
   onAddTransition,
+  onUpdateTransition,
+  onDeleteTransition,
+  onConnect,
+  onDeleteConnection,
   onNodesChange
 }) {
   const containerRef = useRef(null);
@@ -33,12 +37,17 @@ export default function FlowCanvas({
   const [draggingNodeId, setDraggingNodeId] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Live Wire Dragging Connection State
+  const [connectingState, setConnectingState] = useState(null);
+  const [hoveredConnectionId, setHoveredConnectionId] = useState(null);
+
   // Minimap visibility
   const [showMinimap, setShowMinimap] = useState(true);
 
   // Zoom handlers
   const handleZoomIn = () => setZoom((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(2))));
   const handleZoomOut = () => setZoom((prev) => Math.max(0.3, Number((prev - 0.1).toFixed(2))));
+  
   // Dynamic bounding-box calculation to center and fit conversation flow graph on canvas
   const handleFitView = useCallback(() => {
     if (!nodes || nodes.length === 0) {
@@ -49,8 +58,8 @@ export default function FlowCanvas({
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     nodes.forEach((node) => {
-      const nodeW = node.type === "begin" || node.type === "ending" ? 120 : 260;
-      const nodeH = node.type === "begin" || node.type === "ending" ? 40 : 180;
+      const nodeW = node.type === "begin" || node.type === "start" || node.type === "ending" ? 140 : 260;
+      const nodeH = node.type === "begin" || node.type === "start" || node.type === "ending" ? 40 : 180;
       if (node.x < minX) minX = node.x;
       if (node.y < minY) minY = node.y;
       if (node.x + nodeW > maxX) maxX = node.x + nodeW;
@@ -115,7 +124,46 @@ export default function FlowCanvas({
     });
   };
 
-  // Global mouse move
+  // Start dragging a connection wire from a port handle
+  const handleStartConnect = (e, sourceNodeId, transitionId, transitionIndex) => {
+    e.stopPropagation();
+    const sourceNode = nodes.find((n) => n.id === sourceNodeId);
+    if (!sourceNode) return;
+
+    let startX = sourceNode.x + (sourceNode.type === "begin" || sourceNode.type === "start" ? 120 : 255);
+    let startY = sourceNode.y + (sourceNode.type === "begin" || sourceNode.type === "start" ? 16 : 145 + (transitionIndex || 0) * 34);
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const currentMouseX = Math.round((e.clientX - rect.left - pan.x) / zoom);
+      const currentMouseY = Math.round((e.clientY - rect.top - pan.y) / zoom);
+
+      setConnectingState({
+        sourceNodeId,
+        transitionId,
+        transitionIndex,
+        startPos: { x: startX, y: startY },
+        currentPos: { x: currentMouseX, y: currentMouseY }
+      });
+    }
+  };
+
+  // End dragging a connection wire over a target node
+  const handleEndConnect = (targetNodeId) => {
+    if (connectingState && targetNodeId && targetNodeId !== connectingState.sourceNodeId) {
+      if (onConnect) {
+        onConnect(
+          connectingState.sourceNodeId,
+          connectingState.transitionId,
+          connectingState.transitionIndex,
+          targetNodeId
+        );
+      }
+    }
+    setConnectingState(null);
+  };
+
+  // Global mouse move for node drag & live wire drawing
   const handleMouseMove = useCallback(
     (e) => {
       if (draggingNodeId) {
@@ -127,6 +175,14 @@ export default function FlowCanvas({
             node.id === draggingNodeId ? { ...node, x: newX, y: newY } : node
           )
         );
+      } else if (connectingState && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const canvasX = Math.round((e.clientX - rect.left - pan.x) / zoom);
+        const canvasY = Math.round((e.clientY - rect.top - pan.y) / zoom);
+
+        setConnectingState((prev) =>
+          prev ? { ...prev, currentPos: { x: canvasX, y: canvasY } } : null
+        );
       } else if (isPanning) {
         setPan({
           x: e.clientX - panStart.x,
@@ -134,14 +190,44 @@ export default function FlowCanvas({
         });
       }
     },
-    [draggingNodeId, dragOffset, zoom, isPanning, panStart, onNodesChange]
+    [draggingNodeId, dragOffset, zoom, connectingState, isPanning, panStart, pan, onNodesChange]
   );
 
   // Global mouse up
-  const handleMouseUp = useCallback(() => {
-    setDraggingNodeId(null);
-    setIsPanning(false);
-  }, []);
+  const handleMouseUp = useCallback(
+    (e) => {
+      if (connectingState) {
+        // If released over a node box on canvas, complete connection
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const canvasX = Math.round((e.clientX - rect.left - pan.x) / zoom);
+          const canvasY = Math.round((e.clientY - rect.top - pan.y) / zoom);
+
+          const targetNode = nodes.find(
+            (n) =>
+              n.id !== connectingState.sourceNodeId &&
+              canvasX >= n.x &&
+              canvasX <= n.x + 260 &&
+              canvasY >= n.y &&
+              canvasY <= n.y + 280
+          );
+
+          if (targetNode && onConnect) {
+            onConnect(
+              connectingState.sourceNodeId,
+              connectingState.transitionId,
+              connectingState.transitionIndex,
+              targetNode.id
+            );
+          }
+        }
+        setConnectingState(null);
+      }
+      setDraggingNodeId(null);
+      setIsPanning(false);
+    },
+    [connectingState, nodes, pan, zoom, onConnect]
+  );
 
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
@@ -152,51 +238,118 @@ export default function FlowCanvas({
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  // Consolidate connections from flowConnections and node.data.transitions
+  const getUnifiedConnections = useCallback(() => {
+    const map = new Map();
+
+    // 1. Array-based connections
+    (connections || []).forEach((c) => {
+      const key = `${c.fromNode}-${c.transitionId || c.transitionIndex || 0}`;
+      map.set(key, { ...c });
+    });
+
+    // 2. Node transition target references
+    nodes.forEach((n) => {
+      const transitions = n.data?.transitions || [];
+      transitions.forEach((t, idx) => {
+        if (t.targetNodeId) {
+          const key = `${n.id}-${t.id || idx}`;
+          map.set(key, {
+            id: `c_${n.id}_${t.id || idx}`,
+            fromNode: n.id,
+            toNode: t.targetNodeId,
+            transitionId: t.id,
+            transitionIndex: idx
+          });
+        }
+      });
+    });
+
+    return Array.from(map.values());
+  }, [connections, nodes]);
+
   // Compute SVG Bezier Curves for connections between nodes
   const renderConnections = () => {
-    return connections.map((conn) => {
+    const unified = getUnifiedConnections();
+
+    return unified.map((conn) => {
       const sourceNode = nodes.find((n) => n.id === conn.fromNode);
       const targetNode = nodes.find((n) => n.id === conn.toNode);
 
       if (!sourceNode || !targetNode) return null;
 
       // Calculate source handle coordinates
-      let startX = sourceNode.x + (sourceNode.type === "begin" ? 80 : 255);
-      let startY = sourceNode.y + (sourceNode.type === "begin" ? 14 : 95 + (conn.transitionIndex || 0) * 32);
+      let startX = sourceNode.x + (sourceNode.type === "begin" || sourceNode.type === "start" ? 120 : 255);
+      let startY = sourceNode.y + (sourceNode.type === "begin" || sourceNode.type === "start" ? 16 : 145 + (conn.transitionIndex || 0) * 34);
 
-      // Target node port is usually top-left handle
+      // Target node port is left handle
       let endX = targetNode.x;
-      let endY = targetNode.y + (targetNode.type === "ending" ? 14 : 32);
+      let endY = targetNode.y + (targetNode.type === "ending" ? 16 : 32);
 
-      const dx = Math.max(50, Math.abs(endX - startX) * 0.45);
+      const dx = Math.max(60, Math.abs(endX - startX) * 0.45);
       const pathD = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      const connId = conn.id || `${conn.fromNode}-${conn.toNode}-${conn.transitionIndex || 0}`;
+      const isHovered = hoveredConnectionId === connId;
 
       return (
-        <g key={conn.id || `${conn.fromNode}-${conn.toNode}`}>
+        <g
+          key={connId}
+          className="group cursor-pointer"
+          onMouseEnter={() => setHoveredConnectionId(connId)}
+          onMouseLeave={() => setHoveredConnectionId(null)}
+        >
+          {/* Thick invisible click/hover target path */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="transparent"
+            strokeWidth="16"
+            className="pointer-events-stroke cursor-pointer"
+          />
+
           {/* Outer glow line */}
           <path
             d={pathD}
             fill="none"
             stroke="currentColor"
-            strokeWidth="3"
-            className="text-border-primary/40"
+            strokeWidth={isHovered ? "4" : "3"}
+            className={isHovered ? "text-accent-primary opacity-60" : "text-border-primary/40"}
           />
           {/* Core connection curve */}
           <path
             d={pathD}
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.8"
-            className="text-zinc-400 dark:text-zinc-600 hover:text-accent-primary transition-colors"
+            strokeWidth={isHovered ? "2.5" : "2"}
+            className={isHovered ? "text-accent-primary" : "text-zinc-500 dark:text-zinc-400"}
           />
           {/* Target port circle */}
           <circle
             cx={endX}
             cy={endY}
-            r="3"
+            r="3.5"
             fill="currentColor"
             className="text-accent-primary"
           />
+
+          {/* Hover delete connection badge */}
+          {isHovered && onDeleteConnection && (
+            <g
+              transform={`translate(${midX}, ${midY})`}
+              className="cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteConnection(conn.id);
+              }}
+            >
+              <circle r="9" fill="#ef4444" className="shadow-md" />
+              <text textAnchor="middle" dy="3.5" fill="#ffffff" fontSize="10" fontWeight="bold">
+                ✕
+              </text>
+            </g>
+          )}
         </g>
       );
     });
@@ -235,6 +388,27 @@ export default function FlowCanvas({
           height="3500"
         >
           {renderConnections()}
+
+          {/* Live Rubberband Wire while dragging connector handle */}
+          {connectingState && (
+            <g>
+              <path
+                d={`M ${connectingState.startPos.x} ${connectingState.startPos.y} C ${connectingState.startPos.x + 80} ${connectingState.startPos.y}, ${connectingState.currentPos.x - 80} ${connectingState.currentPos.y}, ${connectingState.currentPos.x} ${connectingState.currentPos.y}`}
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="3"
+                strokeDasharray="6 4"
+                className="animate-pulse"
+              />
+              <circle
+                cx={connectingState.currentPos.x}
+                cy={connectingState.currentPos.y}
+                r="5"
+                fill="#6366f1"
+                className="shadow-md"
+              />
+            </g>
+          )}
         </svg>
 
         {/* Render Flow Nodes */}
@@ -249,6 +423,10 @@ export default function FlowCanvas({
             onDelete={onDeleteNode}
             onStartDrag={handleStartDragNode}
             onAddTransition={onAddTransition}
+            onUpdateTransition={onUpdateTransition}
+            onDeleteTransition={onDeleteTransition}
+            onStartConnect={handleStartConnect}
+            onEndConnect={handleEndConnect}
           />
         ))}
       </div>

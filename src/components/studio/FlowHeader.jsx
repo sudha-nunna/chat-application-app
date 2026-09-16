@@ -18,15 +18,21 @@ export default function FlowHeader({
   isSaving,
   onPublish,
   isPublishing,
+  onValidateGraph,
+  isValidating,
   lastSavedTime,
   environment = "Development",
-  onEnvironmentChange
+  onEnvironmentChange,
+  isPublished = false,
+  publishedVersion = "V0",
+  versionList = ["V0 (Draft)", "V1 (Live)"],
+  onSelectVersion
 }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(agentName || "Conversation Flow Agent");
   const [showEnvDropdown, setShowEnvDropdown] = useState(false);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState("V0");
+  const [selectedVersion, setSelectedVersion] = useState(publishedVersion || "V0");
 
   const handleStartEdit = () => {
     setTitleInput(agentName || "Conversation Flow Agent");
@@ -126,30 +132,52 @@ export default function FlowHeader({
           <button
             type="button"
             onClick={() => setShowVersionDropdown(!showVersionDropdown)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-secondary border border-border-primary/50 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-secondary border border-border-primary/50 transition cursor-pointer"
+            title="Switch agent version"
           >
             <FiClock className="text-xs text-text-muted" />
             <span>{selectedVersion}</span>
+            <FiChevronDown className="text-[10px] text-text-muted" />
           </button>
 
           {showVersionDropdown && (
-            <div className="absolute right-0 top-full mt-1 w-32 bg-surface-primary dark:bg-surface-secondary border border-border-primary rounded-xl shadow-lg py-1 z-50 animate-fadeIn">
-              {["V0", "V1 (Draft)", "V2 (Live)"].map((v) => (
+            <div className="absolute right-0 top-full mt-1 w-40 bg-surface-primary dark:bg-surface-secondary border border-border-primary rounded-xl shadow-lg py-1 z-50 animate-fadeIn">
+              {(versionList && versionList.length > 0 ? versionList : ["V0 (Draft)", "V1 (Live)"]).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => {
                     setSelectedVersion(v);
+                    if (onSelectVersion) onSelectVersion(v);
                     setShowVersionDropdown(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-secondary cursor-pointer"
+                  className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-secondary cursor-pointer flex items-center justify-between"
                 >
-                  {v}
+                  <span>{v}</span>
+                  {selectedVersion === v && <FiCheck className="text-xs text-emerald-500" />}
                 </button>
               ))}
             </div>
           )}
         </div>
+
+        {/* Validate Graph Button */}
+        {onValidateGraph && (
+          <button
+            type="button"
+            onClick={onValidateGraph}
+            disabled={isValidating}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition cursor-pointer shadow-2xs"
+            title="Validate flow graph integrity (checks orphans, missing ports, loops)"
+          >
+            {isValidating ? (
+              <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <FiCheck className="text-xs" />
+            )}
+            <span>Validate</span>
+          </button>
+        )}
 
         {/* Test Button (Opens Test & Simulation Drawer) */}
         <button

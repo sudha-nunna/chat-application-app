@@ -280,8 +280,8 @@ const AgentStudioPage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Retell AI Visual Workflow State
-  const [studioViewMode, setStudioViewMode] = useState("workflow"); // "workflow" (Retell AI Visual Canvas) | "classic" (Legacy Form)
+  // Retell AI Visual Workflow & Platform Architecture State
+  const [studioViewMode, setStudioViewMode] = useState("workflow"); // "workflow" | "classic"
   const [flowNodes, setFlowNodes] = useState(DEFAULT_FLOW_NODES);
   const [flowConnections, setFlowConnections] = useState(DEFAULT_CONNECTIONS);
   const [selectedNodeId, setSelectedNodeId] = useState("welcome-node");
@@ -291,6 +291,12 @@ const AgentStudioPage = () => {
   const [isConductorModalOpen, setIsConductorModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [environment, setEnvironment] = useState("Development");
+  const [publishedVersion, setPublishedVersion] = useState("V0 (Draft)");
+  const [versionHistory, setVersionHistory] = useState([
+    { version: "V0 (Draft)", timestamp: new Date().toLocaleTimeString(), nodes: DEFAULT_FLOW_NODES, connections: DEFAULT_CONNECTIONS }
+  ]);
+  const [isValidatingGraph, setIsValidatingGraph] = useState(false);
+  const [graphValidationNotice, setGraphValidationNotice] = useState(null);
   const [lastSavedTime, setLastSavedTime] = useState(
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   );
@@ -350,6 +356,122 @@ const AgentStudioPage = () => {
         return n;
       })
     );
+  };
+
+  const handleDeleteTransition = (nodeId, transitionId) => {
+    setFlowNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === nodeId) {
+          const currentTr = n.data?.transitions || [];
+          const filtered = currentTr.filter((t, idx) => (t.id ? t.id !== transitionId : idx !== transitionId));
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              transitions: filtered
+            }
+          };
+        }
+        return n;
+      })
+    );
+  };
+
+  const handleUpdateTransition = (nodeId, transitionId, updatedData) => {
+    setFlowNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === nodeId) {
+          const currentTr = n.data?.transitions || [];
+          const updated = currentTr.map((t, idx) => {
+            if ((t.id && t.id === transitionId) || idx === transitionId) {
+              return typeof updatedData === "string"
+                ? { ...t, label: updatedData }
+                : { ...t, ...updatedData };
+            }
+            return t;
+          });
+          return { ...n, data: { ...n.data, transitions: updated } };
+        }
+        return n;
+      })
+    );
+  };
+
+  // Handle Wire Connection between Nodes
+  const handleConnect = (fromNodeId, transitionId, transitionIndex, toNodeId) => {
+    if (!fromNodeId || !toNodeId || fromNodeId === toNodeId) return;
+
+    setFlowConnections((prev) => {
+      const filtered = prev.filter(
+        (c) => !(c.fromNode === fromNodeId && (c.transitionId === transitionId || c.transitionIndex === transitionIndex))
+      );
+      const newConn = {
+        id: `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        fromNode: fromNodeId,
+        toNode: toNodeId,
+        transitionId,
+        transitionIndex
+      };
+      return [...filtered, newConn];
+    });
+
+    setFlowNodes((prev) =>
+      prev.map((node) => {
+        if (node.id === fromNodeId && node.data?.transitions) {
+          const updated = node.data.transitions.map((tr, idx) => {
+            if ((tr.id && tr.id === transitionId) || idx === transitionIndex) {
+              return { ...tr, targetNodeId: toNodeId };
+            }
+            return tr;
+          });
+          return { ...node, data: { ...node.data, transitions: updated } };
+        }
+        return node;
+      })
+    );
+  };
+
+  const handleDeleteConnection = (connectionId) => {
+    setFlowConnections((prev) => prev.filter((c) => c.id !== connectionId));
+  };
+
+  // Graph Integrity Validation Engine
+  const handleValidateGraph = () => {
+    setIsValidatingGraph(true);
+    let errorCount = 0;
+    const updatedNodes = flowNodes.map((n) => {
+      let validationError = null;
+      // Check 1: Non-start and non-begin nodes should have incoming target links or be accessible
+      if (n.type !== "begin" && n.type !== "start" && n.type !== "note") {
+        const hasIncoming = flowConnections.some((c) => c.toNode === n.id);
+        if (!hasIncoming && n.id !== "welcome-node") {
+          validationError = "Orphan node (no incoming connection)";
+          errorCount++;
+        }
+      }
+      return { ...n, validationError };
+    });
+
+    setFlowNodes(updatedNodes);
+    setIsValidatingGraph(false);
+    if (errorCount > 0) {
+      setGraphValidationNotice(`Found ${errorCount} graph issue(s). Check highlighted nodes.`);
+    } else {
+      setGraphValidationNotice("✅ Graph Integrity Validated! All nodes connected cleanly.");
+    }
+
+    setTimeout(() => {
+      setGraphValidationNotice(null);
+    }, 4000);
+  };
+
+  const handleSelectVersion = (versionTag) => {
+    const found = versionHistory.find((v) => v.version === versionTag);
+    if (found) {
+      setFlowNodes(found.nodes);
+      setFlowConnections(found.connections);
+      setPublishedVersion(versionTag);
+    }
   };
 
   // Form State
@@ -1588,12 +1710,33 @@ const AgentStudioPage = () => {
           onOpenConductor={() => setIsConductorModalOpen(true)}
           onSave={handleSaveConfiguration}
           isSaving={isSaving}
-          onPublish={handleSaveConfiguration}
+          onPublish={async () => {
+            handleValidateGraph();
+            const nextVersionTag = `V${versionHistory.length} (Published)`;
+            setPublishedVersion(nextVersionTag);
+            setVersionHistory((prev) => [
+              ...prev,
+              { version: nextVersionTag, timestamp: new Date().toLocaleTimeString(), nodes: flowNodes, connections: flowConnections }
+            ]);
+            await handleSaveConfiguration();
+          }}
           isPublishing={isSaving}
+          onValidateGraph={handleValidateGraph}
+          isValidating={isValidatingGraph}
           lastSavedTime={lastSavedTime}
           environment={environment}
           onEnvironmentChange={(env) => setEnvironment(env)}
+          publishedVersion={publishedVersion}
+          versionList={versionHistory.map((v) => v.version)}
+          onSelectVersion={handleSelectVersion}
         />
+
+        {/* Validation Toast Notice */}
+        {graphValidationNotice && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-surface-primary border border-border-primary text-xs font-bold text-text-primary shadow-xl animate-fadeIn">
+            {graphValidationNotice}
+          </div>
+        )}
 
         {/* Main Studio Body: Left Node Palette | Center Visual Node Canvas | Right Test Drawer */}
         <div className="flex-1 flex w-full h-[calc(100vh-3.5rem)] overflow-hidden relative">
@@ -1622,6 +1765,10 @@ const AgentStudioPage = () => {
             onUpdateNodeData={handleUpdateNodeData}
             onDeleteNode={handleDeleteNode}
             onAddTransition={handleAddTransition}
+            onUpdateTransition={handleUpdateTransition}
+            onDeleteTransition={handleDeleteTransition}
+            onConnect={handleConnect}
+            onDeleteConnection={handleDeleteConnection}
             onNodesChange={setFlowNodes}
           />
 
@@ -1631,6 +1778,7 @@ const AgentStudioPage = () => {
             onClose={() => setIsTestDrawerOpen(false)}
             agentId={botId}
             nodes={flowNodes}
+            connections={flowConnections}
             voiceProfile={getVoiceProfileById(selectedVoiceId)}
             globalPrompt={systemPrompt}
             model={selectedModel}

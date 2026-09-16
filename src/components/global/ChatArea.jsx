@@ -59,6 +59,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   // Stores original message content + _id before edit replaces it in state — used to find the correct DB document
   const originalContentBeforeEditRef = useRef(null);
   const originalMessageIdRef = useRef(null);
+  const continuationContextRef = useRef(null);
 
   // Streaming speech queue & buffer refs for sentence-by-sentence TTS
   const streamingSpeechQueueRef = useRef([]);
@@ -581,6 +582,9 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   const handleStopGeneration = (targetChatOverride = null) => {
+    // If targetChatOverride is a React SyntheticEvent or not a string, treat as null
+    const targetChatId = typeof targetChatOverride === "string" ? targetChatOverride : null;
+
     isGeneratingRef.current = false;
     isAbortedRef.current = true;
     if (abortControllerRef.current) {
@@ -588,18 +592,30 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       abortControllerRef.current = null;
     }
     stopDrainLoop();
-    tokenQueueRef.current = [];
+
+    // ✅ FIX: Capture ALL received content BEFORE clearing the queue.
+    // currentStreamingTextRef = already visually drained tokens.
+    // tokenQueueRef = received from network but not yet drained to the display.
+    const partialText = currentStreamingTextRef.current + tokenQueueRef.current.join("");
+
+    tokenQueueRef.current = [];          // clear queue AFTER capturing
     streamNetworkDoneRef.current = false;
     streamCompleteCbRef.current = null;
 
-    const targetChat = targetChatOverride || streamingChatIdRef.current || (currentChatId && currentChatId !== "new" ? currentChatId : null);
-    const partialText = currentStreamingTextRef.current;
+    const targetChat = targetChatId || streamingChatIdRef.current || (currentChatId && currentChatId !== "new" ? currentChatId : null);
+
     if (partialText && partialText.trim()) {
-      if (!targetChatOverride || targetChatOverride === currentChatId) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: partialText, isStoppedMidway: true }
-        ]);
+      if (!targetChatId || targetChatId === currentChatId) {
+        if (continuationContextRef.current && continuationContextRef.current.messageIndex !== undefined) {
+          const idx = continuationContextRef.current.messageIndex;
+          const fullPartial = (continuationContextRef.current.baseContent || "") + partialText;
+          setMessages((prev) => prev.map((m, i) => i === idx ? { ...m, content: fullPartial, isStoppedMidway: true } : m));
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: partialText, isStoppedMidway: true }
+          ]);
+        }
       }
 
       // Synchronize stop with backend so switching chats or reloading preserves the Continue button
@@ -613,7 +629,23 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               Authorization: `Bearer ${token}`
             },
             body: JSON.stringify({ content: partialText })
-          }).catch((e) => console.warn("Failed to notify stop:", e.message));
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data?.message?._id) {
+              setMessages(prev => {
+                if (prev.length === 0) return prev;
+                const lastIdx = prev.length - 1;
+                if (prev[lastIdx]?.role === "assistant") {
+                  const updated = [...prev];
+                  updated[lastIdx] = { ...updated[lastIdx], _id: data.message._id };
+                  return updated;
+                }
+                return prev;
+              });
+            }
+          })
+          .catch((e) => console.warn("Failed to notify stop:", e.message));
         }
       } catch (err) {
         console.warn("Stop notification error:", err);
@@ -622,6 +654,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     setStreamingReply("");
     currentStreamingTextRef.current = "";
+    continuationContextRef.current = null;
     setIsSearching(false);
     setIsBotTyping(false);
     clearAudioPipeline();
@@ -630,26 +663,23 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const handleContinueGeneration = (stoppedContent, messageIndex) => {
     if (isGeneratingRef.current) return;
 
-    const tailSnippet = (stoppedContent || "").slice(-120).trim();
-    const openFences = (stoppedContent.match(/```/g) || []).length;
-    const isInsideCode = openFences % 2 !== 0;
-
-    let continuationPrompt = "";
-    if (isInsideCode) {
-      continuationPrompt = `Continue writing the code and response exactly from where you stopped. Do not repeat what was already written. Do not open a new code block. Continue directly with the remaining code and tags from: "${tailSnippet}"`;
-    } else {
-      continuationPrompt = `Continue your response exactly from where you stopped without repeating. Continue immediately from: "${tailSnippet}"`;
-    }
+    const stoppedMsgObj = Array.isArray(messages) ? messages[messageIndex] : null;
+    const stoppedMessageId = stoppedMsgObj?._id || stoppedMsgObj?.id || null;
+    const prevUserMsg = Array.isArray(messages)
+      ? [...messages.slice(0, messageIndex)].reverse().find((m) => m.role === "user")
+      : null;
+    const userPrompt = prevUserMsg?.content || "";
 
     handleSendSubmit(
-      continuationPrompt,
+      userPrompt,
       null,
       undefined,
       [],
       undefined,
       false,
       false,
-      { baseContent: stoppedContent, messageIndex, isInsideCode }
+      { isContinuation: true, baseContent: stoppedContent || "", messageIndex, stoppedMessageId },
+      false
     );
   };
 
@@ -762,8 +792,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       return;
     }
     const cleanText = (typeof textPayload === "string" ? textPayload : "").trim();
-    // Prompt text is mandatory (attachments alone cannot be submitted without text prompt)
-    if (!cleanText) {
+    // Prompt text is mandatory (unless continuationContext is provided)
+    if (!cleanText && !continuationContext) {
       console.warn("⚠️ Request blocked: A text prompt is required to send.");
       return;
     }
@@ -831,6 +861,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     isGeneratingRef.current = true;
     isAbortedRef.current = false;
+    continuationContextRef.current = continuationContext;
     const effectiveChatId = activeChatIdRef.current || currentChatId;
     streamingChatIdRef.current = effectiveChatId;
     streamFollowUpsRef.current = [];
@@ -847,11 +878,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       window.speechSynthesis.resume();
     }
 
-    if (continuationContext) {
-      // Seamless continuation: keep prior history up to the stopped message and start stream with baseContent
-      setMessages((prev) => prev.slice(0, continuationContext.messageIndex));
-      currentStreamingTextRef.current = continuationContext.baseContent || "";
-      setStreamingReply(continuationContext.baseContent || "");
+    if (continuationContext && continuationContext.messageIndex !== undefined && continuationContext.messageIndex >= 0) {
+      // Edit/Reload style Continuation: trim downstream messages after messageIndex
+      setMessages((prev) => prev.slice(0, continuationContext.messageIndex + 1));
+      currentStreamingTextRef.current = "";
+      setStreamingReply("");
+    } else if (continuationContext) {
+      currentStreamingTextRef.current = "";  // stream shows only NEW tokens
+      setStreamingReply("");
     } else if (isAssistantReload && editIndex !== undefined && editIndex >= 0) {
       // ChatGPT-style Regeneration: keep user query in history at editIndex, trim old assistant response, do NOT add duplicate user message!
       setMessages((prev) => prev.slice(0, editIndex + 1));
@@ -859,7 +893,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setStreamingReply("");
     } else if (editIndex !== undefined && editIndex >= 0) {
       // Capture BOTH _id and content BEFORE setMessages replaces the message in state
-      // _id is the most reliable way for backend to find the exact MongoDB document
       originalMessageIdRef.current = messages[editIndex]?._id ?? messages[editIndex]?.id ?? null;
       originalContentBeforeEditRef.current = messages[editIndex]?.content ?? null;
       setMessages((prev) => [...prev.slice(0, editIndex), userMsgObj]);
@@ -895,6 +928,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       const requestEndpoint = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/ollama/message/${targetChatEndpoint}`;
       const activeModel = selectedModelId || lastUsedModelRef.current;
       const isUserEdit = Boolean(editIndex !== undefined && editIndex >= 0 && !isAssistantReload);
+      const isContinuation = Boolean(continuationContext?.isContinuation);
+      const stoppedMessageId = continuationContext?.stoppedMessageId || continuationContext?.targetMessageId;
+      const baseContent = continuationContext?.baseContent;
+
       const requestPayload = {
         message: cleanText,
         mode: conversationMode,
@@ -906,10 +943,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         webSearch: isSearchRequested,
         isReload: Boolean(isAssistantReload),
         isEdit: Boolean(isUserEdit),
+        isContinuation,
+        isLastMessage: continuationContext?.isLastMessage !== undefined ? Boolean(continuationContext.isLastMessage) : true,
+        stoppedMessageId,
+        baseContent,
+        stoppedContent: baseContent,
         devMode: Boolean(isDevModeActive),
         isDevModeActive: Boolean(isDevModeActive),
-        // messageId (_id) is the most reliable way to find the exact DB document for edit
-        messageId: isUserEdit ? (originalMessageIdRef.current ?? undefined) : undefined,
+        // messageId (_id) is the most reliable way to find the exact DB document for edit / continuation
+        messageId: isUserEdit
+          ? (originalMessageIdRef.current ?? undefined)
+          : (stoppedMessageId ?? undefined),
         // originalContent as text fallback (in case _id doesn't match e.g. guest sessions)
         originalContent: isUserEdit
           ? (originalContentBeforeEditRef.current ?? undefined)
@@ -917,6 +961,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             ? messages[editIndex].content
             : undefined)
       };
+
 
       console.log("📤 [AI CHAT REQUEST SENT FROM BROWSER]", {
         endpoint: requestEndpoint,
@@ -1124,22 +1169,49 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
       if (finalResponseContent && finalResponseContent.trim()) {
         setMessages((prev) => {
-          const next = [
-            ...prev,
-            {
-              role: "assistant",
-              content: finalResponseContent,
-              followUps: streamFollowUpsRef.current || [],
-              sources: activeSearchSourcesRef.current || [],
-              requiresWebSearch: isSearchGuidanceRef.current || false,
-            },
-          ];
-          if (isStreamingSpeechActiveRef.current) {
-            setActiveSpeakingIndex(next.length - 1);
+          let targetIdx = -1;
+          if (continuationContextRef.current) {
+            const { messageIndex: reqIdx, stoppedMessageId: reqId, baseContent: reqBase } = continuationContextRef.current;
+            if (reqIdx !== undefined && reqIdx >= 0 && prev[reqIdx] && prev[reqIdx].role === "assistant") {
+              targetIdx = reqIdx;
+            } else if (reqId) {
+              targetIdx = prev.findIndex((m) => m._id === reqId || m.id === reqId);
+            } else if (reqBase) {
+              targetIdx = prev.findIndex((m) => m.role === "assistant" && m.content === reqBase);
+            }
           }
-          return next;
+
+          if (targetIdx !== -1) {
+            const fullContent = (continuationContextRef.current.baseContent || "") + finalResponseContent;
+            return prev.map((msg, idx) =>
+              idx === targetIdx
+                ? {
+                    ...msg,
+                    content: fullContent,
+                    isStoppedMidway: false,
+                    continuationResolved: true,
+                    followUps: streamFollowUpsRef.current || [],
+                    sources: activeSearchSourcesRef.current || [],
+                    requiresWebSearch: isSearchGuidanceRef.current || false,
+                  }
+                : msg
+            );
+          } else {
+            return [
+              ...prev,
+              {
+                role: "assistant",
+                content: finalResponseContent,
+                followUps: streamFollowUpsRef.current || [],
+                sources: activeSearchSourcesRef.current || [],
+                requiresWebSearch: isSearchGuidanceRef.current || false,
+                isStoppedMidway: false,
+              },
+            ];
+          }
         });
       }
+      continuationContextRef.current = null;
 
       const totalTime = (performance.now() - t0).toFixed(2);
       const streamDuration = firstTokenTime ? (performance.now() - firstTokenTime).toFixed(2) : "N/A";
@@ -1590,6 +1662,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     )
                     : false;
 
+                  const isTargetContinuation = Boolean(
+                    isBotTyping &&
+                    continuationContextRef.current &&
+                    (
+                      index === continuationContextRef.current.messageIndex ||
+                      (continuationContextRef.current.stoppedMessageId && (m._id === continuationContextRef.current.stoppedMessageId || m.id === continuationContextRef.current.stoppedMessageId)) ||
+                      (continuationContextRef.current.baseContent && m.content === continuationContextRef.current.baseContent)
+                    )
+                  );
+
+                  const displayContent = isTargetContinuation
+                    ? (m.content || "") + (streamingReply || "")
+                    : m.content;
+
+                  const hasNewerMessages = index < messages.length - 1;
+                  const showContinueBtn =
+                    m.role === "assistant" &&
+                    m.isStoppedMidway === true &&
+                    !m.continuationResolved &&
+                    !hasNewerMessages &&
+                    !isTargetContinuation;
+
                   return (
                     <div
                       key={index}
@@ -1598,7 +1692,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                     >
                       <MessageBubble
                         role={m.role}
-                        content={m.content}
+                        content={displayContent}
+                        isStreaming={isTargetContinuation ? true : false}
                         attachments={m.attachments}
                         enableSearch={m.enableSearch}
                         searchExecuted={isSearchActuallyExecuted}
@@ -1646,7 +1741,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                                 )
                               : undefined
                         }
-                        isStoppedMidway={m.isStoppedMidway}
+                        isStoppedMidway={showContinueBtn}
                         onContinueGeneration={() => handleContinueGeneration(m.content, index)}
                       />
                     </div>
@@ -1654,7 +1749,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 });
               })()}
 
-              {(isSearching || isBotTyping) && (
+              {(isSearching || isBotTyping) && !continuationContextRef.current && (
                 <MessageBubble
                   role="assistant"
                   content={streamingReply}

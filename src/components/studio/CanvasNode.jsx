@@ -1,10 +1,13 @@
+import { useState } from "react";
 import {
   FiMessageSquare,
   FiPlus,
   FiTrash2,
   FiPhoneCall,
   FiSend,
-  FiCode
+  FiCode,
+  FiEdit2,
+  FiCheck
 } from "react-icons/fi";
 import {
   TbRobot,
@@ -26,8 +29,14 @@ export default function CanvasNode({
   onUpdateData,
   onDelete,
   onStartDrag,
-  onAddTransition
+  onAddTransition,
+  onUpdateTransition,
+  onDeleteTransition,
+  onStartConnect,
+  onEndConnect
 }) {
+  const [editingTransId, setEditingTransId] = useState(null);
+  const [editingLabelText, setEditingLabelText] = useState("");
   // Styling maps based on node type / color
   const colorStyles = {
     pink: {
@@ -129,8 +138,8 @@ export default function CanvasNode({
     }
   };
 
-  // 1. Begin Pill Node
-  if (node.type === "begin") {
+  // 1. Begin / Start Pill Node
+  if (node.type === "begin" || node.type === "start") {
     return (
       <div
         style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
@@ -141,19 +150,24 @@ export default function CanvasNode({
         onMouseDown={(e) => onStartDrag(e, node.id)}
         className={`absolute select-none cursor-grab active:cursor-grabbing z-10 transition-all ${
           isActiveRunning
-            ? "ring-4 ring-purple-500/70 shadow-lg shadow-purple-500/30 animate-pulse"
+            ? "ring-4 ring-emerald-500/70 shadow-lg shadow-emerald-500/30 animate-pulse"
             : isSelected
-            ? "ring-2 ring-purple-500 shadow-md"
+            ? "ring-2 ring-emerald-500 shadow-md"
             : ""
         }`}
       >
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/40 text-purple-600 dark:text-purple-300 text-xs font-semibold shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
-          <span>Begin</span>
+        <div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/40 text-emerald-600 dark:text-emerald-300 text-xs font-bold shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>{node.title || "Start Node"}</span>
           {/* Outgoing port */}
           <div
             id={`port-${node.id}-out`}
-            className="w-2.5 h-2.5 rounded-full bg-purple-500 border-2 border-white dark:border-neutral-900 -mr-2 ml-1 shadow-2xs"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              if (onStartConnect) onStartConnect(e, node.id, "out", 0);
+            }}
+            className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-neutral-900 -mr-2 ml-1 shadow-2xs cursor-crosshair hover:scale-150 transition-transform"
+            title="Drag line to connect to next node"
           />
         </div>
       </div>
@@ -181,7 +195,12 @@ export default function CanvasNode({
         {/* Incoming port */}
         <div
           id={`port-${node.id}-in`}
-          className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-teal-500 border-2 border-white dark:border-neutral-900 z-10"
+          onMouseUp={(e) => {
+            e.stopPropagation();
+            if (onEndConnect) onEndConnect(node.id);
+          }}
+          className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-teal-500 border-2 border-white dark:border-neutral-900 z-10 cursor-pointer hover:scale-150 transition-transform"
+          title="Drop wire here to connect ending node"
         />
         <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal-500/15 dark:bg-teal-500/20 border border-teal-500/40 text-teal-700 dark:text-teal-300 text-xs font-semibold shadow-xs">
           <TbPercentage className="text-sm" />
@@ -236,6 +255,7 @@ export default function CanvasNode({
 
   // 4. Full Flow Cards
   const transitions = node.data?.transitions || [];
+  const hasValidationError = Boolean(node.validationError);
 
   return (
     <div
@@ -247,6 +267,8 @@ export default function CanvasNode({
       className={`absolute w-[240px] sm:w-[260px] rounded-2xl border ${style.border} ${style.cardBg} shadow-sm backdrop-blur-md select-none transition-all z-10 group ${
         isActiveRunning
           ? style.activeGlow
+          : hasValidationError
+          ? "ring-2 ring-red-500 shadow-md shadow-red-500/20"
           : isSelected
           ? style.selectedRing
           : "hover:shadow-md"
@@ -255,7 +277,12 @@ export default function CanvasNode({
       {/* Incoming Connection Port (Left Center) */}
       <div
         id={`port-${node.id}-in`}
-        className="absolute -left-1.5 top-8 w-2.5 h-2.5 rounded-full bg-border-primary border-2 border-surface-primary shadow-xs z-20 group-hover:scale-125 transition"
+        onMouseUp={(e) => {
+          e.stopPropagation();
+          if (onEndConnect) onEndConnect(node.id);
+        }}
+        className="absolute -left-1.5 top-8 w-3 h-3 rounded-full bg-accent-primary border-2 border-surface-primary shadow-xs z-20 hover:scale-150 transition-transform cursor-pointer"
+        title="Drop wire here to connect target node"
       />
 
       {/* Global Badge if present */}
@@ -263,6 +290,13 @@ export default function CanvasNode({
         <div className="absolute -top-2.5 left-4 px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold tracking-wide flex items-center gap-1">
           <span className="w-1 h-1 rounded-full bg-emerald-500" />
           <span>{node.badge}</span>
+        </div>
+      )}
+
+      {/* Validation Warning Alert Badge */}
+      {hasValidationError && (
+        <div className="absolute -top-2.5 right-4 px-2 py-0.2 rounded-full bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-xs" title={node.validationError}>
+          <span>⚠️ {node.validationError}</span>
         </div>
       )}
 
@@ -279,7 +313,7 @@ export default function CanvasNode({
         </div>
 
         <div className="flex items-center gap-1">
-          {node.id !== "welcome-node" && (
+          {node.id !== "welcome-node" && node.type !== "start" && (
             <button
               type="button"
               onClick={(e) => {
@@ -304,7 +338,7 @@ export default function CanvasNode({
                 Prompt
               </span>
               <span className="px-1.5 py-0.5 rounded bg-surface-secondary/70 text-text-muted border border-border-primary/40 font-mono">
-                Static Sentence
+                Static / Variable
               </span>
             </div>
             <textarea
@@ -313,17 +347,24 @@ export default function CanvasNode({
               onChange={(e) => {
                 onUpdateData(node.id, { text: e.target.value });
               }}
-              placeholder="Type prompt or message. Type @ to insert variables..."
+              placeholder="Type prompt or instructions. Use {{variable}} for dynamic context..."
               className="w-full text-[11px] leading-relaxed p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-text-primary resize-none focus:outline-hidden focus:border-accent-primary focus:bg-surface-primary placeholder:text-text-muted/60"
+            />
+          </div>
+        ) : node.type === "call_transfer" ? (
+          <div className="space-y-1">
+            <div className="text-[10px] font-bold text-text-muted">Transfer Destination</div>
+            <input
+              type="text"
+              value={node.data?.phone || "+1 (800) 555-0199"}
+              onChange={(e) => onUpdateData(node.id, { phone: e.target.value })}
+              placeholder="+1 (800) 555-0199 or sip:endpoint"
+              className="w-full text-[11px] px-2 py-1 rounded-lg bg-surface-primary/70 border border-border-primary/40 text-text-primary focus:outline-hidden focus:border-accent-primary"
             />
           </div>
         ) : node.type === "function" ? (
           <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
-            {node.data?.functionName || "⚡ Execute API / Tool Call"}
-          </div>
-        ) : node.type === "call_transfer" ? (
-          <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
-            📞 Transfer to: {node.data?.phone || "+1 (800) 555-0199"}
+            ⚡ {node.data?.functionName || "Execute API / Tool Call"}
           </div>
         ) : node.type === "press_digit" ? (
           <div className="p-2 rounded-xl bg-surface-primary/70 border border-border-primary/40 text-[11px] text-text-secondary font-medium truncate">
@@ -355,7 +396,7 @@ export default function CanvasNode({
           </div>
         )}
 
-        {/* Transition Section */}
+        {/* Dynamic Transition Section Across All Nodes */}
         <div className="pt-1 border-t border-border-primary/30 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
@@ -376,21 +417,118 @@ export default function CanvasNode({
 
           {/* Transition Branches */}
           <div className="space-y-1">
-            {transitions.map((t, index) => (
-              <div
-                key={t.id || index}
-                className="group/branch flex items-center justify-between p-1.5 rounded-lg bg-surface-primary/60 border border-border-primary/40 text-[10px] text-text-secondary hover:border-border-primary transition relative"
-              >
-                <span className="truncate pr-3">{t.label}</span>
+            {transitions.map((t, index) => {
+              const transKey = t.id || index;
+              const isEditingThis = editingTransId === transKey;
 
-                {/* Right Connector Handle */}
+              return (
                 <div
-                  id={`port-${node.id}-t-${t.id || index}`}
-                  className="w-2 h-2 rounded-full bg-accent-primary border border-white dark:border-neutral-900 shrink-0 shadow-2xs group-hover/branch:scale-125 transition"
-                  title="Connect to next node"
-                />
+                  key={transKey}
+                  className="group/branch flex items-center justify-between p-1.5 rounded-lg bg-surface-primary/60 border border-border-primary/40 text-[10px] text-text-secondary hover:border-border-primary transition relative"
+                >
+                  {isEditingThis ? (
+                    <div className="flex items-center gap-1 flex-1 pr-1">
+                      <input
+                        type="text"
+                        value={editingLabelText}
+                        onChange={(e) => setEditingLabelText(e.target.value)}
+                        onBlur={() => {
+                          if (onUpdateTransition && editingLabelText.trim()) {
+                            onUpdateTransition(node.id, transKey, editingLabelText.trim());
+                          }
+                          setEditingTransId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (onUpdateTransition && editingLabelText.trim()) {
+                              onUpdateTransition(node.id, transKey, editingLabelText.trim());
+                            }
+                            setEditingTransId(null);
+                          } else if (e.key === "Escape") {
+                            setEditingTransId(null);
+                          }
+                        }}
+                        autoFocus
+                        className="w-full text-[10px] px-1.5 py-0.5 rounded bg-surface-primary border border-accent-primary text-text-primary focus:outline-hidden font-medium"
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          if (onUpdateTransition && editingLabelText.trim()) {
+                            onUpdateTransition(node.id, transKey, editingLabelText.trim());
+                          }
+                          setEditingTransId(null);
+                        }}
+                        className="p-1 text-emerald-500 hover:text-emerald-600 transition cursor-pointer"
+                        title="Save option label"
+                      >
+                        <FiCheck className="text-xs" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTransId(transKey);
+                        setEditingLabelText(t.label || `= Option ${index + 1}`);
+                      }}
+                      className="truncate pr-1 cursor-pointer hover:text-accent-primary transition font-medium"
+                      title="Click to edit transition label"
+                    >
+                      {t.label || `= Option ${index + 1}`}
+                    </span>
+                  )}
+
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {!isEditingThis && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTransId(transKey);
+                          setEditingLabelText(t.label || `= Option ${index + 1}`);
+                        }}
+                        className="opacity-0 group-hover/branch:opacity-100 p-0.5 text-text-muted hover:text-accent-primary transition cursor-pointer"
+                        title="Edit option label"
+                      >
+                        <FiEdit2 className="text-[10px]" />
+                      </button>
+                    )}
+
+                    {onDeleteTransition && !isEditingThis && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteTransition(node.id, transKey);
+                        }}
+                        className="opacity-0 group-hover/branch:opacity-100 p-0.5 text-text-muted hover:text-red-500 transition cursor-pointer mr-0.5"
+                        title="Remove transition option"
+                      >
+                        <FiTrash2 className="text-[10px]" />
+                      </button>
+                    )}
+
+                    {/* Right Connector Handle */}
+                    <div
+                      id={`port-${node.id}-t-${transKey}`}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        if (onStartConnect) onStartConnect(e, node.id, transKey, index);
+                      }}
+                      className="w-3 h-3 rounded-full bg-accent-primary border border-white dark:border-neutral-900 shrink-0 shadow-2xs hover:scale-150 transition-transform cursor-crosshair z-20 ml-0.5"
+                      title="Drag line to connect to next node"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {transitions.length === 0 && (
+              <div className="text-[10px] text-text-muted italic px-1">
+                No transitions configured. Click + to add option.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
