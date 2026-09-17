@@ -1064,7 +1064,7 @@ const AppLayout = ({ children }) => {
                   <img
                     src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
                     alt="Codegene AI Logo"
-                    className="w-8 h-8 object-contain transition-all"
+                    className={`w-8 h-8 object-contain transition-all ${isDark ? "" : "mix-blend-multiply"}`}
                   />
                 </div>
                 <div className="flex items-center min-w-0">
@@ -1088,7 +1088,7 @@ const AppLayout = ({ children }) => {
                       <img
                         src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
                         alt="Codegene Logo"
-                        className="w-8 h-8 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute"
+                        className={`w-8 h-8 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute ${isDark ? "" : "mix-blend-multiply"}`}
                       />
                       <FiSidebar className="text-lg opacity-0 group-hover:opacity-100 transition-opacity absolute" />
                     </>
