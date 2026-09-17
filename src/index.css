@@ -10,6 +10,7 @@
   --font-orbitron: "Orbitron", sans-serif;
   --font-serif: "Instrument Serif", Georgia, serif;
   --font-instrument: "Ethnocentric Rg", "Ethnocentric", "Orbitron", sans-serif;
+  --font-poppins: "Poppins-Bold", "Poppins", sans-serif;
   --color-surface-primary: var(--surface-primary);
   --color-surface-secondary: var(--surface-secondary);
   --color-surface-tertiary: var(--surface-tertiary);
@@ -29,6 +30,13 @@
   --color-surface-dropdown: var(--surface-dropdown);
   --color-interactive-selected: var(--interactive-selected);
   --color-accent-primary: var(--accent-primary);
+}
+
+@font-face {
+  font-family: 'Poppins-Bold';
+  src: local('Poppins Bold'), local('Poppins-Bold'), url('https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
 }
 
 * {

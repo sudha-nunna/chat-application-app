@@ -1068,7 +1068,7 @@ const AppLayout = ({ children }) => {
                   />
                 </div>
                 <div className="flex items-center min-w-0">
-                  <span className="text-[14px] sm:text-[15px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold uppercase tracking-wider text-text-primary leading-none truncate">
+                  <span className="text-[14px] sm:text-[15px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-normal uppercase tracking-wider text-text-primary leading-none truncate">
                     CODEGENE-AI
                   </span>
                 </div>
