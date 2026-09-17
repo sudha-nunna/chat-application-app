@@ -5,7 +5,11 @@
 
 @theme {
   --font-sans: "Inter", sans-serif;
-  --font-display: "Inter", sans-serif;
+  --font-display: "Ethnocentric Rg", "Ethnocentric", "Orbitron", sans-serif;
+  --font-ethnocentric: "Ethnocentric Rg", "Ethnocentric", "Orbitron", sans-serif;
+  --font-orbitron: "Orbitron", sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-instrument: "Ethnocentric Rg", "Ethnocentric", "Orbitron", sans-serif;
   --color-surface-primary: var(--surface-primary);
   --color-surface-secondary: var(--surface-secondary);
   --color-surface-tertiary: var(--surface-tertiary);

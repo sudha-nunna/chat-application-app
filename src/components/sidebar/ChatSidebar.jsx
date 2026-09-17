@@ -6,8 +6,11 @@ import {
   FiChevronRight,
   FiMessageSquare,
   FiX,
+  FiSlack,
+  FiCpu,
 } from "react-icons/fi";
 import { TbPin } from "react-icons/tb";
+
 
 const ChatSidebar = ({
   isSidebarCollapsed,
@@ -132,9 +135,33 @@ const ChatSidebar = ({
             )}
           </div>
         )}
+
+        {/* MCP Host Servers Trigger Button */}
+        {/* <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("open-mcp-modal"))}
+          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all cursor-pointer text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 group ${
+            isSidebarCollapsed ? "justify-center" : "justify-between"
+          }`}
+          title="MCP Host Servers & Integration Management"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative flex items-center justify-center shrink-0">
+              <FiCpu className="text-base shrink-0 text-purple-500 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            {!isSidebarCollapsed && <span className="truncate">MCP Host Servers</span>}
+          </div>
+          {!isSidebarCollapsed && (
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-600 dark:text-purple-300 font-bold uppercase tracking-wider shrink-0">
+              Active
+            </span>
+          )}
+        </button> */}
       </div>
 
       {/* Scrollable Chat History List */}
+
       <div
         className={`flex-1 relative ${isSidebarCollapsed && !isMobile
             ? "overflow-visible"

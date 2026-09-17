@@ -784,7 +784,12 @@ const MessageBubble = ({
               </div>
               {onRetry && (
                 <button
-                  onClick={onRetry}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onRetry) onRetry();
+                  }}
                   className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95 cursor-pointer"
                 >
                   <FiRotateCw className="w-3.5 h-3.5" />
@@ -793,8 +798,8 @@ const MessageBubble = ({
               )}
             </div>
           )}
-          {/* Web Search Required Guidance Action Button */}
-          {!isUser && (requiresWebSearch || /(don't have access to real-time|don't have real-time|switch on the .*web search|turn on the .*web search|enable web search|cannot provide real-time|real-time.*data.*(unable|cannot|don't)|live.*data.*(unable|cannot|don't)|no access to live)/i.test(content || "")) && (
+          {/* Web Search Required Guidance Action Button (Suppressed for Slack & Plugin integration messages) */}
+          {!isUser && !/(slack|#\w+|not_in_channel|invite @|workspace|channels)/i.test(content || "") && (requiresWebSearch || /(don't have access to real-time|don't have real-time|switch on the .*web search|turn on the .*web search|enable web search|cannot provide real-time|real-time.*data.*(unable|cannot|don't)|live.*data.*(unable|cannot|don't)|no access to live)/i.test(content || "")) && (
             <div className="mt-3 pt-1">
               <button
                 type="button"

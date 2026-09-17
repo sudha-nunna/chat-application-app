@@ -14,8 +14,10 @@ import {
   FiSearch,
   FiCheck,
   FiCpu,
-  FiServer
+  FiServer,
+  FiSlack
 } from "react-icons/fi";
+
 
 const DEFAULT_AUTO_MODEL = {
   displayName: "Auto",
@@ -62,6 +64,7 @@ const ChatInput = ({
   const attachMenuRef = useRef(null);
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const isSubmittingRef = useRef(false);
+  const stopClickedTimestampRef = useRef(0);
 
   /**
    * Determines if the currently selected model supports image/vision input.
@@ -547,18 +550,18 @@ const ChatInput = ({
     }
   };
 
-  // Automatically reopen mic to listen when AI finishes reading aloud (hands-free dialogue)
+  // Disabled auto-reopening of mic so microphone stays off after AI response completes
   useEffect(() => {
-    if (autoListenTrigger > 0 && !isListening && !isGenerating) {
-      startVoiceListening();
-    }
+    // Intentionally no-op to prevent auto-listening loop after completion
   }, [autoListenTrigger]);
 
   const hasText = Boolean(text && text.trim());
   const canSubmit = hasText && !isGenerating;
 
   const handleSend = () => {
-    if (isSubmittingRef.current || isGenerating) return;
+    if (isGenerating) return;
+    if (Date.now() - stopClickedTimestampRef.current < 600) return;
+    if (isSubmittingRef.current) return;
     if (!canSubmit) return;
 
     if (silenceTimerRef.current) {
@@ -631,6 +634,8 @@ const ChatInput = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          if (isGenerating) return;
+          if (Date.now() - stopClickedTimestampRef.current < 600) return;
           if (canSubmit) handleSend();
         }}
         className={`
@@ -747,17 +752,18 @@ const ChatInput = ({
             isListening
               ? "Listening... Speak now (pause 2 sec to submit to AI)..."
               : isDevModeActive
-              ? "Dev Mode enabled — Ask Codegene to build any app, site, or component..."
+              ? "Dev Mode enabled — Ask Codegene AI to build any app, site, or component..."
               : isWebSearchActive
               ? "Web Search enabled — Ask anything or look up latest live info..."
               : attachments.length > 0
               ? "Add a prompt for your attachment..."
-              : "Ask Codegene to build, explain, or explore..."
+              : "Ask Codegene AI to build, explain, or explore..."
           }
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
+              if (isGenerating) return;
               if (canSubmit) handleSend();
             }
           }}
@@ -1184,6 +1190,7 @@ const ChatInput = ({
             </div>
 
             {/* Microphone Button */}
+
             <button
               onClick={handleVoiceClick}
               type="button"
@@ -1235,7 +1242,12 @@ const ChatInput = ({
             {/* Send / Stop Button */}
             {isGenerating ? (
               <button
-                onClick={onStop}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  stopClickedTimestampRef.current = Date.now();
+                  if (onStop) onStop();
+                }}
                 type="button"
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-accent-primary flex items-center justify-center shrink-0 transition cursor-pointer active:scale-95 text-white shadow-sm"
                 title="Stop Generating"

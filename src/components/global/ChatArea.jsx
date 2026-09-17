@@ -69,10 +69,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const isStreamingSpeechActiveRef = useRef(false);
 
   const triggerMicAutoListen = () => {
-    // Small buffer delay so the user speaker finishes any audio output before mic opens
-    setTimeout(() => {
-      setAutoListenTrigger((prev) => prev + 1);
-    }, 450);
+    // Disabled auto-reopening of mic to prevent automatic recording after response completion
   };
 
   const processStreamingSpeechQueue = () => {
@@ -86,7 +83,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         setCurrentSubtitle("");
         if (isVoiceConversationModeRef.current) {
           isVoiceConversationModeRef.current = false;
-          triggerMicAutoListen();
         }
       }
       return;
@@ -243,17 +239,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
   // Automatically detect artifacts from latest assistant message or streaming reply
   useEffect(() => {
-    const isArtifactRequested = isDevModeActive || isExplicitWebPromptRef.current;
-
     if (streamingReply) {
-      if (streamingReply.includes("```") && isArtifactRequested) {
+      if (streamingReply.includes("```")) {
         const now = Date.now();
         if (now - lastArtifactUpdateRef.current > 350) {
           lastArtifactUpdateRef.current = now;
           const parsed = extractPreviewableCode(streamingReply);
           if (parsed) {
             setActiveArtifact(parsed);
-            if (window.innerWidth >= 768) {
+            if (typeof window !== "undefined" && window.innerWidth >= 768) {
               setIsArtifactOpen(true);
             }
           }
@@ -264,7 +258,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     if (Array.isArray(messages) && messages.length > 0) {
       // If currently generating a new web app request, do NOT overwrite activeArtifact with past historical artifacts
-      if (isGeneratingRef.current && isArtifactRequested) {
+      if (isGeneratingRef.current) {
         return;
       }
       for (let i = messages.length - 1; i >= 0; i--) {
@@ -861,13 +855,28 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     isGeneratingRef.current = true;
     isAbortedRef.current = false;
+    setIsSearching(true);
+    setIsWebSearching(Boolean(enableSearch));
+    setIsBotTyping(true);
     continuationContextRef.current = continuationContext;
     const effectiveChatId = activeChatIdRef.current || currentChatId;
     streamingChatIdRef.current = effectiveChatId;
     streamFollowUpsRef.current = [];
 
     const isSearchRequested = Boolean(enableSearch);
-    const userMsgObj = { role: "user", content: cleanText, attachments, enableSearch: isSearchRequested };
+    const isEditingMessage = editIndex !== undefined && editIndex >= 0;
+    const targetEditMsg = isEditingMessage ? messages[editIndex] : null;
+    const nowIso = new Date().toISOString();
+    const userMsgObj = {
+      role: "user",
+      content: cleanText,
+      attachments,
+      enableSearch: isSearchRequested,
+      createdAt: isEditingMessage ? nowIso : (targetEditMsg?.createdAt || nowIso),
+      timestamp: isEditingMessage ? nowIso : (targetEditMsg?.timestamp || nowIso),
+      updatedAt: nowIso,
+      ...(targetEditMsg?._id ? { _id: targetEditMsg._id, id: targetEditMsg._id } : {}),
+    };
 
     const t0 = performance.now();
     let firstTokenTime = null;
@@ -903,9 +912,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       currentStreamingTextRef.current = "";
       setStreamingReply("");
     }
-    setIsSearching(true);
-    setIsWebSearching(isSearchRequested);
-    setIsBotTyping(true);
     tokenQueueRef.current = [];
     streamNetworkDoneRef.current = false;
     streamCompleteCbRef.current = null;
@@ -1154,11 +1160,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               }
             },
             onEnd: () => {
-              const shouldAutoListen = isVoiceConversationModeRef.current;
+              isVoiceConversationModeRef.current = false;
               handleStopSpeaking();
-              if (shouldAutoListen) {
-                triggerMicAutoListen();
-              }
             },
             onError: () => {
               handleStopSpeaking();
@@ -1248,7 +1251,6 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         setActiveSpeakingIndex(null);
         setCurrentSubtitle("");
         isVoiceConversationModeRef.current = false;
-        triggerMicAutoListen();
       }
       if (onChatUpdated) onChatUpdated();
       queryClient.invalidateQueries({ queryKey: ["chats"] });
@@ -1298,10 +1300,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   const formatChatTimestamp = (chat, msgList) => {
+    const latestMsg = Array.isArray(msgList) && msgList.length > 0 ? msgList[msgList.length - 1] : null;
     let rawDate =
-      msgList?.[0]?.createdAt ||
-      msgList?.[0]?.timestamp ||
       chat?.updatedAt ||
+      latestMsg?.updatedAt ||
+      latestMsg?.createdAt ||
+      latestMsg?.timestamp ||
       chat?.createdAt ||
       chat?.timestamp;
 
@@ -1527,7 +1531,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex flex-col relative"
           >
             <div
-              className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-8 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-1.5 sm:space-y-2"}`}
+              className={`w-full flex-1 max-w-[820px] mx-auto px-2.5 sm:px-4 md:px-6 pt-4 pb-12 sm:pb-16 flex flex-col ${!isFetchingMessages && messages.length === 0 && !isSearching && !isBotTyping ? "justify-center" : "space-y-1.5 sm:space-y-2"}`}
             >
               {!isSearching && !isBotTyping && isFetchingMessages && (
                 <div className="flex flex-col items-center justify-center flex-1 text-center">
@@ -1541,22 +1545,22 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 !isSearching &&
                 !isBotTyping && (
                   <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-[820px] mx-auto py-6 md:py-10">
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-2.5">
                       <div className="h-[1px] w-8 bg-accent-primary"></div>
-                      <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-text-muted">
-                        Intelligence, without the noise
+                      <span className="text-[9.5px] sm:text-[10.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold tracking-[0.2em] uppercase text-text-muted">
+                        INTELLIGENCE, WITHOUT THE NOISE
                       </span>
                     </div>
                     <h2
-                      className={`text-[26px] font-light! md:text-[48px] font-serif leading-tight tracking-tight mb-4 ${"text-text-primary dark:text-[#F4F4F5]"}`}
+                      className="text-[18px] sm:text-[24px] md:text-[32px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold uppercase leading-[1.3] tracking-wide mb-3 text-[#18181B] dark:text-[#F4F4F5]"
                     >
-                      What can we{" "}
-                      <span className="text-accent-primary italic font-normal">
-                        make clear
+                      WHAT CAN WE{" "}
+                      <span className="text-[#3F51B5] dark:text-[#6379F2]">
+                        MAKE CLEAR
                       </span>{" "}
-                      today?
+                      TODAY?
                     </h2>
-                    <p className="text-xs md:text-sm text-text-muted max-w-md leading-relaxed mb-6">
+                    <p className="text-xs sm:text-[13px] text-text-muted max-w-lg leading-relaxed mb-5 font-sans">
                       Codegene helps you reason through hard problems, build
                       <br />
                       useful things, and move from a blank page to a precise
@@ -1571,15 +1575,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me build a prototype.")
                         }
-                        className="flex-1 group flex flex-col p-3.5 sm:p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                        className="flex-1 group flex flex-col p-2.5 sm:p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5 min-w-0"
                       >
-                        <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                          <FiCode className="text-[13px] sm:text-[14px]" />
+                        <div className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-1.5 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiCode className="text-[12px] sm:text-[13px]" />
                         </div>
-                        <span className="text-[12.5px] sm:text-[13px] font-medium mb-1 leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
-                          Build a prototype
+                        <span className="text-[9.5px] sm:text-[10.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold uppercase mb-1 leading-snug text-text-primary dark:text-[#e5e5e5] tracking-wider truncate max-w-full">
+                          BUILD A PROTOTYPE
                         </span>
-                        <span className="text-[11px] sm:text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                        <span className="text-[10.5px] sm:text-[11.5px] text-text-muted dark:text-[#8a8a93] leading-normal font-sans">
                           Turn an idea into a working interface
                         </span>
                       </button>
@@ -1588,15 +1592,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me analyze a document.")
                         }
-                        className="flex-1 group flex flex-col p-3.5 sm:p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5"
+                        className="flex-1 group flex flex-col p-2.5 sm:p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5 min-w-0"
                       >
-                        <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                          <FiFileText className="text-[13px] sm:text-[14px]" />
+                        <div className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-1.5 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiFileText className="text-[12px] sm:text-[13px]" />
                         </div>
-                        <span className="text-[12.5px] sm:text-[13px] mb-1 font-medium leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
-                          Analyze a document
+                        <span className="text-[9.5px] sm:text-[10.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold uppercase mb-1 leading-snug text-text-primary dark:text-[#e5e5e5] tracking-wider truncate max-w-full">
+                          ANALYZE A DOCUMENT
                         </span>
-                        <span className="text-[11px] sm:text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
+                        <span className="text-[10.5px] sm:text-[11.5px] text-text-muted dark:text-[#8a8a93] leading-normal font-sans">
                           Find the signal in a long file
                         </span>
                       </button>
@@ -1605,16 +1609,16 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me explore a visual direction.")
                         }
-                        className="flex-1 group flex flex-col p-3.5 sm:p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                        className="flex-1 group flex flex-col p-2.5 sm:p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left min-w-0"
                       >
-                        <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
-                          <FiImage className="text-[13px] sm:text-[14px]" />
+                        <div className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-1.5 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
+                          <FiImage className="text-[12px] sm:text-[13px]" />
                         </div>
-                        <span className="text-[12.5px] sm:text-[13px] mb-1 font-medium leading-none text-text-primary dark:text-[#e5e5e5] tracking-wide">
-                          Create an image
+                        <span className="text-[9.5px] sm:text-[10.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold uppercase mb-1 leading-snug text-text-primary dark:text-[#e5e5e5] tracking-wider truncate max-w-full">
+                          EXPLORE VISUAL CONCEPTS
                         </span>
-                        <span className="text-[11px] sm:text-[12px] text-text-muted dark:text-[#8a8a93] leading-normal">
-                          Explore a visual direction
+                        <span className="text-[10.5px] sm:text-[11.5px] text-text-muted dark:text-[#8a8a93] leading-normal font-sans">
+                          Generate layout ideas
                         </span>
                       </button>
                     </div>
@@ -1724,21 +1728,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         }
                         onRetry={
                           isUserMsg
-                            ? (newContent) =>
-                              handleSendSubmit(newContent || m.content, null, undefined, m.attachments, index, false, m.enableSearch, null, false)
+                            ? (newContent) => {
+                                const payload = typeof newContent === "string" ? newContent : m.content;
+                                handleSendSubmit(payload, null, undefined, m.attachments, index, false, m.enableSearch, null, false);
+                              }
                             : prevUserMsg
-                              ? (newContent) =>
-                                handleSendSubmit(
-                                  newContent || prevUserMsg.content,
-                                  null,
-                                  undefined,
-                                  prevUserMsg.attachments,
-                                  prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
-                                  false,
-                                  prevUserMsg.enableSearch,
-                                  null,
-                                  true
-                                )
+                              ? (newContent) => {
+                                  const payload = typeof newContent === "string" ? newContent : prevUserMsg.content;
+                                  handleSendSubmit(
+                                    payload,
+                                    null,
+                                    undefined,
+                                    prevUserMsg.attachments,
+                                    prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
+                                    false,
+                                    prevUserMsg.enableSearch,
+                                    null,
+                                    true
+                                  );
+                                }
                               : undefined
                         }
                         isStoppedMidway={showContinueBtn}

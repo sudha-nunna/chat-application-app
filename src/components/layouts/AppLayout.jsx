@@ -52,6 +52,8 @@ import {
 import ChatSidebar from "../sidebar/ChatSidebar";
 import AgentSidebar from "../sidebar/AgentSidebar";
 import ModeTransitionOverlay from "../sidebar/ModeTransitionOverlay";
+import McpIntegrationsModal from "../mcp/McpIntegrationsModal";
+
 
 const AppLayout = ({ children }) => {
   const { isDark, toggleTheme } = useTheme();
@@ -111,12 +113,19 @@ const AppLayout = ({ children }) => {
   };
   const [activePopover, setActivePopover] = useState(null);
 
+  const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
+
   useEffect(() => {
     const handleOpenModal = () => setIsCreateModalOpen(true);
+    const handleOpenMcp = () => setIsMcpModalOpen(true);
     window.addEventListener("open-create-bot-modal", handleOpenModal);
-    return () =>
+    window.addEventListener("open-mcp-modal", handleOpenMcp);
+    return () => {
       window.removeEventListener("open-create-bot-modal", handleOpenModal);
+      window.removeEventListener("open-mcp-modal", handleOpenMcp);
+    };
   }, []);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
@@ -1050,20 +1059,17 @@ const AppLayout = ({ children }) => {
             className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed && !isMobile ? "justify-center px-2!" : "justify-between"}`}
           >
             {(!isSidebarCollapsed || isMobile) && (
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 bg-accent-primary rounded-xl flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
                   <img
-                    src="/mini-logo2.png"
-                    alt="Codegene Logo"
-                    className="w-5 h-5 object-contain"
+                    src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
+                    alt="Codegene AI Logo"
+                    className="w-8 h-8 object-contain transition-all"
                   />
                 </div>
-                <div className="flex items-baseline min-w-0">
-                  <span className="text-[18px] font-serif font-medium text-text-primary leading-tight tracking-tight truncate">
-                    Codegene
-                  </span>
-                  <span className="text-[9px] font-sans text-text-muted font-bold tracking-wider shrink-0 ml-0.5 -translate-y-2">
-                    AI
+                <div className="flex items-center min-w-0">
+                  <span className="text-[14px] sm:text-[15px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold uppercase tracking-wider text-text-primary leading-none truncate">
+                    CODEGENE-AI
                   </span>
                 </div>
               </div>
@@ -1080,9 +1086,9 @@ const AppLayout = ({ children }) => {
                   {isSidebarCollapsed ? (
                     <>
                       <img
-                        src="/mini-logo2.png"
-                        alt="Nexora Logo"
-                        className={`w-9 h-9 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute ${isDark ? "" : "invert"}`}
+                        src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
+                        alt="Codegene Logo"
+                        className="w-8 h-8 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute"
                       />
                       <FiSidebar className="text-lg opacity-0 group-hover:opacity-100 transition-opacity absolute" />
                     </>
@@ -1560,8 +1566,15 @@ const AppLayout = ({ children }) => {
           hasMessages={true}
         />
       )}
+
+      {/* MCP Integrations Modal */}
+      {/* <McpIntegrationsModal
+        isOpen={isMcpModalOpen}
+        onClose={() => setIsMcpModalOpen(false)}
+      /> */}
     </div>
   );
 };
+
 
 export default AppLayout;
