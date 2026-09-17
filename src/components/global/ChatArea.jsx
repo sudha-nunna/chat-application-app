@@ -1547,12 +1547,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   <div className="flex flex-col items-start justify-center md:px-4 w-full max-w-[820px] mx-auto py-6 md:py-10">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="h-[1px] w-8 bg-accent-primary opacity-80"></div>
-                      <span className="text-[9px] sm:text-[10px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-semibold tracking-[0.18em] uppercase text-[#6B7280] dark:text-[#a1a1aa]">
+                      <span className="text-[10px] md:text-[9px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold md:font-semibold tracking-[0.18em] uppercase text-text-muted md:text-[#6B7280] dark:text-[#a1a1aa]">
                         INTELLIGENCE, WITHOUT THE NOISE
                       </span>
                     </div>
                     <h2
-                      className="text-[16px] sm:text-[21px] md:text-[27px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-semibold uppercase leading-[1.3] tracking-wide mb-2.5 text-[#27272A] dark:text-[#F4F4F5]"
+                      className="text-[20px] sm:text-[24px] md:text-[27px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold md:font-semibold uppercase leading-[1.3] tracking-wide mb-3 md:mb-2.5 text-[#18181B] dark:text-[#F4F4F5] md:text-[#27272A]"
                     >
                       WHAT CAN WE{" "}
                       <span className="text-[#3F51B5] dark:text-[#6379F2]">
@@ -1560,7 +1560,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                       </span>{" "}
                       TODAY?
                     </h2>
-                    <p className="text-[12px] sm:text-[13px] text-[#4B5563] dark:text-[#a1a1aa] max-w-lg leading-relaxed mb-5 font-['Poppins',sans-serif] font-medium">
+                    <p className="text-[13px] text-text-muted dark:text-[#a1a1aa] md:text-[#4B5563] max-w-lg leading-relaxed mb-5 font-['Poppins',sans-serif] font-bold md:font-medium">
                       Codegene AI helps you reason through hard problems, build
                       <br />
                       useful things, and move from a blank page to a precise
@@ -1575,15 +1575,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me build a prototype.")
                         }
-                        className="flex-1 group flex flex-col p-3 sm:p-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5 min-w-0"
+                        className="flex-1 group flex flex-col p-3.5 sm:p-4 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5 min-w-0"
                       >
                         <div className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                           <FiCode className="text-[12px] sm:text-[13px]" />
                         </div>
-                        <span className="text-[8.5px] sm:text-[9.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-semibold uppercase mb-1 leading-snug text-[#1F2937] dark:text-[#F8FAFC] tracking-wide max-w-full">
+                        <span className="text-[10px] sm:text-[10.5px] md:text-[8.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold md:font-semibold uppercase mb-1 leading-snug text-text-primary dark:text-[#f4f4f5] md:text-[#374151] tracking-wide max-w-full">
                           BUILD A PROTOTYPE
                         </span>
-                        <span className="text-[10.5px] sm:text-[11px] text-[#6B7280] dark:text-[#9999a3] leading-snug font-['Poppins',sans-serif] font-medium">
+                        <span className="text-[11.5px] sm:text-[12px] md:text-[10.5px] text-text-muted dark:text-[#9999a3] md:text-[#6B7280] leading-snug font-['Poppins',sans-serif] font-bold md:font-medium">
                           Turn an idea into a working interface
                         </span>
                       </button>
@@ -1592,15 +1592,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me analyze a document.")
                         }
-                        className="flex-1 group flex flex-col p-3 sm:p-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5 min-w-0"
+                        className="flex-1 group flex flex-col p-3.5 sm:p-4 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left border-b md:border-b-0 md:border-r border-border-primary dark:border-white/5 min-w-0"
                       >
                         <div className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                           <FiFileText className="text-[12px] sm:text-[13px]" />
                         </div>
-                        <span className="text-[8.5px] sm:text-[9.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-semibold uppercase mb-1 leading-snug text-[#374151] dark:text-[#f4f4f5] tracking-wide max-w-full">
+                        <span className="text-[10px] sm:text-[10.5px] md:text-[8.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold md:font-semibold uppercase mb-1 leading-snug text-text-primary dark:text-[#f4f4f5] md:text-[#374151] tracking-wide max-w-full">
                           ANALYZE A DOCUMENT
                         </span>
-                        <span className="text-[10.5px] sm:text-[11px] text-[#6B7280] dark:text-[#9999a3] leading-snug font-['Poppins',sans-serif] font-medium">
+                        <span className="text-[11.5px] sm:text-[12px] md:text-[10.5px] text-text-muted dark:text-[#9999a3] md:text-[#6B7280] leading-snug font-['Poppins',sans-serif] font-bold md:font-medium">
                           Find the signal in a long file
                         </span>
                       </button>
@@ -1609,15 +1609,15 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onClick={() =>
                           handleSendSubmit("Help me explore a visual direction.")
                         }
-                        className="flex-1 group flex flex-col p-3 sm:p-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left min-w-0"
+                        className="flex-1 group flex flex-col p-3.5 sm:p-4 md:p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left min-w-0"
                       >
                         <div className="w-5.5 h-5.5 sm:w-6 sm:h-6 rounded-[6px] bg-accent-primary/20 flex items-center justify-center text-accent-primary mb-2 group-hover:bg-interactive-hover dark:group-hover:bg-[#2c2d43] transition-colors">
                           <FiImage className="text-[12px] sm:text-[13px]" />
                         </div>
-                        <span className="text-[8.5px] sm:text-[9.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-semibold uppercase mb-1 leading-snug text-[#374151] dark:text-[#f4f4f5] tracking-wide max-w-full">
+                        <span className="text-[10px] sm:text-[10.5px] md:text-[8.5px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold md:font-semibold uppercase mb-1 leading-snug text-text-primary dark:text-[#f4f4f5] md:text-[#374151] tracking-wide max-w-full">
                           EXPLORE VISUAL CONCEPTS
                         </span>
-                        <span className="text-[10.5px] sm:text-[11px] text-[#6B7280] dark:text-[#9999a3] leading-snug font-['Poppins',sans-serif] font-medium">
+                        <span className="text-[11.5px] sm:text-[12px] md:text-[10.5px] text-text-muted dark:text-[#9999a3] md:text-[#6B7280] leading-snug font-['Poppins',sans-serif] font-bold md:font-medium">
                           Generate layout ideas
                         </span>
                       </button>
