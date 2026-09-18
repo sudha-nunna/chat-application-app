@@ -91,7 +91,7 @@ const AuthModal = ({ onAuthSuccess }) => {
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1.5 tracking-tight text-center md:text-start">
               Welcome
             </h1>
-            <p className="text-white/50 text-[13px] sm:text-[14px] mb-8 text-center md:text-start">
+            <p className="text-white/50 text-[13px] sm:text-[14px] mb-6 md:mb-8 text-center md:text-start">
               Sign in to continue to your workspace
             </p>
 
@@ -101,7 +101,7 @@ const AuthModal = ({ onAuthSuccess }) => {
               </div>
             )}
 
-            <div className="mb-8 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
+            <div className="mb-6 md:mb-8 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() =>
@@ -116,7 +116,7 @@ const AuthModal = ({ onAuthSuccess }) => {
               />
             </div>
 
-            <div className="space-y-3.5 mb-8 bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+            <div className="space-y-3.5 mb-6 md:mb-8 bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
                   <FiZap className="text-indigo-400 text-xs" />
