@@ -13,7 +13,11 @@ const AuthModal = ({ onAuthSuccess }) => {
     setError("");
 
     try {
-      const res = await NobackEndCallObj("/auth/google", { token: credentialResponse.credential }, "post");
+      const res = await NobackEndCallObj(
+        "/auth/google",
+        { token: credentialResponse.credential },
+        "post",
+      );
       const token = res?.token || res?.data?.token;
       const user = res?.user || res?.data?.user;
 
@@ -35,17 +39,27 @@ const AuthModal = ({ onAuthSuccess }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-8 bg-black/90 backdrop-blur-md">
       <div className="flex flex-col md:flex-row w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] md:h-auto max-w-4xl sm:rounded-2xl md:rounded-[32px] border-none sm:border border-white/10 bg-[#0c0c0e] overflow-hidden shadow-2xl relative">
-
         {/* Top Hero Section (Mobile) / Left Side (Desktop) */}
         <div className="relative flex flex-col w-full md:w-1/2 h-[22vh] min-h-[140px] md:h-auto p-6 md:p-10 justify-between bg-gradient-to-b from-[#141418] to-[#0c0c0e] border-none md:border-r border-white/10 overflow-hidden shrink-0">
           {/* Background Image Layer */}
           <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
-            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top brightness-75" />
+            <img
+              src="/auth.webp"
+              alt="Auth Background"
+              className="w-full h-full object-cover object-top brightness-75"
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0c0c0e]" />
           </div>
 
-          <Link to="/" className="hidden md:flex relative z-10 items-center gap-2.5">
-            <img src="/codegene-halo-dark.png" alt="Codegene Logo" className="w-10 h-10 object-contain shrink-0 rounded-lg" />
+          <Link
+            to="/"
+            className="hidden md:flex relative items-center gap-2.5"
+          >
+            <img
+              src="/codegene-halo-dark.png"
+              alt="Codegene Logo"
+              className={`w-10 h-10 object-contain shrink-0 rounded-lg ${isDark ? "mix-blend-plus-lighter" : ""}`}
+            />
             <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-xs sm:text-sm tracking-wider flex items-center gap-1.5 uppercase">
               CODEGENE<span className="text-accent-primary">-AI</span>
             </span>
@@ -56,7 +70,8 @@ const AuthModal = ({ onAuthSuccess }) => {
               Analyze. Think. Generate.
             </h2>
             <p className="text-white/60 text-[13.5px] max-w-xs leading-relaxed">
-              Your intelligent companion for coding, reasoning, and problem-solving.
+              Your intelligent companion for coding, reasoning, and
+              problem-solving.
             </p>
           </div>
         </div>
@@ -64,10 +79,13 @@ const AuthModal = ({ onAuthSuccess }) => {
         {/* Bottom Sheet Card (Mobile) / Right Side (Desktop) */}
         <div className="w-full md:w-1/2 flex-1 flex flex-col justify-between bg-[#0e0e11] relative z-10 rounded-t-[24px] md:rounded-none -mt-4 md:mt-0 p-6 sm:p-8 md:p-10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:shadow-none overflow-y-auto custom-scrollbar">
           <div className="max-w-[340px] mx-auto w-full my-auto">
-
             {/* Logo */}
             <div className="flex flex-col items-center justify-center gap-3 mb-4 md:mb-5">
-              <img src="/codegene-halo-dark.png" alt="Codegene Logo" className="w-14 h-14 object-contain rounded-xl shadow-lg" />
+              <img
+                src="/codegene-halo-dark.png"
+                alt="Codegene Logo"
+                className={`w-14 h-14 object-contain rounded-xl shadow-lg ${isDark ? "mix-blend-plus-lighter" : ""}`}
+              />
               <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-xs sm:text-sm tracking-wider uppercase">
                 CODEGENE<span className="text-accent-primary">-AI</span>
               </span>
@@ -89,7 +107,9 @@ const AuthModal = ({ onAuthSuccess }) => {
             <div className="mb-6 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
-                onError={() => setError("Google sign-in failed. Please try again.")}
+                onError={() =>
+                  setError("Google sign-in failed. Please try again.")
+                }
                 theme="outline"
                 size="large"
                 text="signin_with"
@@ -104,28 +124,47 @@ const AuthModal = ({ onAuthSuccess }) => {
                 <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
                   <FiZap className="text-indigo-400 text-xs" />
                 </div>
-                <span className="text-[12.5px] text-white/70 font-medium">Advanced reasoning and problem-solving</span>
+                <span className="text-[12.5px] text-white/70 font-medium">
+                  Advanced reasoning and problem-solving
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
                   <FiCode className="text-indigo-400 text-xs" />
                 </div>
-                <span className="text-[12.5px] text-white/70 font-medium">Generate and analyze code instantly</span>
+                <span className="text-[12.5px] text-white/70 font-medium">
+                  Generate and analyze code instantly
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
                   <FiMessageSquare className="text-indigo-400 text-xs" />
                 </div>
-                <span className="text-[12.5px] text-white/70 font-medium">Seamless conversational experience</span>
+                <span className="text-[12.5px] text-white/70 font-medium">
+                  Seamless conversational experience
+                </span>
               </div>
             </div>
 
             <p className="text-[11px] text-white/40 leading-relaxed text-center">
-              By continuing, you agree to our <a href="#" className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">Terms</a> and <a href="#" className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">Privacy Policy</a>.
+              By continuing, you agree to our{" "}
+              <a
+                href="#"
+                className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2"
+              >
+                Terms
+              </a>{" "}
+              and{" "}
+              <a
+                href="#"
+                className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2"
+              >
+                Privacy Policy
+              </a>
+              .
             </p>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1072,7 +1072,7 @@ const AppLayout = ({ children }) => {
                   <img
                     src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
                     alt="Codegene AI Logo"
-                    className={`w-8 h-8 object-contain transition-all ${isDark ? "" : "mix-blend-multiply"}`}
+                    className={`w-8 h-8 object-contain transition-all ${isDark ? "mix-blend-difference" : "mix-blend-multiply"}`}
                   />
                 </div>
                 <div className="flex items-center min-w-0">
@@ -1105,7 +1105,7 @@ const AppLayout = ({ children }) => {
                   )}
                   {isSidebarCollapsed && (
                     <div className="absolute left-[calc(100%+12px)] px-2.5 py-1.5 bg-surface-dropdown border border-border-primary rounded-lg text-[13px] font-semibold text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[100] shadow-xl pointer-events-none">
-                      Toggle Sidebar
+                      Open Sidebar
                     </div>
                   )}
                 </button>
