@@ -332,9 +332,17 @@ const AppLayout = ({ children }) => {
               if (localStorage.getItem("user") !== newUserStr) {
                 localStorage.setItem("user", newUserStr);
               }
+            } else if (res?.success === false || res?.status === 401) {
+              setJwt(null);
+              setIsAuthenticated(false);
+              setUser(null);
             }
           })
-          .catch(() => { });
+          .catch(() => {
+            setJwt(null);
+            setIsAuthenticated(false);
+            setUser(null);
+          });
       }
     };
 

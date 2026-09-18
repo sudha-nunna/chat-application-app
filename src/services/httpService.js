@@ -31,8 +31,11 @@ http.interceptors.response.use(
       // Log network or server error
     }
     if (error.response && error.response.status === 401) {
-      // localStorage.clear();
-      // window.location.href = `/section_expaired?text=${encodeURIComponent(error.response.data || "")}`;
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-change"));
+      }
     }
 
     return Promise.reject(error);

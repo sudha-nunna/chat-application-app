@@ -8,7 +8,9 @@ const tokenKey = "token";
 
 // JWT Helper Functions
 export function getJwt() {
-  return localStorage.getItem(tokenKey) || localStorage.getItem("token") || null;
+  const token = localStorage.getItem(tokenKey) || localStorage.getItem("token");
+  if (!token || token === "undefined" || token === "null") return null;
+  return token;
 }
 
 export function setJwt(jwt) {

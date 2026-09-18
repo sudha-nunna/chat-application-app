@@ -33,60 +33,60 @@ const AuthModal = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className={`absolute inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-8 ${"bg-[#111111] md:bg-black/90 md:backdrop-blur-md"
-      }`}>
-      <div className="flex flex-col md:flex-row w-full h-full md:h-auto max-w-4xl md:min-h-[500px] bg-transparent md:bg-[#0A0A0A] rounded-none md:rounded-[32px] md:border border-white/[0.01] overflow-hidden md:shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-8 bg-black/90 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] md:h-auto max-w-4xl sm:rounded-2xl md:rounded-[32px] border-none sm:border border-white/10 bg-[#0c0c0e] overflow-hidden shadow-2xl relative">
 
-        {/* Top Image (Mobile) / Left Side (Desktop) */}
-        <div className="flex md:flex-col w-full md:w-1/2 h-[45%] md:h-auto p-8 md:p-10 justify-between relative bg-gradient-to-b from-[#111111] to-[#050505] border-none md:border-r border-white/5 overflow-hidden">
+        {/* Top Hero Section (Mobile) / Left Side (Desktop) */}
+        <div className="relative flex flex-col w-full md:w-1/2 h-[22vh] min-h-[140px] md:h-auto p-6 md:p-10 justify-between bg-gradient-to-b from-[#141418] to-[#0c0c0e] border-none md:border-r border-white/10 overflow-hidden shrink-0">
           {/* Background Image Layer */}
-          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-80 md:pointer-events-none">
-            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top brightness-80" />
+          <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
+            <img src="/auth.webp" alt="Auth Background" className="w-full h-full object-cover object-top brightness-75" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0c0c0e]" />
           </div>
 
-          <Link to="/" className="hidden md:flex relative z-10 items-center gap-1">
-            <img src="/mini-logo2.png" alt="Codegene Logo" className={`w-12 h-12 object-contain shrink-0`} />
-            <span className="text-white font-medium text-sm tracking-wide flex items-start gap-0.5">
-              CODEGENE
-              <sup className="text-[9px] mt-1 font-sans text-white/50 font-semibold tracking-wider">
-                AI
-              </sup>
+          <Link to="/" className="hidden md:flex relative z-10 items-center gap-2.5">
+            <img src="/codegene-halo-dark.png" alt="Codegene Logo" className="w-10 h-10 object-contain shrink-0 rounded-lg" />
+            <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-xs sm:text-sm tracking-wider flex items-center gap-1.5 uppercase">
+              CODEGENE<span className="text-accent-primary">-AI</span>
             </span>
           </Link>
 
           <div className="hidden md:block relative z-10 mt-auto">
-            <h2 className="text-xl md:text-2xl font-display font-medium text-white mb-4 leading-[1.1] tracking-tight">
-              Analyze. Think. Generate
+            <h2 className="text-base md:text-lg font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-normal text-white mb-2 leading-snug tracking-wider uppercase opacity-95">
+              Analyze. Think. Generate.
             </h2>
-            <p className="text-white/50 text-[15px] max-w-xs leading-relaxed">
+            <p className="text-white/60 text-[13.5px] max-w-xs leading-relaxed">
               Your intelligent companion for coding, reasoning, and problem-solving.
             </p>
           </div>
         </div>
 
-        {/* Bottom Card (Mobile) / Right Side (Desktop) */}
-        <div className="w-full md:w-1/2 h-[75%] md:h-auto flex flex-col justify-start md:justify-center bg-[#121212] relative z-10 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 p-8 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] md:shadow-none overflow-y-auto">
-          <div className="max-w-[340px] mx-auto w-full pt-2 md:pt-0">
+        {/* Bottom Sheet Card (Mobile) / Right Side (Desktop) */}
+        <div className="w-full md:w-1/2 flex-1 flex flex-col justify-between bg-[#0e0e11] relative z-10 rounded-t-[24px] md:rounded-none -mt-4 md:mt-0 p-6 sm:p-8 md:p-10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:shadow-none overflow-y-auto custom-scrollbar">
+          <div className="max-w-[340px] mx-auto w-full my-auto">
 
-            {/* Mobile Logo */}
-            <div className="md:hidden flex flex-col items-center justify-center gap-2 mb-3">
-              <img src="/codegene-mark.png" alt="Codegene Logo" className="w-12 h-12 object-contain" />
+            {/* Logo */}
+            <div className="flex flex-col items-center justify-center gap-3 mb-4 md:mb-5">
+              <img src="/codegene-halo-dark.png" alt="Codegene Logo" className="w-14 h-14 object-contain rounded-xl shadow-lg" />
+              <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-xs sm:text-sm tracking-wider uppercase">
+                CODEGENE<span className="text-accent-primary">-AI</span>
+              </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-display font-medium text-white mb-2 tracking-tight text-center md:text-left">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1.5 tracking-tight text-center">
               Welcome
             </h1>
-            <p className="text-white/50 text-[14px] md:text-[15px] mb-5 text-center md:text-left">
+            <p className="text-white/50 text-[13px] sm:text-[14px] mb-6 text-center">
               Sign in to continue to your workspace
             </p>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-xl mb-6 text-center">
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm p-3 rounded-xl mb-5 text-center">
                 {error}
               </div>
             )}
 
-            <div className="mb-5 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
+            <div className="mb-6 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => setError("Google sign-in failed. Please try again.")}
@@ -99,28 +99,30 @@ const AuthModal = ({ onAuthSuccess }) => {
               />
             </div>
 
-
-            <div className="space-y-4 mb-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-5 flex justify-center"><FiZap className="text-purple-400/80 text-sm" /></div>
-                <span className="text-[13px] text-white/60">Advanced reasoning and problem-solving</span>
+            <div className="space-y-3.5 mb-6 bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
+                  <FiZap className="text-indigo-400 text-xs" />
+                </div>
+                <span className="text-[12.5px] text-white/70 font-medium">Advanced reasoning and problem-solving</span>
               </div>
-              <div className="flex items-center gap-3.5">
-                <div className="w-5 flex justify-center"><FiCode className="text-purple-400/80 text-sm" /></div>
-                <span className="text-[13px] text-white/60">Generate and analyze code instantly</span>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
+                  <FiCode className="text-indigo-400 text-xs" />
+                </div>
+                <span className="text-[12.5px] text-white/70 font-medium">Generate and analyze code instantly</span>
               </div>
-              <div className="flex items-center gap-3.5">
-                <div className="w-5 flex justify-center"><FiMessageSquare className="text-purple-400/80 text-sm" /></div>
-                <span className="text-[13px] text-white/60">Seamless conversational experience</span>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
+                  <FiMessageSquare className="text-indigo-400 text-xs" />
+                </div>
+                <span className="text-[12.5px] text-white/70 font-medium">Seamless conversational experience</span>
               </div>
             </div>
 
-            {/* Terms and conditions commented out on mobile, visible on desktop */}
-            <div className="hidden md:block">
-              <p className="text-[11px] text-white/40 leading-relaxed max-w-[280px] mt-10 text-center md:text-left mx-auto md:mx-0">
-                By continuing, you agree to our <a href="#" className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">Terms</a> and <a href="#" className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">Privacy Policy</a>.
-              </p>
-            </div>
+            <p className="text-[11px] text-white/40 leading-relaxed text-center">
+              By continuing, you agree to our <a href="#" className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">Terms</a> and <a href="#" className="text-white/70 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">Privacy Policy</a>.
+            </p>
           </div>
         </div>
 
