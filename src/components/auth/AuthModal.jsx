@@ -83,7 +83,7 @@ const AuthModal = ({ onAuthSuccess }) => {
                 alt="Codegene Logo"
                 className={`w-14 h-14 object-contain rounded-xl shadow-lg ${isDark ? "mix-blend-plus-lighter" : ""}`}
               />
-              <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-xs sm:text-sm tracking-wider uppercase">
+              <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-base tracking-wider uppercase">
                 CODEGENE<span className="text-accent-primary">-AI</span>
               </span>
             </div>
