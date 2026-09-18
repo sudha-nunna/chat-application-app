@@ -51,16 +51,13 @@ const AuthModal = ({ onAuthSuccess }) => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0c0c0e]" />
           </div>
 
-          <Link
-            to="/"
-            className="hidden md:flex relative items-center gap-2.5"
-          >
+          <Link to="/" className="hidden md:flex relative items-center gap-1">
             <img
               src="/codegene-halo-dark.png"
               alt="Codegene Logo"
-              className={`w-10 h-10 object-contain shrink-0 rounded-lg ${isDark ? "mix-blend-plus-lighter" : ""}`}
+              className={`w-14 h-14 object-contain shrink-0 rounded-lg ${isDark ? "mix-blend-plus-lighter" : ""}`}
             />
-            <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-bold text-xs sm:text-sm tracking-wider flex items-center gap-1.5 uppercase">
+            <span className="text-white font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-semibold text-xl tracking-wider mt-1 flex items-center gap-1.5 uppercase">
               CODEGENE<span className="text-accent-primary">-AI</span>
             </span>
           </Link>
@@ -80,7 +77,7 @@ const AuthModal = ({ onAuthSuccess }) => {
         <div className="w-full md:w-1/2 flex-1 flex flex-col justify-between bg-[#0e0e11] relative z-10 rounded-t-[24px] md:rounded-none -mt-4 md:mt-0 p-6 sm:p-8 md:p-10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:shadow-none overflow-y-auto custom-scrollbar">
           <div className="max-w-[340px] mx-auto w-full my-auto">
             {/* Logo */}
-            <div className="flex flex-col items-center justify-center gap-3 mb-4 md:mb-5">
+            <div className="flex md:hidden flex-col items-center justify-center gap-3 mb-4 md:mb-5">
               <img
                 src="/codegene-halo-dark.png"
                 alt="Codegene Logo"
@@ -91,10 +88,10 @@ const AuthModal = ({ onAuthSuccess }) => {
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1.5 tracking-tight text-center">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1.5 tracking-tight text-center md:text-start">
               Welcome
             </h1>
-            <p className="text-white/50 text-[13px] sm:text-[14px] mb-6 text-center">
+            <p className="text-white/50 text-[13px] sm:text-[14px] mb-8 text-center md:text-start">
               Sign in to continue to your workspace
             </p>
 
@@ -104,7 +101,7 @@ const AuthModal = ({ onAuthSuccess }) => {
               </div>
             )}
 
-            <div className="mb-6 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
+            <div className="mb-8 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() =>
@@ -119,7 +116,7 @@ const AuthModal = ({ onAuthSuccess }) => {
               />
             </div>
 
-            <div className="space-y-3.5 mb-6 bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+            <div className="space-y-3.5 mb-8 bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
                   <FiZap className="text-indigo-400 text-xs" />

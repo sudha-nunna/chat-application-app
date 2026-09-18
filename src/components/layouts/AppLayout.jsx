@@ -1059,32 +1059,39 @@ const AppLayout = ({ children }) => {
           />
         )}
         <div
-          style={!isMobile && !isSidebarCollapsed ? { width: `${sidebarWidth}px` } : undefined}
+          style={
+            !isMobile && !isSidebarCollapsed
+              ? { width: `${sidebarWidth}px` }
+              : undefined
+          }
           className={`flex flex-col h-full ${isSidebarCollapsed && !isMobile ? "overflow-visible px-1" : "overflow-hidden"} ${isResizingSidebar ? "transition-none" : "transition-all duration-300"} bg-surface-secondary shrink-0 select-none relative ${isMobile ? "w-full" : isSidebarCollapsed ? "w-[65px] border-r border-border-primary z-[60]" : "border-r border-border-primary z-20"}`}
         >
-          
           <div
             className={`p-4 border-b border-border-primary/40 flex items-center shrink-0 ${isSidebarCollapsed && !isMobile ? "justify-center px-2!" : "justify-between"}`}
           >
             {(!isSidebarCollapsed || isMobile) && (
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <div className="w-8 h-8 flex items-center justify-center shrink-0">
                   <img
-                    src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
+                    src={
+                      isDark
+                        ? "/codegene-halo-dark.png"
+                        : "/codegene-halo-light.png"
+                    }
                     alt="Codegene AI Logo"
                     className={`w-8 h-8 object-contain transition-all ${isDark ? "mix-blend-difference" : "mix-blend-multiply"}`}
                   />
                 </div>
-                <div className="flex items-center min-w-0">
-                  <span className="text-[14px] sm:text-[15px] font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-normal uppercase tracking-wider text-text-primary leading-none truncate">
+                <div className="flex items-center min-w-0 mt-1">
+                  <span className="text-[14px] sm:text-base font-['Ethnocentric_Rg','Ethnocentric','Orbitron',sans-serif] font-normal uppercase tracking-wider text-text-primary leading-none truncate">
                     CODEGENE-AI
                   </span>
                 </div>
               </div>
             )}
-            
+
             <div
-              className={`flex gap-1 shrink-0 ${isSidebarCollapsed && !isMobile ? "w-full justify-center" : ""}`}
+              className={`flex gap-1 shrink-0 mt-1 ${isSidebarCollapsed && !isMobile ? "w-full justify-center" : ""}`}
             >
               {!isMobile ? (
                 <button
@@ -1094,9 +1101,13 @@ const AppLayout = ({ children }) => {
                   {isSidebarCollapsed ? (
                     <>
                       <img
-                        src={isDark ? "/codegene-halo-dark.png" : "/codegene-halo-light.png"}
+                        src={
+                          isDark
+                            ? "/codegene-halo-dark.png"
+                            : "/codegene-halo-light.png"
+                        }
                         alt="Codegene Logo"
-                        className={`w-8 h-8 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute ${isDark ? "" : "mix-blend-multiply"}`}
+                        className={`w-8 h-8 object-contain shrink-0 group-hover:opacity-0 transition-opacity absolute ${isDark ? "mix-blend-difference" : "mix-blend-multiply"}`}
                       />
                       <FiSidebar className="text-lg opacity-0 group-hover:opacity-100 transition-opacity absolute" />
                     </>
@@ -1212,7 +1223,9 @@ const AppLayout = ({ children }) => {
           </div> */}
 
           {/* Main Sidebar Content Area (takes remaining space, enables internal scrolling) */}
-          <div className={`flex-1 min-h-0 flex flex-col ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-hidden"}`}>
+          <div
+            className={`flex-1 min-h-0 flex flex-col ${isSidebarCollapsed && !isMobile ? "overflow-visible" : "overflow-hidden"}`}
+          >
             {activeSidebarTab === "agents" ? (
               <AgentSidebar
                 isSidebarCollapsed={isSidebarCollapsed}
@@ -1265,32 +1278,83 @@ const AppLayout = ({ children }) => {
                 className="profile-dropdown absolute bottom-full left-4 mb-2 rounded-2xl shadow-2xl border py-2 text-sm z-[100] bg-surface-dropdown border-border-primary text-text-primary w-[220px]"
               >
                 <div
-                  onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsMobileMenuOpen(false); navigate("/usage"); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsProfileDropdownOpen(false);
+                    setIsMobileMenuOpen(false);
+                    navigate("/usage");
+                  }}
                   className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition rounded-lg mx-1 mb-1"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <UserAvatar user={user} className="w-8 h-8 text-[12px]" borderClassName="border border-border-primary" />
+                    <UserAvatar
+                      user={user}
+                      className="w-8 h-8 text-[12px]"
+                      borderClassName="border border-border-primary"
+                    />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[13px] font-bold truncate tracking-wide">{user?.name || "Nunna Sudha"}</span>
+                      <span className="text-[13px] font-bold truncate tracking-wide">
+                        {user?.name || "Nunna Sudha"}
+                      </span>
                       <span className="text-[11.5px] text-text-muted truncate leading-tight mt-0.5 font-normal flex items-center gap-1">
-                        <span className="font-medium text-accent-primary">{typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits}</span>{" "}Credits
+                        <span className="font-medium text-accent-primary">
+                          {typeof activeCredits === "number"
+                            ? activeCredits.toFixed(2)
+                            : activeCredits}
+                        </span>{" "}
+                        Credits
                       </span>
                     </div>
                   </div>
                   <FiChevronRight className="text-text-primary/70 text-sm shrink-0" />
                 </div>
                 <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsMobileMenuOpen(false); navigate("/subscription"); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsProfileDropdownOpen(false);
+                    setIsMobileMenuOpen(false);
+                    navigate("/subscription");
+                  }}
+                  className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                >
                   <FiZap className="text-sm" /> Upgrade plan
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); setIsMobileMenuOpen(false); navigate("/usage"); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsProfileDropdownOpen(false);
+                    setIsMobileMenuOpen(false);
+                    navigate("/usage");
+                  }}
+                  className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                >
                   <FiCreditCard className="text-sm" /> Credits usage
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); toggleTheme(); setIsProfileDropdownOpen(false); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
-                  {isDark ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}{" "}Appearance
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTheme();
+                    setIsProfileDropdownOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                >
+                  {isDark ? (
+                    <FiSun className="text-sm" />
+                  ) : (
+                    <FiMoon className="text-sm" />
+                  )}{" "}
+                  Appearance
                 </button>
                 <div className="h-px bg-border-primary/30 my-1.5 mx-3"></div>
-                <button onClick={(e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsProfileDropdownOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full text-left px-4 py-2.5 font-normal hover:bg-white/5 transition cursor-pointer flex items-center gap-3"
+                >
                   <FiLogOut className="text-sm" /> Log out
                 </button>
               </div>
@@ -1302,18 +1366,31 @@ const AppLayout = ({ children }) => {
             >
               <div className="flex items-center min-w-0">
                 <div className="flex items-center shrink-0">
-                  <UserAvatar user={user} className="w-8 h-8 text-[12px]" borderClassName="border border-border-primary/50" />
+                  <UserAvatar
+                    user={user}
+                    className="w-8 h-8 text-[12px]"
+                    borderClassName="border border-border-primary/50"
+                  />
                 </div>
                 {!isSidebarCollapsed && (
                   <div className="flex-col whitespace-nowrap overflow-hidden ml-2.5 flex transition-opacity duration-300 items-start leading-none min-w-0">
-                    <p className="text-[13px] font-normal truncate text-text-primary">{user?.name || "User"}</p>
-                    <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">{typeof activeCredits === "number" ? activeCredits.toFixed(2) : activeCredits} Credits</p>
+                    <p className="text-[13px] font-normal truncate text-text-primary">
+                      {user?.name || "User"}
+                    </p>
+                    <p className="text-[12px] text-text-muted truncate leading-tight mt-0.5">
+                      {typeof activeCredits === "number"
+                        ? activeCredits.toFixed(2)
+                        : activeCredits}{" "}
+                      Credits
+                    </p>
                   </div>
                 )}
               </div>
               {!isSidebarCollapsed && (
                 <div className="shrink-0 ml-auto pl-2 text-text-muted">
-                  <FiChevronUp className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""}`} />
+                  <FiChevronUp
+                    className={`w-4 h-4 transition-transform duration-200 group-hover:text-text-primary ${isProfileDropdownOpen ? "rotate-180 text-text-primary" : ""}`}
+                  />
                 </div>
               )}
             </div>
@@ -1327,7 +1404,9 @@ const AppLayout = ({ children }) => {
               className={`absolute top-0 -right-1 w-[8px] h-full cursor-col-resize z-50 group transition-all flex items-center justify-center ${isResizingSidebar ? "bg-accent-primary/20" : "hover:bg-accent-primary/10"}`}
               title="Drag left/right to adjust sidebar width (Double-click to reset)"
             >
-              <div className={`w-[2px] h-full transition-colors ${isResizingSidebar ? "bg-accent-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]" : "bg-transparent group-hover:bg-accent-primary"}`} />
+              <div
+                className={`w-[2px] h-full transition-colors ${isResizingSidebar ? "bg-accent-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]" : "bg-transparent group-hover:bg-accent-primary"}`}
+              />
             </div>
           )}
         </div>

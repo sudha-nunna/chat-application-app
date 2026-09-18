@@ -67,7 +67,7 @@ const ChatSidebar = ({
     <div className="flex flex-col h-full min-h-0 flex-1">
       {/* Top Controls: New Chat, Search */}
       <div
-        className={`pt-2 pb-2 flex flex-col gap-2 shrink-0 ${isSidebarCollapsed ? "px-1 items-center" : "px-4"
+        className={`pt-4 pb-2 flex flex-col gap-2 shrink-0 ${isSidebarCollapsed ? "px-1 items-center" : "px-4"
           }`}
       >
         {/* New Chat Button */}
