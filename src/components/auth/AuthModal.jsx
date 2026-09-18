@@ -42,7 +42,7 @@ const AuthModal = ({ onAuthSuccess }) => {
         {/* Top Hero Section (Mobile) / Left Side (Desktop) */}
         <div className="relative flex flex-col w-full md:w-1/2 h-[22vh] min-h-[140px] md:h-auto p-6 md:p-10 justify-between bg-gradient-to-b from-[#141418] to-[#0c0c0e] border-none md:border-r border-white/10 overflow-hidden shrink-0">
           {/* Background Image Layer */}
-          <div className="absolute inset-0 z-0 opacity-90 pointer-events-none">
+          <div className="absolute inset-0 z-0 pointer-events-none">
             <img
               src="/auth.webp"
               alt="Auth Background"
