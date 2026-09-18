@@ -38,11 +38,11 @@ const AuthModal = ({ onAuthSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-8 bg-black/90 backdrop-blur-md">
-      <div className="flex flex-col md:flex-row w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] md:h-auto max-w-4xl sm:rounded-2xl md:rounded-[32px] border-none sm:border border-white/10 bg-[#0c0c0e] overflow-hidden shadow-2xl relative">
+      <div className="flex flex-col md:flex-row w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] md:h-auto max-w-4xl sm:rounded-2xl md:rounded-[32px] border-none sm:border border-white/10 bg-[#0c0c0e] overflow-hidden shadow-[0_0_50px_-12px_rgba(99,102,241,0.25)] relative ring-1 ring-white/5">
         {/* Top Hero Section (Mobile) / Left Side (Desktop) */}
         <div className="relative flex flex-col w-full md:w-1/2 h-[22vh] min-h-[140px] md:h-auto p-6 md:p-10 justify-between bg-gradient-to-b from-[#141418] to-[#0c0c0e] border-none md:border-r border-white/10 overflow-hidden shrink-0">
           {/* Background Image Layer */}
-          <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
+          <div className="absolute inset-0 z-0 opacity-90 pointer-events-none">
             <img
               src="/auth.webp"
               alt="Auth Background"
@@ -74,7 +74,7 @@ const AuthModal = ({ onAuthSuccess }) => {
         </div>
 
         {/* Bottom Sheet Card (Mobile) / Right Side (Desktop) */}
-        <div className="w-full md:w-1/2 flex-1 flex flex-col justify-between bg-[#0e0e11] relative z-10 rounded-t-[24px] md:rounded-none -mt-4 md:mt-0 p-6 sm:p-8 md:p-10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:shadow-none overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-1/2 flex-1 flex flex-col justify-between bg-[#0e0e11] relative z-10 rounded-t-[24px] md:rounded-none -mt-4 md:mt-0 p-6 sm:p-8 md:p-10 shadow-[0_0_50px_-12px_rgba(99,102,241,0.25)] md:shadow-none overflow-y-auto custom-scrollbar border-t border-white/5 md:border-t-0">
           <div className="max-w-[340px] mx-auto w-full my-auto">
             {/* Logo */}
             <div className="flex md:hidden flex-col items-center justify-center gap-3 mb-4 md:mb-5">
@@ -88,7 +88,7 @@ const AuthModal = ({ onAuthSuccess }) => {
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1.5 tracking-tight text-center md:text-start">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white mb-1.5 tracking-tight text-center md:text-start">
               Welcome
             </h1>
             <p className="text-white/50 text-[13px] sm:text-[14px] mb-6 md:mb-8 text-center md:text-start">
@@ -96,12 +96,12 @@ const AuthModal = ({ onAuthSuccess }) => {
             </p>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm p-3 rounded-xl mb-5 text-center">
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm p-3 rounded-xl mb-5 text-center shadow-[0_0_15px_rgba(239,68,68,0.15)]">
                 {error}
               </div>
             )}
 
-            <div className="mb-6 md:mb-8 rounded-xl overflow-hidden shadow-sm flex justify-center w-full">
+            <div className="mb-6 md:mb-8 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.2)] flex justify-center w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() =>
@@ -116,26 +116,26 @@ const AuthModal = ({ onAuthSuccess }) => {
               />
             </div>
 
-            <div className="space-y-3.5 mb-6 md:mb-8 bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+            <div className="space-y-3.5 mb-6 md:mb-8 bg-[#131317]/50 border border-white/[0.08] p-4 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_0_20px_rgba(99,102,241,0.03)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_0_20px_rgba(99,102,241,0.08)] transition-shadow duration-300">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
-                  <FiZap className="text-indigo-400 text-xs" />
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                  <FiZap className="text-indigo-400 text-xs drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
                 </div>
                 <span className="text-[12.5px] text-white/70 font-medium">
                   Advanced reasoning and problem-solving
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
-                  <FiCode className="text-indigo-400 text-xs" />
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                  <FiCode className="text-indigo-400 text-xs drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
                 </div>
                 <span className="text-[12.5px] text-white/70 font-medium">
                   Generate and analyze code instantly
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
-                  <FiMessageSquare className="text-indigo-400 text-xs" />
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                  <FiMessageSquare className="text-indigo-400 text-xs drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
                 </div>
                 <span className="text-[12.5px] text-white/70 font-medium">
                   Seamless conversational experience
