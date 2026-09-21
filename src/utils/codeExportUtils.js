@@ -6,7 +6,7 @@
 /**
  * Checks if a code block is non-UI backend code or an isolated inline fragment
  */
-function isIgnoredOrBackendBlock(rawCode, lang) {
+function isIgnoredOrBackendBlock(rawCode, lang, isSecondaryBlock = false) {
   const lower = (rawCode || "").toLowerCase();
   const lLang = (lang || "").toLowerCase();
 
@@ -41,6 +41,18 @@ function isIgnoredOrBackendBlock(rawCode, lang) {
   // If it's CSS or full HTML document, it's valid UI
   if (lLang === "css" || rawCode.includes("<!DOCTYPE") || rawCode.includes("<html")) {
     return false;
+  }
+
+  // Standalone JS/TS code snippets without DOM manipulation, HTML, or React components should be ignored for preview extraction
+  const isJsOrTs = lLang === "javascript" || lLang === "js" || lLang === "ts" || lLang === "typescript";
+  const hasDomOrUi =
+    /<[a-zA-Z][\s\S]*>/.test(rawCode) ||
+    /\bexport\s+default\b/.test(rawCode) ||
+    /return\s*\(\s*</.test(rawCode) ||
+    /\b(document\.|window\.|innerHTML|outerHTML|appendChild|createElement|querySelector|getElementById|getElementsBy|addEventListener|canvas\.getContext)\b/.test(rawCode);
+
+  if (isJsOrTs && !hasDomOrUi && !isSecondaryBlock) {
+    return true;
   }
 
   // Must declare a function, class, arrow component, or export
@@ -112,7 +124,7 @@ export function extractProjectFiles(markdownText) {
     }
 
     // Skip non-UI backend code or isolated fragments
-    if (isIgnoredOrBackendBlock(rawCode, lang)) {
+    if (isIgnoredOrBackendBlock(rawCode, lang, blocks.length > 0)) {
       continue;
     }
 
@@ -320,11 +332,13 @@ export function extractPreviewableCode(markdownText) {
     const lang = (streamingMatch[1] || "").toLowerCase();
     const rawCode = (streamingMatch[2] || "").trim();
 
-    const isWebLang = /^(html|htm|jsx|tsx|react|javascript|js|typescript|ts)$/i.test(lang);
+    const isWebLang = /^(html|htm|jsx|tsx|react)$/i.test(lang);
+    const isJsLang = /^(javascript|js|typescript|ts)$/i.test(lang);
     const hasHtmlTags = /<(!DOCTYPE|html|div|main|section|header|nav|body|h[1-6]|p|button|form|input|script|style)/i.test(rawCode);
-    const hasReactComponent = /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*|return\s*\(\s*<)/.test(rawCode);
+    const hasReactComponent = /(export\s+default\s+function|function\s+[A-Z]\w*|const\s+[A-Z]\w*|return\s*\(\s*<)/.test(rawCode) && /<[a-zA-Z][\s\S]*>/.test(rawCode);
+    const hasDomManipulation = /\b(document\.|window\.|innerHTML|outerHTML|appendChild|createElement|querySelector|getElementById|getElementsBy|addEventListener|canvas\.getContext)\b/.test(rawCode);
 
-    if (isWebLang || hasHtmlTags || hasReactComponent || (rawCode.length > 20 && /<[a-zA-Z][\s\S]*>/.test(rawCode))) {
+    if (isWebLang || hasHtmlTags || hasReactComponent || (isJsLang && hasDomManipulation) || (rawCode.length > 20 && /<[a-zA-Z][\s\S]*>/.test(rawCode))) {
       const isHtml = lang === "html" || lang === "htm" || hasHtmlTags;
       const isJs = !isHtml && !hasReactComponent && (lang === "javascript" || lang === "js");
       const fileName = isHtml ? "index.html" : isJs ? "script.js" : (lang.includes("ts") ? "App.tsx" : "App.jsx");

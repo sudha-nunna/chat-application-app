@@ -24,7 +24,10 @@ import {
   FiEye,
   FiLayers,
   FiPlay,
+  FiClock,
+  FiZap,
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { extractPreviewableCode } from "../../utils/codeExportUtils";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -354,6 +357,7 @@ const MessageBubble = ({
 }) => {
   const isUser = role === "user";
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(content);
@@ -394,7 +398,20 @@ const MessageBubble = ({
     content.includes("check that Ollama is running") ||
     content.includes("check that your server node is running") ||
     content.includes("Unable to process request") ||
-    content.includes("Stream connection error")
+    content.includes("Stream connection error") ||
+    content.includes("difficulty connecting at the moment due to high traffic")
+  );
+
+  const isDailyLimitMessage = !isUser && content && typeof content === "string" && (
+    content.includes("Daily Free Limit Reached") ||
+    content.includes("DAILY_FREE_LIMIT_REACHED") ||
+    content.includes("daily free limit of 50 messages")
+  );
+
+  const isInsufficientCreditsMessage = !isUser && content && typeof content === "string" && (
+    content.includes("Credits Exhausted") ||
+    content.includes("INSUFFICIENT_CREDITS") ||
+    content.includes("run out of AI Credits")
   );
 
   const displayContent = formatMarkdownBreaks(
@@ -603,6 +620,42 @@ const MessageBubble = ({
                 </button>
               </div>
             </div>
+          ) : isDailyLimitMessage ? (
+            <div className="my-2 p-3.5 rounded-xl bg-surface-secondary/80 dark:bg-[#1e1f2b] border border-border-primary/50 dark:border-white/10 text-xs sm:text-sm text-text-primary dark:text-[#e5e5e5] shadow-2xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <FiClock className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="font-medium">
+                    Daily limit reached (50/50 messages). Please upgrade your plan or try again tomorrow.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/subscription")}
+                  className="px-3 py-1 rounded-lg text-xs font-semibold text-white bg-accent-primary hover:opacity-90 transition cursor-pointer shrink-0 shadow-2xs"
+                >
+                  Upgrade Plan
+                </button>
+              </div>
+            </div>
+          ) : isInsufficientCreditsMessage ? (
+            <div className="my-2 p-3.5 rounded-xl bg-surface-secondary/80 dark:bg-[#1e1f2b] border border-border-primary/50 dark:border-white/10 text-xs sm:text-sm text-text-primary dark:text-[#e5e5e5] shadow-2xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <FiZap className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span className="font-medium">
+                    AI credits exhausted. Top up your credit balance to continue chatting.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/subscription")}
+                  className="px-3 py-1 rounded-lg text-xs font-semibold text-white bg-accent-primary hover:opacity-90 transition cursor-pointer shrink-0 shadow-2xs"
+                >
+                  Top Up Credits
+                </button>
+              </div>
+            </div>
           ) : (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -693,6 +746,30 @@ const MessageBubble = ({
                 a: ({ node, children, href, ...props }) => {
                   const linkText = String(children || "");
                   const isCitation = /^(\[\d+\]|\d+|Source\s*\d+|Yahoo|Google|NSE|BSE|Reuters|Bloomberg|CNBC)/i.test(linkText) || linkText.length < 28;
+                  const isInternal = href && (href.startsWith("/") || href.startsWith("#"));
+
+                  if (isInternal) {
+                    return (
+                      <a
+                        href={href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (href) navigate(href);
+                        }}
+                        className={
+                          isUser
+                            ? "text-white underline font-semibold break-all cursor-pointer"
+                            : isCitation
+                            ? "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md text-[11px] font-medium bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary border border-accent-primary/25 transition no-underline align-baseline align-middle shadow-2xs cursor-pointer"
+                            : "text-accent-primary hover:underline font-semibold break-all cursor-pointer"
+                        }
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    );
+                  }
+
                   return (
                     <a
                       href={href}

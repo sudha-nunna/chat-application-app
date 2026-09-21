@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon, FiEye } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon, FiEye, FiClock, FiZap } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
@@ -13,6 +14,7 @@ import { speakText, stopSpeech, cleanMarkdownForSpeech } from "../../utils/speec
 
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const queryClient = useTanStackQueryClient();
   const authToken = localStorage.getItem("token");
   const { data: chats = [] } = useTanStackData(
@@ -25,6 +27,23 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     { enabled: !!authToken }
   );
 
+  const { data: usageData } = useTanStackData(
+    ["usage"],
+    async () => {
+      if (!authToken) return null;
+      const res = await NobackEndCall("/usage/summary");
+      return res?.data || res || null;
+    },
+    { enabled: !!authToken }
+  );
+
+  const isDailyLimitReached = Boolean(
+    usageData &&
+    usageData.plan?.isPaidUser === false &&
+    ((usageData.today?.messagesUsed !== undefined && usageData.today.messagesUsed >= 50) ||
+      usageData.today?.messagesRemaining === 0)
+  );
+
   const currentChat = chats.find(c => c._id === currentChatId);
   const chatTitle = currentChat ? currentChat.title : "New conversation";
 
@@ -33,6 +52,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollToUser, setShowScrollToUser] = useState(false);
   const latestUserMsgRef = useRef(null);
+
+  // Pagination states for lazy-loading older messages
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
+  const isLoadingOlderRef = useRef(false);
 
   const [isSearching, setIsSearching] = useState(false);
   const [isWebSearching, setIsWebSearching] = useState(false);
@@ -525,6 +550,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     setShowScrollBottom(distanceFromBottom > 100);
 
+    // Trigger lazy loading when user scrolls near the top (< 120px)
+    if (scrollTop < 120 && hasMoreMessages && !isLoadingOlderRef.current && !isFetchingMessages) {
+      loadOlderMessages();
+    }
+
     // Only show scroll to latest user message when scrolled away from bottom AND user message is above viewport
     if (!isAtBottom && distanceFromBottom > 100 && latestUserMsgRef.current && messagesContainerRef.current) {
       const containerRect = messagesContainerRef.current.getBoundingClientRect();
@@ -624,22 +654,22 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             },
             body: JSON.stringify({ content: partialText })
           })
-          .then(r => r.json())
-          .then(data => {
-            if (data?.message?._id) {
-              setMessages(prev => {
-                if (prev.length === 0) return prev;
-                const lastIdx = prev.length - 1;
-                if (prev[lastIdx]?.role === "assistant") {
-                  const updated = [...prev];
-                  updated[lastIdx] = { ...updated[lastIdx], _id: data.message._id };
-                  return updated;
-                }
-                return prev;
-              });
-            }
-          })
-          .catch((e) => console.warn("Failed to notify stop:", e.message));
+            .then(r => r.json())
+            .then(data => {
+              if (data?.message?._id) {
+                setMessages(prev => {
+                  if (prev.length === 0) return prev;
+                  const lastIdx = prev.length - 1;
+                  if (prev[lastIdx]?.role === "assistant") {
+                    const updated = [...prev];
+                    updated[lastIdx] = { ...updated[lastIdx], _id: data.message._id };
+                    return updated;
+                  }
+                  return prev;
+                });
+              }
+            })
+            .catch((e) => console.warn("Failed to notify stop:", e.message));
         }
       } catch (err) {
         console.warn("Stop notification error:", err);
@@ -748,9 +778,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     try {
       setIsFetchingMessages(true);
       setMessages([]);
+      setHasMoreMessages(false);
+      setNextCursor(null);
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChatId}/messages`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChatId}/messages?limit=25`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -759,7 +791,10 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       );
       const data = await res.json();
       if (activeChatIdRef.current === targetChatId) {
-        setMessages(Array.isArray(data) ? data : []);
+        const fetchedMsgs = Array.isArray(data) ? data : (Array.isArray(data.messages) ? data.messages : []);
+        setMessages(fetchedMsgs);
+        setHasMoreMessages(Boolean(data.hasMore));
+        setNextCursor(data.nextCursor || null);
       }
     } catch (err) {
       console.error("Error reading history collections:", err);
@@ -767,6 +802,54 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       if (activeChatIdRef.current === targetChatId) {
         setIsFetchingMessages(false);
       }
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (!currentChatId || !hasMoreMessages || !nextCursor || isLoadingOlderRef.current) return;
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    isLoadingOlderRef.current = true;
+    setIsLoadingOlderMessages(true);
+
+    const previousScrollHeight = container.scrollHeight;
+    const targetChatId = currentChatId;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChatId}/messages?limit=25&before=${encodeURIComponent(nextCursor)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = await res.json();
+
+      if (activeChatIdRef.current === targetChatId && data && Array.isArray(data.messages)) {
+        const olderMsgs = data.messages;
+        setMessages(prevMsgs => {
+          const existingIds = new Set(prevMsgs.map(m => m._id).filter(Boolean));
+          const filteredOlder = olderMsgs.filter(m => !m._id || !existingIds.has(m._id));
+          return [...filteredOlder, ...prevMsgs];
+        });
+        setHasMoreMessages(Boolean(data.hasMore));
+        setNextCursor(data.nextCursor || null);
+
+        // Lock scroll position to prevent viewport jumping
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - previousScrollHeight;
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching older messages:", err);
+    } finally {
+      isLoadingOlderRef.current = false;
+      setIsLoadingOlderMessages(false);
     }
   };
 
@@ -825,8 +908,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     const isDesktopView = typeof window !== "undefined" && window.innerWidth >= 768;
 
-    // Immediately open the preview pane ONLY on Web View for explicit web/UI generation requests or Dev Mode requests at prompt send time
-    if ((isExplicitWebPrompt || isDevModeActive) && !continuationContext) {
+    // Immediately open the preview pane ONLY on Web View for explicit web/UI generation requests or Dev Mode code requests at prompt send time
+    if ((isExplicitWebPrompt || (isDevModeActive && isCreationIntent)) && !continuationContext) {
       if (isDesktopView) {
         setIsArtifactOpen(true);
         setActiveArtifact({
@@ -839,9 +922,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         // On Mobile View, keep user in Chat Area without obscuring screen with preview panel
         setIsArtifactOpen(false);
       }
-    } else if (!isDevModeActive && !isExplicitWebPrompt) {
-      // Auto-close preview panel on casual / non-web prompts to prevent preview flashing
+    } else if (!isExplicitWebPrompt && !isCreationIntent) {
+      // Auto-close preview panel on casual / non-web prompts to prevent preview flashing or leftover placeholder
       setIsArtifactOpen(false);
+      if (activeArtifact?.isStreaming || activeArtifact?.title === "Generating...") {
+        setActiveArtifact(null);
+      }
     }
 
     // Cancel any active speech readout and clear audio pipeline BEFORE setting voice flags
@@ -993,8 +1079,12 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
       if (!response.ok) {
         if (response.status === 402) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(JSON.stringify({ type: "INSUFFICIENT_CREDITS", data: errorData }));
+        }
+        if (response.status === 429) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(JSON.stringify({ type: "DAILY_FREE_LIMIT_REACHED", data: errorData }));
         }
         throw new Error(`Server returned status code: ${response.status}`);
       }
@@ -1189,14 +1279,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             return prev.map((msg, idx) =>
               idx === targetIdx
                 ? {
-                    ...msg,
-                    content: fullContent,
-                    isStoppedMidway: false,
-                    continuationResolved: true,
-                    followUps: streamFollowUpsRef.current || [],
-                    sources: activeSearchSourcesRef.current || [],
-                    requiresWebSearch: isSearchGuidanceRef.current || false,
-                  }
+                  ...msg,
+                  content: fullContent,
+                  isStoppedMidway: false,
+                  continuationResolved: true,
+                  followUps: streamFollowUpsRef.current || [],
+                  sources: activeSearchSourcesRef.current || [],
+                  requiresWebSearch: isSearchGuidanceRef.current || false,
+                }
                 : msg
             );
           } else {
@@ -1257,7 +1347,24 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       // Invalidate usage to refresh credits once stream completes without multiple get calls
       queryClient.invalidateQueries({ queryKey: ["usage"] });
     } catch (err) {
-      if (err.message && err.message.includes("INSUFFICIENT_CREDITS")) {
+      if (err.message && err.message.includes("DAILY_FREE_LIMIT_REACHED")) {
+        try {
+          const parsedError = JSON.parse(err.message);
+          const customMsg = parsedError.data?.message || "You have reached your daily limit of 50 free messages. Please upgrade your plan or try again tomorrow.";
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `⏳ **Daily Free Limit Reached**\n\n${customMsg}\n\n[Upgrade Plan / Top Up Credits](/subscription)`
+            }
+          ]);
+        } catch (e) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: `⏳ **Daily Free Limit Reached**\n\nYou have reached your daily limit of 50 free messages. Please upgrade your plan or try again tomorrow. [Upgrade Plan](/subscription)` }
+          ]);
+        }
+      } else if (err.message && err.message.includes("INSUFFICIENT_CREDITS")) {
         try {
           const parsedError = JSON.parse(err.message);
           setMessages((prev) => [
@@ -1296,6 +1403,13 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       setIsBotTyping(false);
       setStreamingReply("");
       currentStreamingTextRef.current = "";
+      setActiveArtifact((prev) => {
+        if (prev?.isStreaming && (prev?.title === "Generating..." || (typeof prev?.code === "string" && prev?.code.includes("Generating Web App...")))) {
+          setIsArtifactOpen(false);
+          return null;
+        }
+        return prev;
+      });
     }
   };
 
@@ -1482,8 +1596,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 }
               }}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${isArtifactOpen
-                  ? "bg-accent-primary text-white border-accent-primary shadow-xs"
-                  : "bg-accent-primary/10 text-accent-primary border-accent-primary/30 hover:bg-accent-primary/20"
+                ? "bg-accent-primary text-white border-accent-primary shadow-xs"
+                : "bg-accent-primary/10 text-accent-primary border-accent-primary/30 hover:bg-accent-primary/20"
                 }`}
               title={isArtifactOpen ? "Hide Live Preview Panel" : "Open Live Preview Panel"}
             >
@@ -1519,8 +1633,8 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         {/* Left: Chat Area */}
         <div
           className={`h-full flex flex-col min-w-0 transition-all duration-300 ${isArtifactOpen && activeArtifact
-              ? "w-full md:w-[48%] lg:w-[45%]"
-              : "w-full"
+            ? "w-full md:w-[48%] lg:w-[45%]"
+            : "w-full"
             }`}
         >
           {/* Messages Scroll Area - ONLY this section scrolls */}
@@ -1537,6 +1651,14 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 <div className="flex flex-col items-center justify-center flex-1 text-center">
                   <div className="w-8 h-8 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mb-3 mx-auto"></div>
                   <p className="text-xs text-text-primary">Loading chat...</p>
+                </div>
+              )}
+
+              {/* Top Spinner indicator for prepending older messages */}
+              {!isFetchingMessages && isLoadingOlderMessages && (
+                <div className="flex items-center justify-center py-2 text-center text-text-muted">
+                  <div className="w-4 h-4 rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white animate-spin mr-2"></div>
+                  <span className="text-[11px]">Loading older messages...</span>
                 </div>
               )}
 
@@ -1560,12 +1682,29 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                       </span>{" "}
                       TODAY?
                     </h2>
-                    <p className="text-[13px] text-text-muted dark:text-[#a1a1aa] md:text-[#4B5563] max-w-lg leading-relaxed mb-5 font-['Poppins',sans-serif] font-bold md:font-medium">
+                    {/* <p className="text-[13px] text-text-muted dark:text-[#a1a1aa] md:text-[#4B5563] max-w-lg leading-relaxed mb-5 font-['Poppins',sans-serif] font-bold md:font-medium">
                       Codegene AI helps you reason through hard problems, build
                       <br />
                       useful things, and move from a blank page to a precise
                       <br />
                       result.
+                    </p> */}
+                    <p
+                      className="
+                        text-[13px]
+                        text-text-muted
+                        dark:text-[#a1a1aa]
+                        md:text-[#4B5563]
+                        max-w-lg
+                        leading-relaxed
+                        mb-5
+                        font-['Poppins',sans-serif]
+                        font-bold
+                        md:font-medium
+                      "
+                    >
+                      Codegene AI helps you reason through hard problems, build useful things,
+                      and move from a blank page to a precise result.
                     </p>
 
                     {/* Quick Actions */}
@@ -1729,24 +1868,24 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                         onRetry={
                           isUserMsg
                             ? (newContent) => {
-                                const payload = typeof newContent === "string" ? newContent : m.content;
-                                handleSendSubmit(payload, null, undefined, m.attachments, index, false, m.enableSearch, null, false);
-                              }
+                              const payload = typeof newContent === "string" ? newContent : m.content;
+                              handleSendSubmit(payload, null, undefined, m.attachments, index, false, m.enableSearch, null, false);
+                            }
                             : prevUserMsg
                               ? (newContent) => {
-                                  const payload = typeof newContent === "string" ? newContent : prevUserMsg.content;
-                                  handleSendSubmit(
-                                    payload,
-                                    null,
-                                    undefined,
-                                    prevUserMsg.attachments,
-                                    prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
-                                    false,
-                                    prevUserMsg.enableSearch,
-                                    null,
-                                    true
-                                  );
-                                }
+                                const payload = typeof newContent === "string" ? newContent : prevUserMsg.content;
+                                handleSendSubmit(
+                                  payload,
+                                  null,
+                                  undefined,
+                                  prevUserMsg.attachments,
+                                  prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
+                                  false,
+                                  prevUserMsg.enableSearch,
+                                  null,
+                                  true
+                                );
+                              }
                               : undefined
                         }
                         isStoppedMidway={showContinueBtn}
@@ -1798,6 +1937,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 )}
               </div>
             )}
+            {isDailyLimitReached && (
+              <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6 mb-2">
+                <div className="p-3 rounded-xl bg-surface-secondary/90 dark:bg-[#1e1f2b] border border-border-primary/60 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs shadow-xs">
+                  <div className="flex items-center gap-2 text-text-primary dark:text-[#e5e5e5]">
+                    <FiClock className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span className="font-medium">
+                      You've reached your daily free limit of 50 messages. Upgrade plan or try again tomorrow.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/subscription")}
+                    className="px-3 py-1 rounded-lg text-xs font-semibold text-white bg-accent-primary hover:opacity-90 transition cursor-pointer shrink-0 shadow-2xs"
+                  >
+                    Upgrade Plan
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="w-full max-w-[820px] mx-auto px-2 sm:px-4 md:px-6 pb-2 shrink-0">
               <ChatInput
                 onSend={handleSendSubmit}
@@ -1808,6 +1966,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                 setIsWebSearchActive={handleToggleWebSearch}
                 isDevModeActive={isDevModeActive}
                 setIsDevModeActive={handleToggleDevMode}
+                isDailyLimitReached={isDailyLimitReached}
               />
             </div>
           </div>

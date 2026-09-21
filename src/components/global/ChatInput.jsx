@@ -37,6 +37,7 @@ const ChatInput = ({
   setIsWebSearchActive: setControlledWebSearchActive,
   isDevModeActive: controlledDevModeActive,
   setIsDevModeActive: setControlledDevModeActive,
+  isDailyLimitReached = false,
 }) => {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -475,6 +476,7 @@ const ChatInput = ({
   }, [stopVoiceSession]);
 
   const handleVoiceClick = async () => {
+    if (isDailyLimitReached) return;
     try {
       if (isListening) {
         await stopVoiceSession();
@@ -509,6 +511,7 @@ const ChatInput = ({
   };
 
   const startVoiceListening = async () => {
+    if (isDailyLimitReached) return;
     try {
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
@@ -555,11 +558,11 @@ const ChatInput = ({
     // Intentionally no-op to prevent auto-listening loop after completion
   }, [autoListenTrigger]);
 
-  const hasText = Boolean(text && text.trim());
-  const canSubmit = hasText && !isGenerating;
+  const hasText = Boolean((text && text.trim()) || (attachments && attachments.length > 0));
+  const canSubmit = !isDailyLimitReached && !isGenerating && hasText;
 
   const handleSend = () => {
-    if (isGenerating) return;
+    if (isGenerating || isDailyLimitReached) return;
     if (Date.now() - stopClickedTimestampRef.current < 600) return;
     if (isSubmittingRef.current) return;
     if (!canSubmit) return;
@@ -634,7 +637,7 @@ const ChatInput = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (isGenerating) return;
+          if (isGenerating || isDailyLimitReached) return;
           if (Date.now() - stopClickedTimestampRef.current < 600) return;
           if (canSubmit) handleSend();
         }}
@@ -642,7 +645,7 @@ const ChatInput = ({
         w-full relative flex flex-col p-2 sm:p-2.5 md:p-3
         bg-white dark:bg-[#191A24] border border-border-primary dark:border-white/5
         rounded-2xl shadow-lg focus-within:border-border-focus dark:focus-within:border-white/10
-        transition-all duration-300
+        transition-all duration-300 ${isDailyLimitReached ? "opacity-80" : ""}
       `}
       >
         {/* ChatGPT Style Attachment Preview Bar */}
@@ -747,9 +750,12 @@ const ChatInput = ({
         <textarea
           ref={inputRef}
           rows={2}
+          disabled={isDailyLimitReached || isGenerating}
           value={text}
           placeholder={
-            isListening
+            isDailyLimitReached
+              ? "Daily free limit reached (50/50 messages). Please upgrade your plan or try again tomorrow..."
+              : isListening
               ? "Listening... Speak now (pause 2 sec to submit to AI)..."
               : isDevModeActive
               ? "Dev Mode enabled — Ask Codegene AI to build any app, site, or component..."
@@ -779,9 +785,10 @@ const ChatInput = ({
             <div className="relative" ref={attachMenuRef}>
               <button
                 type="button"
-                onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
-                className="group flex items-center cursor-pointer"
-                title="Attach Files (Max 10MB)"
+                disabled={isDailyLimitReached}
+                onClick={() => !isDailyLimitReached && setIsAttachMenuOpen(!isAttachMenuOpen)}
+                className={`group flex items-center ${isDailyLimitReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                title={isDailyLimitReached ? "Daily free limit reached (50/50 messages)" : "Attach Files (Max 10MB)"}
               >
                 <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] sm:rounded-[10px] border border-border-primary dark:border-white/5 group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors duration-200 shadow-sm">
                   <svg
@@ -886,19 +893,23 @@ const ChatInput = ({
 
             <button
               type="button"
+              disabled={isDailyLimitReached}
               onClick={() => {
+                if (isDailyLimitReached) return;
                 const next = !isWebSearchActive;
                 setIsWebSearchActive(next);
                 if (next) {
                   setIsDevModeActive(false);
                 }
               }}
-              className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs cursor-pointer shrink-0 ${
+              className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs shrink-0 ${
+                isDailyLimitReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+              } ${
                 isWebSearchActive
                   ? "border-accent-primary bg-accent-primary text-white shadow-sm font-semibold"
                   : "border-border-primary dark:border-white/5 text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
               }`}
-              title={isWebSearchActive ? "Web Search: Enabled (Click to disable)" : "Search the web (Click to enable)"}
+              title={isDailyLimitReached ? "Daily free limit reached (50/50 messages)" : isWebSearchActive ? "Web Search: Enabled (Click to disable)" : "Search the web (Click to enable)"}
             >
               <FiGlobe className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWebSearchActive ? "text-white" : ""}`} />
               <span className="text-[11px] font-medium hidden xs:inline">
@@ -909,19 +920,23 @@ const ChatInput = ({
             {/* Dev / Builder Mode Button */}
             <button
               type="button"
+              disabled={isDailyLimitReached}
               onClick={() => {
+                if (isDailyLimitReached) return;
                 const next = !isDevModeActive;
                 setIsDevModeActive(next);
                 if (next) {
                   setIsWebSearchActive(false);
                 }
               }}
-              className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs cursor-pointer shrink-0 ${
+              className={`flex items-center gap-1.5 px-2 sm:px-2.5 h-7 sm:h-8 rounded-[8px] sm:rounded-[10px] border transition-all duration-200 shadow-xs shrink-0 ${
+                isDailyLimitReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+              } ${
                 isDevModeActive
                   ? "border-emerald-500 bg-emerald-500 text-white shadow-sm font-semibold animate-in fade-in"
                   : "border-border-primary dark:border-white/5 text-text-muted dark:text-[#8A8A93] hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
               }`}
-              title={isDevModeActive ? "Dev Mode: ON (Live Sandbox split-screen enabled)" : "Turn on Dev Mode (Live App/Web Builder)"}
+              title={isDailyLimitReached ? "Daily free limit reached (50/50 messages)" : isDevModeActive ? "Dev Mode: ON (Live Sandbox split-screen enabled)" : "Turn on Dev Mode (Live App/Web Builder)"}
             >
               <FiCode className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isDevModeActive ? "text-white" : ""}`} />
               <span className="text-[11px] font-medium hidden xs:inline">
@@ -1194,17 +1209,18 @@ const ChatInput = ({
             <button
               onClick={handleVoiceClick}
               type="button"
-              disabled={isGenerating}
+              disabled={isDailyLimitReached || isGenerating}
               className={`
-                transition-colors duration-200 cursor-pointer flex items-center justify-center shrink-0
+                transition-colors duration-200 flex items-center justify-center shrink-0
                 w-7 h-7 sm:w-8 sm:h-8 rounded-lg
+                ${isDailyLimitReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
                 ${
                   isListening
                     ? "bg-accent-primary text-white animate-pulse"
                     : "text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
                 }
               `}
-              title={isListening ? "Stop Recording" : "Record Voice"}
+              title={isDailyLimitReached ? "Daily free limit reached (50/50 messages)" : isListening ? "Stop Recording" : "Record Voice"}
             >
               {isListening ? (
                 <svg

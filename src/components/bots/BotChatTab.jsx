@@ -25,7 +25,7 @@ import {
 import { TbRobotFace } from "react-icons/tb";
 import { NobackEndCall, NobackEndCallObj, backEndCallObjDel } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import ClusterStatusWidget from "../global/ClusterStatusWidget";
 import { formatMarkdownBreaks } from "../../services/externalBotService";
 import VisemeAvatarPlayer from "../global/VisemeAvatarPlayer";
@@ -35,6 +35,7 @@ import { useTanStackQueryClient } from "../../hooks/useTanStackData";
 
 const BotChatTab = ({ bot }) => {
   const queryClient = useTanStackQueryClient();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId] = useState(searchParams.get("convId") || null);
@@ -321,6 +322,10 @@ const BotChatTab = ({ bot }) => {
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(JSON.stringify({ type: "DAILY_FREE_LIMIT_REACHED", data: errorData }));
+        }
         throw new Error(`Server returned ${response.status}`);
       }
 
@@ -400,6 +405,22 @@ const BotChatTab = ({ bot }) => {
           }
           return updated;
         });
+      } else if (err.message && err.message.includes("DAILY_FREE_LIMIT_REACHED")) {
+        try {
+          const parsedError = JSON.parse(err.message);
+          const limitMsg = parsedError.data?.message || "You have reached your daily free limit of 50 messages. Please upgrade your plan or try again tomorrow.";
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            const content = `⏳ **Daily Free Limit Reached**\n\n${limitMsg}\n\n[Upgrade Plan](/subscription)`;
+            if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+              updated[lastIdx] = { ...updated[lastIdx], content };
+            } else {
+              updated.push({ role: "assistant", content });
+            }
+            return updated;
+          });
+        } catch (e) {}
       } else {
         console.error("Stream error:", err);
         setMessages((prev) => {
@@ -428,9 +449,25 @@ const BotChatTab = ({ bot }) => {
     p: ({ node, ...props }) => (
       <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-sm" {...props} />
     ),
-    a: ({ node, ...props }) => (
-      <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" {...props} />
-    ),
+    a: ({ node, href, children, ...props }) => {
+      const isInternal = href && (href.startsWith("/") || href.startsWith("#"));
+      if (isInternal) {
+        return (
+          <a
+            href={href}
+            onClick={(e) => {
+              e.preventDefault();
+              if (href) navigate(href);
+            }}
+            className="text-text-primary hover:underline font-semibold break-all cursor-pointer"
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      }
+      return <a className="text-text-primary hover:underline font-semibold break-all" target="_blank" rel="noopener noreferrer" href={href} {...props}>{children}</a>;
+    },
     strong: ({ node, ...props }) => (
       <strong
         className={`font-extrabold px-1.5 py-0.5 rounded-md text-xs inline-block my-0.5 shadow-2xs ${
