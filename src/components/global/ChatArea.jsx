@@ -12,6 +12,88 @@ import { useTanStackQueryClient, useTanStackData } from "../../hooks/useTanStack
 import { NobackEndCall } from "../../services/authService";
 import { speakText, stopSpeech, cleanMarkdownForSpeech } from "../../utils/speechUtils";
 
+export const mergeContinuationText = (baseText = "", newText = "") => {
+  if (!baseText) return newText || "";
+  if (!newText) return baseText || "";
+
+  let cleanedNew = newText;
+
+  // 1. Remove leading continuation artifacts like "... ", "...", "…", "\n...", etc.
+  cleanedNew = cleanedNew.replace(/^(\s*(\.\.\.|\u2026)\s*)+/, "");
+
+  let effectiveBase = baseText;
+
+  // 2. Check for partial hyphenated word duplicate (e.g. baseText ends with "Content-" and newText starts with "Content &")
+  const hyphenMatch = effectiveBase.match(/(\b[a-zA-Z0-9]+)-$/);
+  if (hyphenMatch) {
+    const wordBeforeHyphen = hyphenMatch[1];
+    const newWordMatch = cleanedNew.match(/^([a-zA-Z0-9]+)/);
+    if (newWordMatch && newWordMatch[1].toLowerCase() === wordBeforeHyphen.toLowerCase()) {
+      effectiveBase = effectiveBase.slice(0, -(wordBeforeHyphen.length + 1));
+    }
+  }
+
+  // 3. Substring overlap detection (e.g. baseText ends with "scenarios" and newText starts with "scenarios — where")
+  const baseTrimmed = effectiveBase.trimEnd();
+  const maxOverlapLen = Math.min(80, baseTrimmed.length, cleanedNew.length);
+  let bestOverlapLen = 0;
+
+  for (let len = maxOverlapLen; len >= 3; len--) {
+    const baseSuffix = baseTrimmed.slice(-len);
+    const newPrefix = cleanedNew.slice(0, len);
+
+    if (baseSuffix.toLowerCase() === newPrefix.toLowerCase()) {
+      bestOverlapLen = len;
+      break;
+    }
+  }
+
+  if (bestOverlapLen > 0) {
+    cleanedNew = cleanedNew.slice(bestOverlapLen);
+  }
+
+  // 4. Spacing and boundary normalization
+  const baseEndsWithWordOrPunct = /[a-zA-Z0-9.!?:;,)]$/.test(effectiveBase);
+  const newStartsWithWord = /^[a-zA-Z0-9]/.test(cleanedNew);
+  const needsSpace =
+    baseEndsWithWordOrPunct &&
+    newStartsWithWord &&
+    !effectiveBase.endsWith("-") &&
+    !effectiveBase.endsWith(" ") &&
+    !effectiveBase.endsWith("\n");
+
+  const joiner = needsSpace ? " " : "";
+
+  return effectiveBase + joiner + cleanedNew;
+};
+
+const resolveContinuationIndex = (msgList, context) => {
+  if (!Array.isArray(msgList) || msgList.length === 0) return -1;
+  if (!context) {
+    for (let i = msgList.length - 1; i >= 0; i--) {
+      if (msgList[i]?.role === "assistant") return i;
+    }
+    return -1;
+  }
+  const { messageIndex: reqIdx, stoppedMessageId: reqId, baseContent: reqBase } = context;
+
+  if (reqId) {
+    const foundIdx = msgList.findIndex((m) => m._id === reqId || m.id === reqId);
+    if (foundIdx !== -1) return foundIdx;
+  }
+  if (reqIdx !== undefined && reqIdx >= 0 && reqIdx < msgList.length && msgList[reqIdx]?.role === "assistant") {
+    return reqIdx;
+  }
+  if (reqBase) {
+    const foundIdx = msgList.findIndex((m) => m.role === "assistant" && (m.content === reqBase || reqBase.startsWith((m.content || "").substring(0, 30))));
+    if (foundIdx !== -1) return foundIdx;
+  }
+  for (let i = msgList.length - 1; i >= 0; i--) {
+    if (msgList[i]?.role === "assistant") return i;
+  }
+  return msgList.length - 1;
+};
+
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -627,19 +709,37 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     streamCompleteCbRef.current = null;
 
     const targetChat = targetChatId || streamingChatIdRef.current || (currentChatId && currentChatId !== "new" ? currentChatId : null);
+    const contCtx = continuationContextRef.current;
+    let fullPartialText = partialText;
 
     if (partialText && partialText.trim()) {
       if (!targetChatId || targetChatId === currentChatId) {
-        if (continuationContextRef.current && continuationContextRef.current.messageIndex !== undefined) {
-          const idx = continuationContextRef.current.messageIndex;
-          const fullPartial = (continuationContextRef.current.baseContent || "") + partialText;
-          setMessages((prev) => prev.map((m, i) => i === idx ? { ...m, content: fullPartial, isStoppedMidway: true } : m));
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: partialText, isStoppedMidway: true }
-          ]);
-        }
+        setMessages((prev) => {
+          let targetIdx = resolveContinuationIndex(prev, contCtx);
+          if (targetIdx === -1 && contCtx) {
+            for (let i = prev.length - 1; i >= 0; i--) {
+              if (prev[i]?.role === "assistant") {
+                targetIdx = i;
+                break;
+              }
+            }
+          }
+
+          if (targetIdx !== -1 && contCtx) {
+            const baseText = contCtx.baseContent || prev[targetIdx]?.content || "";
+            fullPartialText = mergeContinuationText(baseText, partialText);
+            return prev.map((m, i) => i === targetIdx ? { ...m, content: fullPartialText, isStoppedMidway: true, continuationResolved: false } : m);
+          } else if (targetIdx !== -1) {
+            fullPartialText = partialText;
+            return prev.map((m, i) => i === targetIdx ? { ...m, content: fullPartialText, isStoppedMidway: true } : m);
+          } else {
+            fullPartialText = partialText;
+            return [
+              ...prev,
+              { role: "assistant", content: fullPartialText, isStoppedMidway: true }
+            ];
+          }
+        });
       }
 
       // Synchronize stop with backend so switching chats or reloading preserves the Continue button
@@ -652,17 +752,22 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`
             },
-            body: JSON.stringify({ content: partialText })
+            body: JSON.stringify({
+              content: fullPartialText,
+              messageId: contCtx?.stoppedMessageId || null,
+              stoppedMessageId: contCtx?.stoppedMessageId || null
+            })
           })
             .then(r => r.json())
             .then(data => {
               if (data?.message?._id) {
                 setMessages(prev => {
                   if (prev.length === 0) return prev;
-                  const lastIdx = prev.length - 1;
-                  if (prev[lastIdx]?.role === "assistant") {
+                  const targetIdx = resolveContinuationIndex(prev, contCtx);
+                  const idxToUpdate = targetIdx !== -1 ? targetIdx : prev.length - 1;
+                  if (prev[idxToUpdate]?.role === "assistant") {
                     const updated = [...prev];
-                    updated[lastIdx] = { ...updated[lastIdx], _id: data.message._id };
+                    updated[idxToUpdate] = { ...updated[idxToUpdate], _id: data.message._id };
                     return updated;
                   }
                   return prev;
@@ -1261,21 +1366,24 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
       }
 
       if (finalResponseContent && finalResponseContent.trim()) {
+        const contCtx = continuationContextRef.current;
         setMessages((prev) => {
           let targetIdx = -1;
-          if (continuationContextRef.current) {
-            const { messageIndex: reqIdx, stoppedMessageId: reqId, baseContent: reqBase } = continuationContextRef.current;
-            if (reqIdx !== undefined && reqIdx >= 0 && prev[reqIdx] && prev[reqIdx].role === "assistant") {
-              targetIdx = reqIdx;
-            } else if (reqId) {
-              targetIdx = prev.findIndex((m) => m._id === reqId || m.id === reqId);
-            } else if (reqBase) {
-              targetIdx = prev.findIndex((m) => m.role === "assistant" && m.content === reqBase);
+          if (contCtx) {
+            targetIdx = resolveContinuationIndex(prev, contCtx);
+          }
+          if (targetIdx === -1 && contCtx) {
+            for (let i = prev.length - 1; i >= 0; i--) {
+              if (prev[i]?.role === "assistant") {
+                targetIdx = i;
+                break;
+              }
             }
           }
 
           if (targetIdx !== -1) {
-            const fullContent = (continuationContextRef.current.baseContent || "") + finalResponseContent;
+            const baseText = (contCtx && contCtx.baseContent) || prev[targetIdx]?.content || "";
+            const fullContent = mergeContinuationText(baseText, finalResponseContent);
             return prev.map((msg, idx) =>
               idx === targetIdx
                 ? {
@@ -1781,133 +1889,134 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                   (lastIdx, msg, idx) => (msg.role === "assistant" ? idx : lastIdx),
                   -1
                 );
-                return messages.map((m, index) => {
-                  const isUserMsg = m.role === "user";
-                  const isLatestUserMsg = index === lastUserMsgIdx;
-                  const isLatestAssistant = index === lastAssistantMsgIdx && !isSearching && !isBotTyping;
-                  const prevUserMsg = !isUserMsg
-                    ? [...messages.slice(0, index)]
-                      .reverse()
-                      .find((msg) => msg.role === "user")
-                    : null;
-                  const prevUserMsgIdx = !isUserMsg
-                    ? messages.reduce(
-                      (lastIdx, msg, idx) => (msg.role === "user" && idx < index ? idx : lastIdx),
-                      -1
-                    )
-                    : -1;
 
-                  const isSearchActuallyExecuted = isUserMsg
-                    ? Boolean(
-                      m.searchExecuted ||
-                      (messages[index + 1] && Array.isArray(messages[index + 1].sources) && messages[index + 1].sources.length > 0) ||
-                      (isLatestUserMsg && Array.isArray(activeSearchSources) && activeSearchSources.length > 0)
-                    )
-                    : false;
+                const targetContinuationIndex = isBotTyping && continuationContextRef.current
+                  ? resolveContinuationIndex(messages, continuationContextRef.current)
+                  : -1;
 
-                  const isTargetContinuation = Boolean(
-                    isBotTyping &&
-                    continuationContextRef.current &&
-                    (
-                      index === continuationContextRef.current.messageIndex ||
-                      (continuationContextRef.current.stoppedMessageId && (m._id === continuationContextRef.current.stoppedMessageId || m.id === continuationContextRef.current.stoppedMessageId)) ||
-                      (continuationContextRef.current.baseContent && m.content === continuationContextRef.current.baseContent)
-                    )
-                  );
+                return (
+                  <>
+                    {messages.map((m, index) => {
+                      const isUserMsg = m.role === "user";
+                      const isLatestUserMsg = index === lastUserMsgIdx;
+                      const isLatestAssistant = index === lastAssistantMsgIdx && !isSearching && !isBotTyping;
+                      const prevUserMsg = !isUserMsg
+                        ? [...messages.slice(0, index)]
+                          .reverse()
+                          .find((msg) => msg.role === "user")
+                        : null;
+                      const prevUserMsgIdx = !isUserMsg
+                        ? messages.reduce(
+                          (lastIdx, msg, idx) => (msg.role === "user" && idx < index ? idx : lastIdx),
+                          -1
+                        )
+                        : -1;
 
-                  const displayContent = isTargetContinuation
-                    ? (m.content || "") + (streamingReply || "")
-                    : m.content;
+                      const isSearchActuallyExecuted = isUserMsg
+                        ? Boolean(
+                          m.searchExecuted ||
+                          (messages[index + 1] && Array.isArray(messages[index + 1].sources) && messages[index + 1].sources.length > 0) ||
+                          (isLatestUserMsg && Array.isArray(activeSearchSources) && activeSearchSources.length > 0)
+                        )
+                        : false;
 
-                  const hasNewerMessages = index < messages.length - 1;
-                  const showContinueBtn =
-                    m.role === "assistant" &&
-                    m.isStoppedMidway === true &&
-                    !m.continuationResolved &&
-                    !hasNewerMessages &&
-                    !isTargetContinuation;
+                      const isTargetContinuation = isBotTyping && index === targetContinuationIndex;
 
-                  return (
-                    <div
-                      key={index}
-                      ref={isLatestUserMsg ? latestUserMsgRef : undefined}
-                      className="w-full flex flex-col"
-                    >
-                      <MessageBubble
-                        role={m.role}
-                        content={displayContent}
-                        isStreaming={isTargetContinuation ? true : false}
-                        attachments={m.attachments}
-                        enableSearch={m.enableSearch}
-                        searchExecuted={isSearchActuallyExecuted}
-                        sources={m.sources || []}
-                        requiresWebSearch={m.requiresWebSearch || false}
-                        onEnableSearchAndRetry={() => {
-                          handleToggleWebSearch(true);
-                          if (prevUserMsg?.content) {
-                            handleSendSubmit(
-                              prevUserMsg.content,
-                              null,
-                              undefined,
-                              prevUserMsg.attachments,
-                              undefined,
-                              false,
-                              true
-                            );
-                          }
-                        }}
-                        followUps={m.followUps || []}
-                        isLatestAssistant={isLatestAssistant}
-                        onSelectFollowUp={(followUpPrompt) => handleSendSubmit(followUpPrompt)}
-                        isSpeaking={activeSpeakingIndex === index}
-                        onToggleSpeak={
-                          !isUserMsg
-                            ? (rawContent) => handleToggleSpeak(index, rawContent)
-                            : undefined
-                        }
-                        onRetry={
-                          isUserMsg
-                            ? (newContent) => {
-                              const payload = typeof newContent === "string" ? newContent : m.content;
-                              handleSendSubmit(payload, null, undefined, m.attachments, index, false, m.enableSearch, null, false);
-                            }
-                            : prevUserMsg
-                              ? (newContent) => {
-                                const payload = typeof newContent === "string" ? newContent : prevUserMsg.content;
+                      const displayContent = isTargetContinuation
+                        ? mergeContinuationText(m.content || "", streamingReply || "")
+                        : m.content;
+
+                      const hasNewerMessages = index < messages.length - 1;
+                      const showContinueBtn =
+                        m.role === "assistant" &&
+                        m.isStoppedMidway === true &&
+                        !m.continuationResolved &&
+                        !hasNewerMessages &&
+                        !isTargetContinuation;
+
+                      return (
+                        <div
+                          key={index}
+                          ref={isLatestUserMsg ? latestUserMsgRef : undefined}
+                          className="w-full flex flex-col"
+                        >
+                          <MessageBubble
+                            role={m.role}
+                            content={displayContent}
+                            isStreaming={isTargetContinuation ? true : false}
+                            attachments={m.attachments}
+                            enableSearch={m.enableSearch}
+                            searchExecuted={isSearchActuallyExecuted}
+                            sources={m.sources || []}
+                            requiresWebSearch={m.requiresWebSearch || false}
+                            onEnableSearchAndRetry={() => {
+                              handleToggleWebSearch(true);
+                              if (prevUserMsg?.content) {
                                 handleSendSubmit(
-                                  payload,
+                                  prevUserMsg.content,
                                   null,
                                   undefined,
                                   prevUserMsg.attachments,
-                                  prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
+                                  undefined,
                                   false,
-                                  prevUserMsg.enableSearch,
-                                  null,
                                   true
                                 );
                               }
-                              : undefined
-                        }
-                        isStoppedMidway={showContinueBtn}
-                        onContinueGeneration={() => handleContinueGeneration(m.content, index)}
-                      />
-                    </div>
-                  );
-                });
-              })()}
+                            }}
+                            followUps={m.followUps || []}
+                            isLatestAssistant={isLatestAssistant}
+                            onSelectFollowUp={(followUpPrompt) => handleSendSubmit(followUpPrompt)}
+                            isSpeaking={activeSpeakingIndex === index}
+                            onToggleSpeak={
+                              !isUserMsg
+                                ? (rawContent) => handleToggleSpeak(index, rawContent)
+                                : undefined
+                            }
+                            onRetry={
+                              isUserMsg
+                                ? (newContent) => {
+                                  const payload = typeof newContent === "string" ? newContent : m.content;
+                                  handleSendSubmit(payload, null, undefined, m.attachments, index, false, m.enableSearch, null, false);
+                                }
+                                : prevUserMsg
+                                  ? (newContent) => {
+                                    const payload = typeof newContent === "string" ? newContent : prevUserMsg.content;
+                                    handleSendSubmit(
+                                      payload,
+                                      null,
+                                      undefined,
+                                      prevUserMsg.attachments,
+                                      prevUserMsgIdx >= 0 ? prevUserMsgIdx : undefined,
+                                      false,
+                                      prevUserMsg.enableSearch,
+                                      null,
+                                      true
+                                    );
+                                  }
+                                  : undefined
+                            }
+                            isStoppedMidway={showContinueBtn}
+                            onContinueGeneration={() => handleContinueGeneration(m.content, index)}
+                          />
+                        </div>
+                      );
+                    })}
 
-              {(isSearching || isBotTyping) && !continuationContextRef.current && (
-                <MessageBubble
-                  role="assistant"
-                  content={streamingReply}
-                  isStreaming={true}
-                  isThinking={!streamingReply}
-                  isWebSearching={isWebSearching}
-                  sources={activeSearchSources}
-                  requiresWebSearch={isSearchGuidanceActive}
-                  onEnableSearchAndRetry={() => handleToggleWebSearch(true)}
-                />
-              )}
+                    {(isSearching || isBotTyping) && targetContinuationIndex === -1 && (
+                      <MessageBubble
+                        role="assistant"
+                        content={streamingReply}
+                        isStreaming={true}
+                        isThinking={!streamingReply}
+                        isWebSearching={isWebSearching}
+                        sources={activeSearchSources}
+                        requiresWebSearch={isSearchGuidanceActive}
+                        onEnableSearchAndRetry={() => handleToggleWebSearch(true)}
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

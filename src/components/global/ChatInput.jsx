@@ -219,8 +219,23 @@ const ChatInput = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
+  const isGeneratingRef = useRef(isGenerating);
   useEffect(() => {
-    if (!isGenerating) {
+    isGeneratingRef.current = isGenerating;
+    if (isGenerating) {
+      isListeningRef.current = false;
+      setIsListening(false);
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
+      latestTranscriptRef.current = "";
+    } else {
       inputRef.current?.focus();
     }
   }, [isGenerating]);
@@ -323,6 +338,21 @@ const ChatInput = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const attachmentsRef = useRef(attachments);
+  useEffect(() => {
+    attachmentsRef.current = attachments;
+  }, [attachments]);
+
+  const isWebSearchActiveRef = useRef(isWebSearchActive);
+  useEffect(() => {
+    isWebSearchActiveRef.current = isWebSearchActive;
+  }, [isWebSearchActive]);
+
+  const isDevModeActiveRef = useRef(isDevModeActive);
+  useEffect(() => {
+    isDevModeActiveRef.current = isDevModeActive;
+  }, [isDevModeActive]);
+
   const silenceTimerRef = useRef(null);
   const latestTranscriptRef = useRef("");
   const recognitionRef = useRef(null);
@@ -337,7 +367,7 @@ const ChatInput = ({
     setIsListening(false);
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (e) {}
     }
     if (voiceRecorderRef.current) {
@@ -358,7 +388,10 @@ const ChatInput = ({
     await stopVoiceSession();
 
     const promptToSubmit = (latestTranscriptRef.current || text || "").trim();
-    if (promptToSubmit && onSend) {
+    const currentAttachments = attachmentsRef.current || [];
+    const currentWebSearchActive = isWebSearchActiveRef.current !== undefined ? isWebSearchActiveRef.current : isWebSearchActive;
+
+    if ((promptToSubmit || currentAttachments.length > 0) && onSend) {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.resume();
@@ -369,16 +402,21 @@ const ChatInput = ({
         promptToSubmit,
         null,
         selectedModel?.modelId || "auto",
-        attachments,
+        currentAttachments,
         undefined,
         true /* isVoiceSubmission */,
-        isWebSearchActive
+        currentWebSearchActive
       );
       setText("");
       latestTranscriptRef.current = "";
       setAttachments([]);
     }
   };
+
+  const handleVoiceAutoSubmitRef = useRef(handleVoiceAutoSubmit);
+  useEffect(() => {
+    handleVoiceAutoSubmitRef.current = handleVoiceAutoSubmit;
+  }, [handleVoiceAutoSubmit]);
 
   // Initialize Speech Recognition on component mount
   useEffect(() => {
@@ -396,14 +434,27 @@ const ChatInput = ({
       rec.interimResults = true;
 
       rec.onstart = () => {
+        if (isGeneratingRef.current) {
+          try {
+            rec.abort();
+          } catch (e) {}
+          isListeningRef.current = false;
+          setIsListening(false);
+          return;
+        }
         isListeningRef.current = true;
         setIsListening(true);
       };
 
       rec.onend = () => {
-        // On Android / mobile Chrome, single-utterance mode is used.
-        // If user is still in voice session and silence timer hasn't fired, auto-restart recognition!
-        if (isListeningRef.current && !silenceTimerRef.current) {
+        // If generation is active or mic was stopped, do NOT auto-restart speech recognition!
+        if (!isListeningRef.current || isGeneratingRef.current) {
+          isListeningRef.current = false;
+          setIsListening(false);
+          return;
+        }
+
+        if (isListeningRef.current && !silenceTimerRef.current && !isGeneratingRef.current) {
           try {
             rec.start();
             return;
@@ -418,19 +469,23 @@ const ChatInput = ({
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current);
           silenceTimerRef.current = null;
-          handleVoiceAutoSubmit();
+          handleVoiceAutoSubmitRef.current();
         } else {
           stopVoiceSession();
         }
       };
 
       rec.onresult = (event) => {
+        if (!isListeningRef.current || isGeneratingRef.current) {
+          return;
+        }
+
         let accumulated = "";
         for (let i = 0; i < event.results.length; i++) {
           accumulated += event.results[i][0].transcript;
         }
         const trimmed = accumulated.trim();
-        if (trimmed) {
+        if (trimmed && isListeningRef.current && !isGeneratingRef.current) {
           setText(trimmed);
           latestTranscriptRef.current = trimmed;
 
@@ -441,7 +496,7 @@ const ChatInput = ({
 
           // Trigger auto-submit after 2s of silence
           silenceTimerRef.current = setTimeout(() => {
-            handleVoiceAutoSubmit();
+            handleVoiceAutoSubmitRef.current();
           }, 2000);
         }
       };
@@ -482,7 +537,10 @@ const ChatInput = ({
         await stopVoiceSession();
 
         const promptToSubmit = (latestTranscriptRef.current || text || "").trim();
-        if (promptToSubmit && onSend) {
+        const currentAttachments = attachmentsRef.current || [];
+        const currentWebSearchActive = isWebSearchActiveRef.current !== undefined ? isWebSearchActiveRef.current : isWebSearchActive;
+
+        if ((promptToSubmit || currentAttachments.length > 0) && onSend) {
           if (typeof window !== "undefined" && "speechSynthesis" in window) {
             try {
               window.speechSynthesis.resume();
@@ -492,10 +550,10 @@ const ChatInput = ({
             promptToSubmit,
             null,
             selectedModel?.modelId || "auto",
-            attachments,
+            currentAttachments,
             undefined,
             true /* isVoiceSubmission */,
-            isWebSearchActive
+            currentWebSearchActive
           );
           setText("");
           latestTranscriptRef.current = "";
@@ -580,14 +638,17 @@ const ChatInput = ({
       isSubmittingRef.current = false;
     }, 600);
 
+    const currentAttachments = attachmentsRef.current || attachments || [];
+    const currentWebSearchActive = isWebSearchActiveRef.current !== undefined ? isWebSearchActiveRef.current : isWebSearchActive;
+
     onSend(
       text.trim(),
       null,
       selectedModel?.modelId || "auto",
-      attachments,
+      currentAttachments,
       undefined,
       false /* isVoiceSubmission: regular text send */,
-      isWebSearchActive
+      currentWebSearchActive
     );
     setText("");
     latestTranscriptRef.current = "";
