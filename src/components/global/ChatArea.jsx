@@ -10,7 +10,7 @@ import { extractPreviewableCode } from "../../utils/codeExportUtils";
 import { useTheme } from "../../context/ThemeContext";
 import { useTanStackQueryClient, useTanStackData } from "../../hooks/useTanStackData";
 import { NobackEndCall } from "../../services/authService";
-import { speakText, stopSpeech, cleanMarkdownForSpeech } from "../../utils/speechUtils";
+import { speakText, stopSpeech, cleanMarkdownForSpeech, detectTextLanguage, getBestNaturalVoice } from "../../utils/speechUtils";
 
 export const mergeContinuationText = (baseText = "", newText = "") => {
   if (!baseText) return newText || "";
@@ -817,8 +817,17 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     const nextSentence = audioQueueRef.current.shift();
 
     if ("speechSynthesis" in window) {
+      const storedLang = typeof localStorage !== "undefined" ? localStorage.getItem("voice_recognition_lang") : null;
+      const targetLang = detectTextLanguage(nextSentence, storedLang);
+
       const utterance = new SpeechSynthesisUtterance(nextSentence);
-      utterance.lang = "en-US";
+      utterance.lang = targetLang;
+
+      const matchedVoice = getBestNaturalVoice({ lang: targetLang });
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+        if (matchedVoice.lang) utterance.lang = matchedVoice.lang;
+      }
 
       utterance.onend = () => {
         isPlayingRef.current = false;
@@ -1129,6 +1138,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         stream: true,
         enableSearch: isSearchRequested,
         webSearch: isSearchRequested,
+        voiceLang: localStorage.getItem("selected_voice_language") || "en-US",
         isReload: Boolean(isAssistantReload),
         isEdit: Boolean(isUserEdit),
         isContinuation,

@@ -225,8 +225,59 @@ export function splitIntoSentences(text) {
 }
 
 /**
- * Select the highest-quality, most human-sounding English voice matching requested voice parameters.
- * Supports distinct male vs female, US vs UK vs AU accents, and specific voice personas (Alex, Cimo, Chloe, Michael, etc.).
+ * Multi-language script & locale detector for natural text-to-speech output.
+ * Automatically detects non-English native scripts (Telugu, Hindi, Tamil, Spanish, etc.)
+ * and respects user's selected voice recognition language preference.
+ */
+export function detectTextLanguage(text, fallbackLang = null) {
+  if (!text || typeof text !== "string") return fallbackLang || "en-US";
+  const str = text.trim();
+
+  // Resolve user's stored fallback language preference from localStorage if not explicitly passed
+  let userPref = fallbackLang;
+  if (!userPref && typeof window !== "undefined" && window.localStorage) {
+    userPref = window.localStorage.getItem("selected_voice_language");
+  }
+
+  // 1. Script Range Regex Detection for precise native script matching
+  if (/[\u0C00-\u0C7F]/.test(str)) return "te-IN"; // Telugu
+  if (/[\u0900-\u097F]/.test(str)) {
+    return userPref === "mr-IN" ? "mr-IN" : "hi-IN"; // Marathi vs Hindi (Devanagari script)
+  }
+  if (/[\u0B80-\u0BFF]/.test(str)) return "ta-IN"; // Tamil
+  if (/[\u0C80-\u0CFF]/.test(str)) return "kn-IN"; // Kannada
+  if (/[\u0D00-\u0D7F]/.test(str)) return "ml-IN"; // Malayalam
+  if (/[\u0980-\u09FF]/.test(str)) return "bn-IN"; // Bengali
+  if (/[\u0A80-\u0AFF]/.test(str)) return "gu-IN"; // Gujarati
+  if (/[\u0A00-\u0A7F]/.test(str)) return "pa-IN"; // Punjabi
+  if (/[\u0600-\u06FF]/.test(str)) {
+    return userPref === "ur-IN" ? "ur-IN" : "ar-SA"; // Urdu vs Arabic script
+  }
+  if (/[\u0400-\u04FF]/.test(str)) return "ru-RU"; // Russian / Cyrillic
+  if (/[\u3040-\u30FF\u4E00-\u9FAF]/.test(str)) return "ja-JP"; // Japanese
+  if (/[\uAC00-\uD7AF]/.test(str)) return "ko-KR"; // Korean
+  if (/[\u4E00-\u9FFF]/.test(str)) return "zh-CN"; // Chinese
+
+  // 2. Language-Specific Diacritics & Character Markers for Global Latin-Script Languages
+  if (/[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i.test(str)) return "vi-VN"; // Vietnamese
+  if (/[¿¡]/i.test(str)) return userPref && userPref.startsWith("es") ? userPref : "es-ES"; // Spanish
+  if (/[œæ]/i.test(str)) return "fr-FR"; // French
+  if (/[äöüß]/i.test(str) && !userPref?.startsWith("sv")) return "de-DE"; // German
+  if (/[ğışĞIŞ]/i.test(str)) return "tr-TR"; // Turkish
+  if (/[ąćęłńśźżĄĆĘŁŃŚŹŻ]/i.test(str)) return "pl-PL"; // Polish
+  if (/[åÅ]/i.test(str)) return "sv-SE"; // Swedish
+
+  // 3. Fallback to user selected voice language from catalog or default en-US
+  if (userPref && typeof userPref === "string") {
+    return userPref;
+  }
+
+  return "en-US";
+}
+
+/**
+ * Select the highest-quality, most human-sounding voice matching requested voice parameters & target language.
+ * Supports distinct male vs female, US vs UK vs AU accents, and native global locale voices (Telugu, Hindi, Tamil, Spanish, French, etc.).
  */
 export function getBestNaturalVoice(voiceSpec = {}) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -236,6 +287,41 @@ export function getBestNaturalVoice(voiceSpec = {}) {
   const voices = window.speechSynthesis.getVoices() || [];
   if (voices.length === 0) return null;
 
+  const targetLang = (voiceSpec.lang || voiceSpec.targetLang || "").toLowerCase();
+  const langPrefix = targetLang ? targetLang.split("-")[0] : "";
+
+  // 1. Try exact name match if system voice matches studio name
+  if (voiceSpec.name) {
+    const exactMatch = voices.find((v) => v.name.toLowerCase().includes(voiceSpec.name.toLowerCase()));
+    if (exactMatch) return exactMatch;
+  }
+
+  // 2. Try exact locale match first (e.g. te-IN, hi-IN, ta-IN, es-ES, fr-FR)
+  if (targetLang) {
+    const exactLangVoices = voices.filter(
+      (v) => v.lang && v.lang.toLowerCase().replace("_", "-") === targetLang
+    );
+    if (exactLangVoices.length > 0) {
+      const naturalChoice = exactLangVoices.find((v) =>
+        /natural|neural|premium|enhanced|google|microsoft/i.test(v.name)
+      );
+      return naturalChoice || exactLangVoices[0];
+    }
+
+    // 3. Try language prefix match (e.g. te, hi, ta, es, fr, de, ja, zh)
+    if (langPrefix && langPrefix !== "en") {
+      const prefixLangVoices = voices.filter(
+        (v) => v.lang && v.lang.toLowerCase().startsWith(langPrefix)
+      );
+      if (prefixLangVoices.length > 0) {
+        const naturalChoice = prefixLangVoices.find((v) =>
+          /natural|neural|premium|enhanced|google|microsoft/i.test(v.name)
+        );
+        return naturalChoice || prefixLangVoices[0];
+      }
+    }
+  }
+
   const voiceId = (voiceSpec.voiceId || voiceSpec.id || voiceSpec.name || "").toLowerCase();
   const gender = (voiceSpec.gender || "").toLowerCase();
   const accent = (voiceSpec.accent || "").toLowerCase();
@@ -243,12 +329,6 @@ export function getBestNaturalVoice(voiceSpec = {}) {
   const isMale = gender === "male" || ["alex", "michael", "david"].includes(voiceId);
   const isUk = accent.includes("uk") || accent.includes("gb") || ["chloe", "emily", "david"].includes(voiceId);
   const isAu = accent.includes("au") || voiceId === "michael";
-
-  // 1. Try exact name match if system voice matches studio name
-  if (voiceSpec.name) {
-    const exactMatch = voices.find((v) => v.name.toLowerCase().includes(voiceSpec.name.toLowerCase()));
-    if (exactMatch) return exactMatch;
-  }
 
   const englishVoices = voices.filter((v) => v.lang && v.lang.startsWith("en"));
   const pool = englishVoices.length > 0 ? englishVoices : voices;
@@ -400,8 +480,11 @@ export function speakText(
       }
     };
 
+    const storedLang = typeof localStorage !== "undefined" ? localStorage.getItem("voice_recognition_lang") : null;
+    const targetLang = detectTextLanguage(currentUnit.text, storedLang);
+
     const utterance = new SpeechSynthesisUtterance(currentUnit.text);
-    utterance.lang = "en-US";
+    utterance.lang = targetLang;
 
     // Dynamic voice profile pacing & pitch overrides
     const vId = (voiceId || (typeof voice === "object" && voice ? voice.id || voice.voiceId || voice.name : "") || "").toLowerCase();
@@ -420,8 +503,8 @@ export function speakText(
     utterance.rate = finalRate;
     utterance.pitch = finalPitch;
 
-    // Pick specified voice or top-tier natural matching voice
-    const voiceSpec = typeof voice === "object" && voice ? voice : { voiceId: vId, gender };
+    // Pick specified voice or top-tier natural matching voice for target language
+    const voiceSpec = typeof voice === "object" && voice ? voice : { voiceId: vId, gender, lang: targetLang };
     const pickedVoice = (typeof voice === "object" && voice && voice.voiceURI) ? voice : getBestNaturalVoice(voiceSpec);
     if (pickedVoice) {
       utterance.voice = pickedVoice;

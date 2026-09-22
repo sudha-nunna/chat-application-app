@@ -694,25 +694,25 @@ const MessageBubble = ({
                 ),
                 h1: ({ node, ...props }) => (
                   <h1
-                    className={`first:mt-0 mt-3.5 mb-1.5 text-[16.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-2.5 mb-1 text-[16.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h2: ({ node, ...props }) => (
                   <h2
-                    className={`first:mt-0 mt-3 mb-1 text-[15.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-2 mb-1 text-[15.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h3: ({ node, ...props }) => (
                   <h3
-                    className={`first:mt-0 mt-2.5 mb-1 text-[14.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-2 mb-0.5 text-[14.5px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
                 h4: ({ node, ...props }) => (
                   <h4
-                    className={`first:mt-0 mt-2 mb-0.5 text-[14px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
+                    className={`first:mt-0 mt-1.5 mb-0.5 text-[14px] font-semibold tracking-tight break-words ${isUser ? "text-white" : "text-text-primary dark:text-[#F4F4F5]"}`}
                     {...props}
                   />
                 ),
@@ -733,7 +733,7 @@ const MessageBubble = ({
                 ),
                 p: ({ node, ...props }) => (
                   <p
-                    className={`first:mt-0 mb-2 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
+                    className={`first:mt-0 mb-1.5 last:mb-0 font-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] text-[15px] leading-relaxed ${isUser ? "text-white" : "text-text-primary dark:text-text-primary"}`}
                     {...props}
                   />
                 ),
@@ -790,19 +790,19 @@ const MessageBubble = ({
                 },
                 ul: ({ node, ...props }) => (
                   <ul
-                    className={`list-disc pl-5 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
+                    className={`list-disc pl-5 my-2 space-y-1 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
                     {...props}
                   />
                 ),
                 ol: ({ node, ...props }) => (
                   <ol
-                    className={`list-decimal pl-7 sm:pl-8 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
+                    className={`list-decimal pl-7 sm:pl-8 my-2 space-y-1 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
                     {...props}
                   />
                 ),
                 li: ({ node, ...props }) => (
                   <li
-                    className={`break-words pl-1 ${isUser ? "text-white" : isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
+                    className={`break-words pl-1 [&>p]:mb-1 [&>p:last-child]:mb-0 ${isUser ? "text-white" : isDark ? "text-[#d1d1d6]" : "text-text-primary"}`}
                     {...props}
                   />
                 ),

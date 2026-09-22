@@ -17,6 +17,12 @@ import {
   FiServer,
   FiSlack
 } from "react-icons/fi";
+import {
+  VOICE_LANGUAGES,
+  DEFAULT_VOICE_LANG,
+  getValidVoiceLang,
+} from "../../constants/voiceLanguages";
+import { isSpeechSpeaking, stopSpeech } from "../../utils/speechUtils";
 
 
 const DEFAULT_AUTO_MODEL = {
@@ -66,6 +72,37 @@ const ChatInput = ({
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const isSubmittingRef = useRef(false);
   const stopClickedTimestampRef = useRef(0);
+
+  const langMenuRef = useRef(null);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [langSearchQuery, setLangSearchQuery] = useState("");
+
+  const getInitialVoiceLang = () => {
+    try {
+      const stored = localStorage.getItem("voice_recognition_lang");
+      return getValidVoiceLang(stored);
+    } catch (e) {
+      return DEFAULT_VOICE_LANG;
+    }
+  };
+
+  const [selectedVoiceLang, setSelectedVoiceLang] = useState(getInitialVoiceLang);
+  const selectedVoiceLangRef = useRef(selectedVoiceLang);
+
+  useEffect(() => {
+    selectedVoiceLangRef.current = selectedVoiceLang;
+  }, [selectedVoiceLang]);
+
+  const displayedVoiceLanguages = useMemo(() => {
+    const q = langSearchQuery.trim().toLowerCase();
+    if (!q) return VOICE_LANGUAGES;
+    return VOICE_LANGUAGES.filter(
+      (l) =>
+        l.name.toLowerCase().includes(q) ||
+        l.nativeName.toLowerCase().includes(q) ||
+        l.code.toLowerCase().includes(q)
+    );
+  }, [langSearchQuery]);
 
   /**
    * Determines if the currently selected model supports image/vision input.
@@ -333,6 +370,12 @@ const ChatInput = ({
       ) {
         setIsAttachMenuOpen(false);
       }
+      if (
+        langMenuRef.current &&
+        !langMenuRef.current.contains(event.target)
+      ) {
+        setIsLangMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -430,11 +473,11 @@ const ChatInput = ({
       const rec = new SpeechRecognition();
       // On mobile/Android, continuous: true causes Google Speech engine to drop out. Use continuous: false with auto-restart on onend.
       rec.continuous = !isMobileDevice;
-      rec.lang = "en-US";
+      rec.lang = getValidVoiceLang(selectedVoiceLangRef.current?.code).code;
       rec.interimResults = true;
 
       rec.onstart = () => {
-        if (isGeneratingRef.current) {
+        if (isGeneratingRef.current || isSpeechSpeaking()) {
           try {
             rec.abort();
           } catch (e) {}
@@ -447,15 +490,16 @@ const ChatInput = ({
       };
 
       rec.onend = () => {
-        // If generation is active or mic was stopped, do NOT auto-restart speech recognition!
-        if (!isListeningRef.current || isGeneratingRef.current) {
+        // If generation is active, mic was stopped, or TTS is speaking, do NOT auto-restart speech recognition!
+        if (!isListeningRef.current || isGeneratingRef.current || isSpeechSpeaking()) {
           isListeningRef.current = false;
           setIsListening(false);
           return;
         }
 
-        if (isListeningRef.current && !silenceTimerRef.current && !isGeneratingRef.current) {
+        if (isListeningRef.current && !silenceTimerRef.current && !isGeneratingRef.current && !isSpeechSpeaking()) {
           try {
+            rec.lang = getValidVoiceLang(selectedVoiceLangRef.current?.code).code;
             rec.start();
             return;
           } catch (e) {
@@ -476,7 +520,7 @@ const ChatInput = ({
       };
 
       rec.onresult = (event) => {
-        if (!isListeningRef.current || isGeneratingRef.current) {
+        if (!isListeningRef.current || isGeneratingRef.current || isSpeechSpeaking()) {
           return;
         }
 
@@ -485,7 +529,7 @@ const ChatInput = ({
           accumulated += event.results[i][0].transcript;
         }
         const trimmed = accumulated.trim();
-        if (trimmed && isListeningRef.current && !isGeneratingRef.current) {
+        if (trimmed && isListeningRef.current && !isGeneratingRef.current && !isSpeechSpeaking()) {
           setText(trimmed);
           latestTranscriptRef.current = trimmed;
 
@@ -533,6 +577,11 @@ const ChatInput = ({
   const handleVoiceClick = async () => {
     if (isDailyLimitReached) return;
     try {
+      // If TTS speech is active, cancel it immediately when user explicitly interacts with voice recording
+      if (isSpeechSpeaking()) {
+        stopSpeech();
+      }
+
       if (isListening) {
         await stopVoiceSession();
 
@@ -599,7 +648,11 @@ const ChatInput = ({
         } catch (e) {}
         setTimeout(() => {
           try {
-            recognitionRef.current?.start();
+            if (recognitionRef.current) {
+              const langCode = getValidVoiceLang(selectedVoiceLangRef.current?.code).code;
+              recognitionRef.current.lang = langCode;
+              recognitionRef.current.start();
+            }
           } catch (e) {}
         }, 50);
       }
@@ -1260,6 +1313,111 @@ const ChatInput = ({
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Voice Language Selector */}
+            <div className="relative" ref={langMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLangMenuOpen((prev) => !prev);
+                  setIsModelMenuOpen(false);
+                  setIsAttachMenuOpen(false);
+                }}
+                disabled={isDailyLimitReached || isGenerating}
+                className={`
+                  transition-all duration-200 flex items-center gap-1 px-1.5 py-1 sm:px-2 sm:py-1 rounded-lg shrink-0 select-none cursor-pointer border
+                  ${
+                    isDailyLimitReached
+                      ? "opacity-40 cursor-not-allowed border-transparent text-text-muted"
+                      : isLangMenuOpen
+                      ? "bg-accent-primary/10 text-accent-primary border-accent-primary/40 dark:border-accent-primary/50"
+                      : "border-transparent text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-white"
+                  }
+                `}
+                title={`Voice Input Language: ${selectedVoiceLang.name} (${selectedVoiceLang.nativeName})`}
+              >
+                <span className="text-xs">{selectedVoiceLang.flag || "🌐"}</span>
+                <span className="text-[10.5px] font-bold font-mono uppercase tracking-wide">
+                  {selectedVoiceLang.code.split("-")[0]}
+                </span>
+              </button>
+
+              {/* Language Search Popover Menu */}
+              {isLangMenuOpen && (
+                <div className="absolute bottom-full mb-2 right-0 sm:left-auto sm:-left-16 z-50 w-64 sm:w-72 rounded-2xl bg-surface-primary dark:bg-[#191A24] border border-border-primary dark:border-white/10 shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-2 border-b border-border-primary/40 dark:border-white/5 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-text-primary dark:text-white select-none">
+                      <div className="flex items-center gap-1.5">
+                        <FiGlobe className="w-3.5 h-3.5 text-accent-primary" />
+                        <span>Speech Recognition Language</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsLangMenuOpen(false)}
+                        className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-text-muted hover:text-text-primary transition cursor-pointer"
+                      >
+                        <FiX className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
+                      <input
+                        type="text"
+                        value={langSearchQuery}
+                        onChange={(e) => setLangSearchQuery(e.target.value)}
+                        placeholder="Search language (e.g. Telugu, हिन्दी, English)..."
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-surface-secondary dark:bg-[#20212e] border border-border-primary/60 dark:border-white/10 text-text-primary dark:text-white outline-none focus:border-accent-primary/60 placeholder:text-text-muted"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="py-1 flex flex-col gap-0.5 overflow-y-auto custom-scrollbar max-h-56">
+                    {displayedVoiceLanguages.map((lang) => {
+                      const isSelected = selectedVoiceLang.code === lang.code;
+                      return (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          onClick={() => {
+                            const valid = getValidVoiceLang(lang.code);
+                            setSelectedVoiceLang(valid);
+                            selectedVoiceLangRef.current = valid;
+                            try {
+                              localStorage.setItem("voice_recognition_lang", valid.code);
+                            } catch (e) {}
+                            setIsLangMenuOpen(false);
+                            setLangSearchQuery("");
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${
+                            isSelected
+                              ? "bg-accent-primary/10 border-accent-primary/50 text-text-primary dark:text-white font-medium"
+                              : "border-transparent hover:bg-black/5 dark:hover:bg-white/5 text-text-muted dark:text-[#8A8A93]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{lang.flag}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-semibold text-text-primary dark:text-white truncate">
+                                {lang.nativeName} <span className="font-normal text-text-muted text-[11px]">({lang.name})</span>
+                              </span>
+                              <span className="text-[9.5px] font-mono opacity-70 text-text-muted">{lang.code}</span>
+                            </div>
+                          </div>
+                          {isSelected && <FiCheck className="w-4 h-4 text-accent-primary shrink-0" />}
+                        </button>
+                      );
+                    })}
+                    {displayedVoiceLanguages.length === 0 && (
+                      <div className="text-center py-4 text-text-muted text-xs select-none">
+                        No matching language found.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
