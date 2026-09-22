@@ -796,7 +796,7 @@ const MessageBubble = ({
                 ),
                 ol: ({ node, ...props }) => (
                   <ol
-                    className={`list-decimal pl-5 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
+                    className={`list-decimal pl-7 sm:pl-8 my-3 space-y-1.5 break-words text-[15px] leading-relaxed ${isUser ? "text-white marker:text-white" : isDark ? "text-[#d1d1d6] marker:text-text-muted" : "text-text-primary marker:text-text-muted"}`}
                     {...props}
                   />
                 ),
@@ -1001,7 +1001,7 @@ const MessageBubble = ({
           )}
 
           {/* AI Follow-up Suggestions (ChatGPT / OpenWebUI Style) */}
-          {!isUser && !hasPauseNotice && !isStreaming && !isThinking && isLatestAssistant && Array.isArray(followUps) && followUps.length > 0 && (
+          {!isUser && !hasPauseNotice && !isStreaming && !isThinking && !isStoppedMidway && isLatestAssistant && Array.isArray(followUps) && followUps.length > 0 && (
             <div className="mt-3.5 pt-2 flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted select-none">
                 <FiCompass className="w-3.5 h-3.5 text-accent-primary shrink-0" />

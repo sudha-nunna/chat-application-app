@@ -69,8 +69,10 @@ export const mergeContinuationText = (baseText = "", newText = "") => {
 
 const resolveContinuationIndex = (msgList, context) => {
   if (!Array.isArray(msgList) || msgList.length === 0) return -1;
+  const lastUserIdx = msgList.reduce((acc, m, i) => m.role === "user" ? i : acc, -1);
+
   if (!context) {
-    for (let i = msgList.length - 1; i >= 0; i--) {
+    for (let i = msgList.length - 1; i > lastUserIdx; i--) {
       if (msgList[i]?.role === "assistant") return i;
     }
     return -1;
@@ -88,10 +90,10 @@ const resolveContinuationIndex = (msgList, context) => {
     const foundIdx = msgList.findIndex((m) => m.role === "assistant" && (m.content === reqBase || reqBase.startsWith((m.content || "").substring(0, 30))));
     if (foundIdx !== -1) return foundIdx;
   }
-  for (let i = msgList.length - 1; i >= 0; i--) {
+  for (let i = msgList.length - 1; i > lastUserIdx; i--) {
     if (msgList[i]?.role === "assistant") return i;
   }
-  return msgList.length - 1;
+  return -1;
 };
 
 const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobileSidebar }) => {
@@ -712,73 +714,62 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     const contCtx = continuationContextRef.current;
     let fullPartialText = partialText;
 
-    if (partialText && partialText.trim()) {
-      if (!targetChatId || targetChatId === currentChatId) {
-        setMessages((prev) => {
-          let targetIdx = resolveContinuationIndex(prev, contCtx);
-          if (targetIdx === -1 && contCtx) {
-            for (let i = prev.length - 1; i >= 0; i--) {
-              if (prev[i]?.role === "assistant") {
-                targetIdx = i;
-                break;
-              }
-            }
-          }
+    if (!targetChatId || targetChatId === currentChatId) {
+      setMessages((prev) => {
+        let targetIdx = resolveContinuationIndex(prev, contCtx);
 
-          if (targetIdx !== -1 && contCtx) {
-            const baseText = contCtx.baseContent || prev[targetIdx]?.content || "";
-            fullPartialText = mergeContinuationText(baseText, partialText);
-            return prev.map((m, i) => i === targetIdx ? { ...m, content: fullPartialText, isStoppedMidway: true, continuationResolved: false } : m);
-          } else if (targetIdx !== -1) {
-            fullPartialText = partialText;
-            return prev.map((m, i) => i === targetIdx ? { ...m, content: fullPartialText, isStoppedMidway: true } : m);
-          } else {
-            fullPartialText = partialText;
-            return [
-              ...prev,
-              { role: "assistant", content: fullPartialText, isStoppedMidway: true }
-            ];
-          }
-        });
-      }
-
-      // Synchronize stop with backend so switching chats or reloading preserves the Continue button
-      try {
-        const token = localStorage.getItem("token");
-        if (targetChat && token) {
-          fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChat}/messages/stop`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              content: fullPartialText,
-              messageId: contCtx?.stoppedMessageId || null,
-              stoppedMessageId: contCtx?.stoppedMessageId || null
-            })
-          })
-            .then(r => r.json())
-            .then(data => {
-              if (data?.message?._id) {
-                setMessages(prev => {
-                  if (prev.length === 0) return prev;
-                  const targetIdx = resolveContinuationIndex(prev, contCtx);
-                  const idxToUpdate = targetIdx !== -1 ? targetIdx : prev.length - 1;
-                  if (prev[idxToUpdate]?.role === "assistant") {
-                    const updated = [...prev];
-                    updated[idxToUpdate] = { ...updated[idxToUpdate], _id: data.message._id };
-                    return updated;
-                  }
-                  return prev;
-                });
-              }
-            })
-            .catch((e) => console.warn("Failed to notify stop:", e.message));
+        if (targetIdx !== -1 && contCtx) {
+          const baseText = contCtx.baseContent || prev[targetIdx]?.content || "";
+          fullPartialText = mergeContinuationText(baseText, partialText);
+          return prev.map((m, i) => i === targetIdx ? { ...m, content: fullPartialText, isStoppedMidway: true, continuationResolved: false } : m);
+        } else if (targetIdx !== -1) {
+          fullPartialText = partialText;
+          return prev.map((m, i) => i === targetIdx ? { ...m, content: fullPartialText, isStoppedMidway: true } : m);
+        } else {
+          fullPartialText = partialText;
+          return [
+            ...prev,
+            { role: "assistant", content: fullPartialText, isStoppedMidway: true }
+          ];
         }
-      } catch (err) {
-        console.warn("Stop notification error:", err);
+      });
+    }
+
+    // Synchronize stop with backend so switching chats or reloading preserves the Continue button
+    try {
+      const token = localStorage.getItem("token");
+      if (targetChat && token) {
+        fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/chats/${targetChat}/messages/stop`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            content: fullPartialText,
+            messageId: contCtx?.stoppedMessageId || null,
+            stoppedMessageId: contCtx?.stoppedMessageId || null
+          })
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data?.message?._id) {
+              setMessages(prev => {
+                if (prev.length === 0) return prev;
+                let targetIdx = resolveContinuationIndex(prev, contCtx);
+                if (targetIdx !== -1 && prev[targetIdx]?.role === "assistant") {
+                  const updated = [...prev];
+                  updated[targetIdx] = { ...updated[targetIdx], _id: data.message._id, isStoppedMidway: true };
+                  return updated;
+                }
+                return prev;
+              });
+            }
+          })
+          .catch((e) => console.warn("Failed to notify stop:", e.message));
       }
+    } catch (err) {
+      console.warn("Stop notification error:", err);
     }
 
     setStreamingReply("");
@@ -1929,7 +1920,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
                       const hasNewerMessages = index < messages.length - 1;
                       const showContinueBtn =
                         m.role === "assistant" &&
-                        m.isStoppedMidway === true &&
+                        Boolean(m.isStoppedMidway) &&
                         !m.continuationResolved &&
                         !hasNewerMessages &&
                         !isTargetContinuation;
