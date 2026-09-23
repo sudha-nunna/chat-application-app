@@ -285,7 +285,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     streamingSentenceBufferRef.current = "";
     isSpeakingStreamingChunkRef.current = false;
     inCodeBlockRef.current = false;
-    stopSpeech();
+    stopSpeech({ clearSession: true });
     setActiveSpeakingIndex(null);
     setCurrentSubtitle("");
   };
@@ -583,6 +583,11 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
 
     prevChatIdRef.current = currentChatId;
 
+    // Reset auto-scroll state so switching to any chat always starts focused at the bottom
+    isAutoScrollEnabledRef.current = true;
+    setShowScrollBottom(false);
+    setShowScrollToUser(false);
+
     if (currentChatId) {
       loadSavedMessages();
     } else {
@@ -604,7 +609,25 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
         setShowScrollBottom(false);
         setShowScrollToUser(false);
       }
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      const container = messagesContainerRef.current;
+      container.scrollTop = container.scrollHeight;
+
+      // Multi-stage layout frame checks for code blocks, syntax highlighting, latex, and images
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current && isAutoScrollEnabledRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      });
+      setTimeout(() => {
+        if (messagesContainerRef.current && isAutoScrollEnabledRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 100);
+      setTimeout(() => {
+        if (messagesContainerRef.current && isAutoScrollEnabledRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 300);
     }
   };
 
@@ -620,12 +643,38 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   };
 
   useEffect(() => {
-    if (isAutoScrollEnabledRef.current && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      setShowScrollBottom(false);
-      setShowScrollToUser(false);
+    if (!isFetchingMessages && isAutoScrollEnabledRef.current && messagesContainerRef.current) {
+      scrollToBottom(false);
     }
-  }, [messages, streamingReply, isSearching, isBotTyping]);
+  }, [messages, isFetchingMessages, streamingReply, isSearching, isBotTyping]);
+
+  // Dynamic layout observer to lock scroll to bottom as async content (images, math, syntax highlighting) renders
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    let rafId = null;
+    const observer = new ResizeObserver(() => {
+      if (isAutoScrollEnabledRef.current && !isLoadingOlderRef.current && !isFetchingMessages) {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          if (messagesContainerRef.current && isAutoScrollEnabledRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+          }
+        });
+      }
+    });
+
+    if (container.firstElementChild) {
+      observer.observe(container.firstElementChild);
+    }
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [isFetchingMessages]);
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -906,6 +955,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
     } finally {
       if (activeChatIdRef.current === targetChatId) {
         setIsFetchingMessages(false);
+        scrollToBottom(true);
       }
     }
   };
