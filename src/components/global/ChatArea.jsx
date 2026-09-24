@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon, FiEye, FiClock, FiZap } from "react-icons/fi";
+import { FiMenu, FiMessageSquare, FiCode, FiLayout, FiBookOpen, FiMail, FiServer, FiCpu, FiCheckCircle, FiX, FiActivity, FiVolume2, FiVolumeX, FiStopCircle, FiImage, FiArrowDown, FiArrowUp, FiFileText, FiShare2, FiUpload, FiSun, FiMoon, FiEye, FiClock, FiZap, FiBell } from "react-icons/fi";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import ClusterStatusWidget from "./ClusterStatusWidget";
@@ -101,6 +101,18 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
   const navigate = useNavigate();
   const queryClient = useTanStackQueryClient();
   const authToken = localStorage.getItem("token");
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const handleCountChange = (e) => {
+      if (typeof e.detail?.count === "number") {
+        setUnreadCount(e.detail.count);
+      }
+    };
+    window.addEventListener("notification-count-changed", handleCountChange);
+    return () => window.removeEventListener("notification-count-changed", handleCountChange);
+  }, []);
   const { data: chats = [] } = useTanStackData(
     ["chats"],
     async () => {
@@ -1743,7 +1755,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
           </div>
         )}
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Live Preview / Builder Mode Button */}
           {(activeArtifact || isDevModeActive) && (
             <button
@@ -1765,6 +1777,7 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             </button>
           )}
 
+          {/* Share Button */}
           <button
             onClick={handleShare}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] text-[12px] font-medium transition-all cursor-pointer active:scale-95"
@@ -1773,15 +1786,33 @@ const ChatArea = ({ currentChatId, setCurrentChatId, onChatUpdated, onToggleMobi
             <FiShare2 className="text-[14px]" />
             <span className="hidden xs:inline sm:inline">Share</span>
           </button>
+
+          {/* Theme Toggle Button (Light / Dark Switch) */}
           <button
+            type="button"
             onClick={toggleTheme}
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-white/20 border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer"
-            title="Toggle Theme"
+            className="flex items-center justify-center w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer group"
+            title={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
           >
             {isDark ? (
-              <FiSun className="text-[14px]" />
+              <FiSun className="text-[14px] group-hover:rotate-45 transition-transform" />
             ) : (
-              <FiMoon className="text-[14px]" />
+              <FiMoon className="text-[14px] group-hover:-rotate-12 transition-transform" />
+            )}
+          </button>
+
+          {/* Notification Center Bell Button */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-notification-center"))}
+            className="relative flex items-center justify-center w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg bg-transparent border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer group"
+            title="Notification Center & Scheduled Intelligence"
+          >
+            <FiBell className="text-[14px] text-indigo-500 group-hover:scale-110 transition-transform" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-1 flex items-center justify-center text-[9px] font-bold bg-rose-500 text-white rounded-full leading-none shadow-xs animate-pulse">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
             )}
           </button>
         </div>

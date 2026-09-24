@@ -26,6 +26,7 @@ import {
   FiSidebar,
   FiZap,
   FiShare2,
+  FiBell,
 } from "react-icons/fi";
 import { TbPin, TbPinnedOff, TbRobotFace } from "react-icons/tb";
 import axios from "axios";
@@ -37,6 +38,7 @@ import {
   NobackEndCallObj,
   getJwt,
 } from "../../services/authService";
+import { getUnreadCount } from "../../services/notificationService";
 import CreateBotModal from "../bots/CreateBotModal";
 import AuthModal from "../auth/AuthModal";
 import SubscriptionModal from "../subscription/SubscriptionModal";
@@ -53,6 +55,7 @@ import ChatSidebar from "../sidebar/ChatSidebar";
 import AgentSidebar from "../sidebar/AgentSidebar";
 import ModeTransitionOverlay from "../sidebar/ModeTransitionOverlay";
 import McpIntegrationsModal from "../mcp/McpIntegrationsModal";
+import NotificationCenter from "../global/NotificationCenter";
 
 
 const AppLayout = ({ children }) => {
@@ -114,15 +117,44 @@ const AppLayout = ({ children }) => {
   const [activePopover, setActivePopover] = useState(null);
 
   const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const fetchUnread = async () => {
+      try {
+        const res = await getUnreadCount();
+        if (res?.success) {
+          setUnreadCount(res.unreadCount || 0);
+        }
+      } catch (_) {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000);
+    const handleCountChange = (e) => {
+      if (typeof e.detail?.count === "number") {
+        setUnreadCount(e.detail.count);
+      }
+    };
+    window.addEventListener("notification-count-changed", handleCountChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("notification-count-changed", handleCountChange);
+    };
+  }, [authToken]);
 
   useEffect(() => {
     const handleOpenModal = () => setIsCreateModalOpen(true);
     const handleOpenMcp = () => setIsMcpModalOpen(true);
+    const handleOpenNotifications = () => setIsNotificationCenterOpen(true);
     window.addEventListener("open-create-bot-modal", handleOpenModal);
     window.addEventListener("open-mcp-modal", handleOpenMcp);
+    window.addEventListener("open-notification-center", handleOpenNotifications);
     return () => {
       window.removeEventListener("open-create-bot-modal", handleOpenModal);
       window.removeEventListener("open-mcp-modal", handleOpenMcp);
+      window.removeEventListener("open-notification-center", handleOpenNotifications);
     };
   }, []);
 
@@ -1461,6 +1493,7 @@ const AppLayout = ({ children }) => {
       </div>
 
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-dotted">
+
         {isUpgradeModalOpen && location.pathname !== "/subscription" ? (
           <SubscriptionModal />
         ) : isCreditsModalOpen && location.pathname !== "/usage" ? (
@@ -1654,11 +1687,17 @@ const AppLayout = ({ children }) => {
         />
       )}
 
+      {/* Notification Center Drawer */}
+      <NotificationCenter
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+      />
+
       {/* MCP Integrations Modal */}
-      {/* <McpIntegrationsModal
+      <McpIntegrationsModal
         isOpen={isMcpModalOpen}
         onClose={() => setIsMcpModalOpen(false)}
-      /> */}
+      />
     </div>
   );
 };

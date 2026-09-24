@@ -167,13 +167,13 @@ const SharedChatPage = () => {
   return (
     <div className={`h-full w-full overflow-hidden flex flex-col ${isDark ? "bg-[#0f1015] text-white" : "bg-[#f8f9fc] text-text-primary"}`}>
       {/* Top Navigation Bar */}
-      <header className={`sticky top-0 z-30 border-b backdrop-blur-md px-4 sm:px-8 py-3 flex items-center justify-between ${
+      <header className={`sticky top-0 z-30 border-b backdrop-blur-md px-3 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2 ${
         isDark ? "bg-[#0f1015]/90 border-white/10" : "bg-white/90 border-border-primary/60"
       }`}>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={() => navigate("/chat")}
-            className="flex items-center gap-2 text-sm font-bold tracking-tight hover:opacity-80 transition cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 sm:gap-2 text-sm font-bold tracking-tight hover:opacity-80 transition cursor-pointer shrink-0"
             title="Go to Codegene AI"
           >
             <div className="w-7 h-7 rounded-lg bg-accent-primary flex items-center justify-center text-white font-black text-xs shadow-xs">
@@ -182,16 +182,16 @@ const SharedChatPage = () => {
             <span className="hidden sm:inline font-semibold">Codegene</span>
           </button>
           <div className="h-4 w-[1px] bg-border-primary dark:bg-white/10 shrink-0" />
-          <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm font-semibold truncate max-w-[180px] sm:max-w-[400px]">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xs sm:text-sm font-semibold truncate max-w-[120px] xs:max-w-[200px] sm:max-w-[400px]">
               {chatData?.title || "Shared Conversation"}
             </h1>
-            <div className="flex items-center gap-2 text-[10.5px] text-text-muted">
-              <span className="flex items-center gap-1 truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[10.5px] text-text-muted truncate">
+              <span className="flex items-center gap-1 truncate max-w-[80px] xs:max-w-[120px] sm:max-w-none">
                 <FiUser className="w-2.5 h-2.5 shrink-0" />
                 {chatData?.author?.name || "Anonymous"}
               </span>
-              <span>•</span>
+              <span className="shrink-0">•</span>
               <span className="flex items-center gap-1 shrink-0">
                 <FiLock className="w-2.5 h-2.5 text-accent-primary" />
                 Read-only
@@ -201,44 +201,45 @@ const SharedChatPage = () => {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Live Preview Toggle Button */}
           {activeArtifact && (
             <button
               onClick={() => setIsArtifactOpen((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${
+              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[11px] sm:text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${
                 isArtifactOpen
                   ? "bg-accent-primary text-white border-accent-primary shadow-xs"
                   : "bg-accent-primary/10 text-accent-primary border-accent-primary/30 hover:bg-accent-primary/20"
               }`}
               title={isArtifactOpen ? "Hide Live Preview Panel" : "Open Live Preview Panel"}
             >
-              <FiEye className="text-[14px]" />
-              <span className="hidden xs:inline">Preview</span>
+              <FiEye className="text-[13px] sm:text-[14px]" />
+              <span className="hidden sm:inline">Preview</span>
             </button>
           )}
 
           <button
             onClick={toggleTheme}
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/15 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer"
+            className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-white/10 border border-border-primary dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/15 text-text-primary dark:text-[#e5e5e5] transition-colors cursor-pointer shrink-0"
             title="Toggle theme"
           >
-            {isDark ? <FiSun className="text-[14px]" /> : <FiMoon className="text-[14px]" />}
+            {isDark ? <FiSun className="text-[13px] sm:text-[14px]" /> : <FiMoon className="text-[13px] sm:text-[14px]" />}
           </button>
 
           {/* Fork / Continue in My Chats */}
           <button
             onClick={handleForkChat}
             disabled={isForking}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full text-xs font-semibold bg-accent-primary text-white hover:bg-accent-primary/90 active:scale-95 transition shadow-sm cursor-pointer shrink-0"
+            className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold bg-accent-primary text-white hover:bg-accent-primary/90 active:scale-95 transition shadow-sm cursor-pointer shrink-0"
             title="Make an editable copy in your personal chats"
           >
             {isForking ? (
-              <span>Cloning...</span>
+              <span className="text-[11px] sm:text-xs">Cloning...</span>
             ) : (
               <>
                 <FiMessageSquare className="w-3.5 h-3.5" />
-                <span>Continue in My Chats</span>
+                <span className="hidden sm:inline">Continue in My Chats</span>
+                <span className="sm:hidden">Continue</span>
                 <FiArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </>
             )}
@@ -249,45 +250,47 @@ const SharedChatPage = () => {
       {/* Main Split Layout: Left is Conversation Feed, Right is Live Preview Sandbox */}
       <div className="flex-1 min-h-0 min-w-0 flex flex-row overflow-hidden relative">
         <main
-          className={`h-full overflow-y-auto px-4 py-6 sm:py-8 space-y-6 transition-all duration-300 custom-scrollbar ${
+          className={`h-full min-w-0 overflow-y-auto custom-scrollbar transition-all duration-300 ${
             isArtifactOpen && activeArtifact
-              ? "w-full md:w-[48%] lg:w-[45%]"
-              : "flex-1 w-full max-w-[840px] mx-auto"
+              ? "w-full md:w-[48%] lg:w-[45%] shrink-0"
+              : "flex-1 w-full"
           }`}
         >
-          {messages.length === 0 ? (
-            <p className="text-center text-xs text-text-muted py-12">No messages in this conversation.</p>
-          ) : (
-            messages.map((m, idx) => {
-              const isUser = m.role === "user";
-              const nextAssistant = !isUser ? null : messages[idx + 1];
-              const isSearchExecuted = isUser && Boolean(
-                m.searchExecuted ||
-                (nextAssistant && Array.isArray(nextAssistant.sources) && nextAssistant.sources.length > 0)
-              );
+          <div className="w-full max-w-[840px] mx-auto px-4 py-6 sm:py-8 space-y-6">
+            {messages.length === 0 ? (
+              <p className="text-center text-xs text-text-muted py-12">No messages in this conversation.</p>
+            ) : (
+              messages.map((m, idx) => {
+                const isUser = m.role === "user";
+                const nextAssistant = !isUser ? null : messages[idx + 1];
+                const isSearchExecuted = isUser && Boolean(
+                  m.searchExecuted ||
+                  (nextAssistant && Array.isArray(nextAssistant.sources) && nextAssistant.sources.length > 0)
+                );
 
-              return (
-                <div key={idx} className="w-full flex flex-col">
-                  <MessageBubble
-                    role={m.role}
-                    content={m.content}
-                    attachments={m.attachments || []}
-                    enableSearch={m.enableSearch}
-                    searchExecuted={isSearchExecuted}
-                    sources={m.sources || []}
-                    requiresWebSearch={false}
-                    isStreaming={false}
-                    isThinking={false}
-                  />
-                </div>
-              );
-            })
-          )}
+                return (
+                  <div key={idx} className="w-full flex flex-col">
+                    <MessageBubble
+                      role={m.role}
+                      content={m.content}
+                      attachments={m.attachments || []}
+                      enableSearch={m.enableSearch}
+                      searchExecuted={isSearchExecuted}
+                      sources={m.sources || []}
+                      requiresWebSearch={false}
+                      isStreaming={false}
+                      isThinking={false}
+                    />
+                  </div>
+                );
+              })
+            )}
+          </div>
         </main>
 
         {/* Right Pane: Live Artifact Sandbox */}
         {isArtifactOpen && activeArtifact && (
-          <div className="hidden md:flex flex-1 min-w-0 h-full overflow-hidden transition-all duration-300">
+          <div className="hidden md:flex flex-1 min-w-0 h-full overflow-hidden border-l border-border-primary/60 dark:border-white/10 transition-all duration-300">
             <ArtifactPreviewPanel
               artifact={activeArtifact}
               onClose={() => setIsArtifactOpen(false)}

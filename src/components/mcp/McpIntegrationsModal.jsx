@@ -162,8 +162,8 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
       title: "GitHub MCP Server",
       category: "Developer Tools",
       description: "Search repos, inspect pull requests, and analyze code context in chat.",
-      icon: <FiGithub className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-300" />,
-      iconBg: "bg-zinc-500/10 border-zinc-500/20",
+      icon: <FiGithub className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-zinc-300" />,
+      iconBg: "bg-gray-200/60 dark:bg-zinc-500/10 border-gray-300 dark:border-zinc-500/20",
       status: "READY",
       actionLabel: "Configure",
       onAction: () => alert("GitHub MCP Connector ready in catalog."),
@@ -274,50 +274,50 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-2.5 sm:p-4 animate-fadeIn touch-manipulation">
-      <div className="relative w-full max-w-4xl rounded-2xl bg-[#12131C] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[82vh] supports-[height:100dvh]:max-h-[85dvh] text-white">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 dark:bg-black/80 backdrop-blur-md p-2.5 sm:p-4 animate-fadeIn touch-manipulation">
+      <div className="relative w-full max-w-4xl rounded-2xl bg-white dark:bg-[#12131C] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[82vh] supports-[height:100dvh]:max-h-[85dvh] text-gray-900 dark:text-white transition-colors">
         
         {/* Modal Header */}
-        <div className="px-3.5 py-3 sm:px-5 sm:py-3.5 border-b border-white/10 flex items-center justify-between bg-white/[0.03]">
+        <div className="px-3.5 py-3 sm:px-5 sm:py-3.5 border-b border-gray-200 dark:border-white/10 flex items-center justify-between bg-gray-50/80 dark:bg-white/[0.03]">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center justify-center text-sm sm:text-base shrink-0 shadow-sm">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 dark:border-purple-500/30 flex items-center justify-center text-sm sm:text-base shrink-0 shadow-sm">
               <FiCpu />
             </div>
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h2 className="text-xs sm:text-base font-bold text-white tracking-tight">
+                <h2 className="text-xs sm:text-base font-bold text-gray-900 dark:text-white tracking-tight">
                   MCP Host Manager
                 </h2>
-                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/25 font-semibold">
+                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/10 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/20 dark:border-purple-500/25 font-semibold">
                   v1.0 Host
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-zinc-400 hidden sm:block">
+              <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-zinc-400 hidden sm:block">
                 Manage workspace tool integrations & custom stdio/SSE servers for Codegene AI
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 active:scale-95 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 active:scale-95 transition cursor-pointer"
           >
             <FiX className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Bar (Scrollable on Mobile / Safari) */}
-        <div className="px-3 sm:px-5 border-b border-white/10 flex items-center gap-3 sm:gap-6 bg-black/20 text-xs font-semibold overflow-x-auto whitespace-nowrap scrollbar-none">
+        <div className="px-3 sm:px-5 border-b border-gray-200 dark:border-white/10 flex items-center gap-3 sm:gap-6 bg-gray-50 dark:bg-black/20 text-xs font-semibold overflow-x-auto whitespace-nowrap scrollbar-none">
           <button
             onClick={() => setActiveTab("connected")}
             className={`py-2.5 border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
               activeTab === "connected"
-                ? "border-purple-500 text-purple-400 font-bold"
-                : "border-transparent text-zinc-400 hover:text-white"
+                ? "border-purple-600 dark:border-purple-500 text-purple-600 dark:text-purple-400 font-bold"
+                : "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <FiServer className="w-3.5 h-3.5" />
             <span>Connected Servers</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400 font-mono">
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono">
               {slackStatus.connected ? 1 + customServers.length : customServers.length}
             </span>
           </button>
@@ -326,8 +326,8 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
             onClick={() => setActiveTab("catalog")}
             className={`py-2.5 border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
               activeTab === "catalog"
-                ? "border-purple-500 text-purple-400 font-bold"
-                : "border-transparent text-zinc-400 hover:text-white"
+                ? "border-purple-600 dark:border-purple-500 text-purple-600 dark:text-purple-400 font-bold"
+                : "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <FiLayers className="w-3.5 h-3.5" />
@@ -338,8 +338,8 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
             onClick={() => setActiveTab("tools")}
             className={`py-2.5 border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
               activeTab === "tools"
-                ? "border-purple-500 text-purple-400 font-bold"
-                : "border-transparent text-zinc-400 hover:text-white"
+                ? "border-purple-600 dark:border-purple-500 text-purple-600 dark:text-purple-400 font-bold"
+                : "border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <FiShield className="w-3.5 h-3.5" />
@@ -353,49 +353,49 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
           {/* TAB 1: CONNECTED SERVERS */}
           {activeTab === "connected" && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-zinc-400">
                 <span>Active Model Context Protocol Connections</span>
-                <span className="font-mono text-[10px] text-emerald-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                   Vault Encrypted & Isolated
                 </span>
               </div>
 
               {/* Slack Connection Card */}
-              <div className="p-3 sm:p-3.5 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-white/20 transition-all">
+              <div className="p-3 sm:p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-gray-300 dark:hover:border-white/20 transition-all">
                 <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                     <FiSlack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-xs text-white">Slack Workspace MCP Server</h3>
+                      <h3 className="font-bold text-xs text-gray-900 dark:text-white">Slack Workspace MCP Server</h3>
                       {slackStatus.loading ? (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-zinc-400 flex items-center gap-1">
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-zinc-400 flex items-center gap-1">
                           <FiRefreshCw className="animate-spin text-[10px]" /> Checking...
                         </span>
                       ) : slackStatus.connected ? (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold flex items-center gap-1">
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
                           <FiCheckCircle className="w-3 h-3" /> Connected
                         </span>
                       ) : (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-zinc-400 flex items-center gap-1">
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-zinc-400 flex items-center gap-1">
                           <FiXCircle className="w-3 h-3" /> Disconnected
                         </span>
                       )}
                     </div>
 
-                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
                       Live channel history lookup & DM execution via OAuth tokens
                     </p>
 
                     {slackStatus.connected && (
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono bg-purple-500/15 text-purple-300 px-2 py-0.5 rounded-md border border-purple-500/25 font-semibold">
+                        <span className="text-[10px] font-mono bg-purple-500/10 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-md border border-purple-500/20 dark:border-purple-500/25 font-semibold">
                           Workspace: {slackStatus.teamName}
                         </span>
-                        <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 flex items-center gap-1">
-                          <FiZap className="w-2.5 h-2.5 text-emerald-400" /> OAuth Active
+                        <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 flex items-center gap-1">
+                          <FiZap className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" /> OAuth Active
                         </span>
                       </div>
                     )}
@@ -409,16 +409,16 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
                         type="button"
                         onClick={handleTestPing}
                         disabled={pinging}
-                        className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-semibold text-white flex items-center gap-1.5 active:scale-95 transition cursor-pointer min-h-[34px] sm:min-h-0"
+                        className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 text-[11px] font-semibold text-gray-800 dark:text-white flex items-center gap-1.5 active:scale-95 transition cursor-pointer min-h-[34px] sm:min-h-0"
                       >
-                        <FiRefreshCw className={`w-3 h-3 ${pinging ? "animate-spin text-purple-400" : ""}`} />
+                        <FiRefreshCw className={`w-3 h-3 ${pinging ? "animate-spin text-purple-500" : ""}`} />
                         <span>{pinging ? "Pinging..." : pingSuccess ? "Ping OK! ✓" : "Test Ping"}</span>
                       </button>
                       <button
                         type="button"
                         onClick={handleDisconnect}
                         disabled={disconnecting}
-                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[11px] font-semibold flex items-center gap-1.5 active:scale-95 transition cursor-pointer min-h-[34px] sm:min-h-0"
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-[11px] font-semibold flex items-center gap-1.5 active:scale-95 transition cursor-pointer min-h-[34px] sm:min-h-0"
                       >
                         <FiTrash2 className="w-3 h-3" />
                         <span>{disconnecting ? "Disconnecting..." : "Disconnect"}</span>
@@ -440,17 +440,17 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
 
               {/* Custom MCP Connections */}
               {customServers.map((srv) => (
-                <div key={srv.id} className="p-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
+                <div key={srv.id} className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 flex items-center justify-center shrink-0">
                       <FiTerminal className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white">{srv.name}</h4>
-                      <p className="text-[10px] text-zinc-400 font-mono truncate max-w-[180px] sm:max-w-[300px]">{srv.url}</p>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-white">{srv.name}</h4>
+                      <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-mono truncate max-w-[180px] sm:max-w-[300px]">{srv.url}</p>
                     </div>
                   </div>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-medium">
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-medium">
                     {srv.transport.toUpperCase()} Active
                   </span>
                 </div>
@@ -461,7 +461,7 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
           {/* TAB 2: INTEGRATIONS CATALOG */}
           {activeTab === "catalog" && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-zinc-400">
                 <span>Select Model Context Protocol integration servers for Codegene AI:</span>
               </div>
 
@@ -470,7 +470,7 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
                 {catalogIntegrations.map((item) => (
                   <div
                     key={item.id}
-                    className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-2 group shadow-sm"
+                    className="p-3 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] hover:bg-gray-100/80 dark:hover:bg-white/[0.06] border border-gray-200 dark:border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-2 group shadow-sm"
                   >
                     {/* Top Row: Icon + Title + Status */}
                     <div className="flex items-start justify-between gap-2">
@@ -479,32 +479,32 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
                           {item.icon}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-bold text-xs text-white truncate group-hover:text-purple-300 transition-colors">
+                          <h4 className="font-bold text-xs text-gray-900 dark:text-white truncate group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
                             {item.title}
                           </h4>
-                          <span className="text-[10px] text-zinc-400 block font-mono truncate">
+                          <span className="text-[10px] text-gray-500 dark:text-zinc-400 block font-mono truncate">
                             {item.category}
                           </span>
                         </div>
                       </div>
                       
                       {item.status === "INSTALLED" ? (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-semibold border border-emerald-500/30 flex items-center gap-1 shrink-0">
                           <FiCheck className="w-2.5 h-2.5" /> Installed
                         </span>
                       ) : item.status === "READY" ? (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/30 shrink-0">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 font-semibold border border-blue-500/30 shrink-0">
                           Ready
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-zinc-400 shrink-0">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-zinc-400 shrink-0">
                           Available
                         </span>
                       )}
                     </div>
 
                     {/* Brief Description */}
-                    <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2 h-7">
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 leading-snug line-clamp-2 h-7">
                       {item.description}
                     </p>
 
@@ -515,7 +515,7 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
                         onClick={item.onAction}
                         className={`px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] font-semibold active:scale-95 transition cursor-pointer flex items-center gap-1 min-h-[32px] sm:min-h-0 ${
                           item.status === "INSTALLED"
-                            ? "bg-white/10 hover:bg-white/15 text-white border border-white/10"
+                            ? "bg-gray-200 hover:bg-gray-300 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-white border border-gray-300 dark:border-white/10"
                             : "bg-purple-600 hover:bg-purple-500 text-white shadow-sm"
                         }`}
                       >
@@ -528,8 +528,8 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
               </div>
 
               {/* Custom MCP Server Form */}
-              <div id="custom-server-form" className="p-3 sm:p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-2.5 mt-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
+              <div id="custom-server-form" className="p-3 sm:p-3.5 rounded-xl bg-purple-500/5 dark:bg-purple-500/10 border border-purple-500/20 space-y-2.5 mt-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
                   <FiTerminal className="w-3.5 h-3.5" />
                   <span>Add Custom MCP Server (Stdio or SSE Endpoint)</span>
                 </div>
@@ -539,23 +539,23 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
                     placeholder="Server Name (e.g. Local Database)"
                     value={customServerName}
                     onChange={(e) => setCustomServerName(e.target.value)}
-                    className="px-2.5 py-2 sm:py-1.5 text-xs rounded-lg bg-black/40 border border-white/10 text-white outline-none focus:border-purple-500 min-h-[36px] sm:min-h-0"
+                    className="px-2.5 py-2 sm:py-1.5 text-xs rounded-lg bg-white dark:bg-black/40 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:border-purple-500 min-h-[36px] sm:min-h-0"
                   />
                   <input
                     type="text"
                     placeholder="Endpoint URL or Stdio command"
                     value={customServerUrl}
                     onChange={(e) => setCustomServerUrl(e.target.value)}
-                    className="px-2.5 py-2 sm:py-1.5 text-xs rounded-lg bg-black/40 border border-white/10 text-white outline-none focus:border-purple-500 min-h-[36px] sm:min-h-0"
+                    className="px-2.5 py-2 sm:py-1.5 text-xs rounded-lg bg-white dark:bg-black/40 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:border-purple-500 min-h-[36px] sm:min-h-0"
                   />
                   <div className="flex items-center gap-2">
                     <select
                       value={customTransport}
                       onChange={(e) => setCustomTransport(e.target.value)}
-                      className="px-2 py-2 sm:py-1.5 text-xs rounded-lg bg-black/40 border border-white/10 text-white outline-none shrink-0 min-h-[36px] sm:min-h-0"
+                      className="px-2 py-2 sm:py-1.5 text-xs rounded-lg bg-white dark:bg-[#1A1B26] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white outline-none shrink-0 min-h-[36px] sm:min-h-0"
                     >
-                      <option value="sse">SSE (HTTP)</option>
-                      <option value="stdio">Stdio Command</option>
+                      <option value="sse" className="bg-white dark:bg-[#1A1B26] text-gray-900 dark:text-white">SSE (HTTP)</option>
+                      <option value="stdio" className="bg-white dark:bg-[#1A1B26] text-gray-900 dark:text-white">Stdio Command</option>
                     </select>
                     <button
                       type="submit"
@@ -573,50 +573,50 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
           {activeTab === "tools" && (
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <p className="text-[11px] text-zinc-400">
+                <p className="text-[11px] text-gray-500 dark:text-zinc-400">
                   Registered tool declarations and associated execution security policies.
                 </p>
                 <div className="relative w-full sm:w-56">
-                  <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none" />
+                  <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-400 text-xs pointer-events-none" />
                   <input
                     type="text"
                     placeholder="Search tools..."
                     value={toolSearchQuery}
                     onChange={(e) => setToolSearchQuery(e.target.value)}
-                    className="w-full pl-7 pr-3 py-1.5 sm:py-1 text-xs bg-black/30 border border-white/10 rounded-lg outline-none text-white focus:border-purple-500 min-h-[34px] sm:min-h-0"
+                    className="w-full pl-7 pr-3 py-1.5 sm:py-1 text-xs bg-white dark:bg-black/30 border border-gray-300 dark:border-white/10 rounded-lg outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:border-purple-500 min-h-[34px] sm:min-h-0"
                   />
                 </div>
               </div>
 
               <div className="space-y-2 max-h-[340px] overflow-y-auto custom-scrollbar">
                 {filteredTools.map((tool) => (
-                  <div key={tool.id} className="p-2.5 px-3 rounded-lg bg-white/[0.04] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3 hover:border-white/20 transition-all">
+                  <div key={tool.id} className="p-2.5 px-3 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3 hover:border-gray-300 dark:hover:border-white/20 transition-all">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-purple-400 truncate">
+                        <span className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 truncate">
                           {tool.name}
                         </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-zinc-400 font-medium">
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-zinc-400 font-medium">
                           {tool.server}
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 mt-0.5 truncate">
+                      <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
                         {tool.description}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-start sm:self-center mt-1 sm:mt-0">
                       {tool.policy === "WRITE_POLICY" ? (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1">
-                          <FiZap className="w-2.5 h-2.5 text-emerald-400" /> Write Access (Active)
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                          <FiZap className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" /> Write Access (Active)
                         </span>
                       ) : tool.policy === "SANDBOX_GUARDED" ? (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-semibold flex items-center gap-1">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border border-cyan-500/30 font-semibold flex items-center gap-1">
                           <FiShield className="w-2.5 h-2.5" /> Stdio Sandbox
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30 font-semibold flex items-center gap-1">
-                          <FiCheckCircle className="w-2.5 h-2.5 text-purple-400" /> Read Access (Active)
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 font-semibold flex items-center gap-1">
+                          <FiCheckCircle className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" /> Read Access (Active)
                         </span>
                       )}
                     </div>
@@ -629,14 +629,14 @@ const McpIntegrationsModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Modal Footer */}
-        <div className="px-3.5 py-2.5 sm:px-5 sm:py-3 border-t border-white/10 flex items-center justify-between bg-black/20 text-xs">
-          <div className="flex items-center gap-1.5 text-zinc-400 text-[10px] sm:text-[11px]">
-            <FiShield className="text-emerald-400 w-3.5 h-3.5 shrink-0" />
+        <div className="px-3.5 py-2.5 sm:px-5 sm:py-3 border-t border-gray-200 dark:border-white/10 flex items-center justify-between bg-gray-50 dark:bg-black/20 text-xs">
+          <div className="flex items-center gap-1.5 text-gray-500 dark:text-zinc-400 text-[10px] sm:text-[11px]">
+            <FiShield className="text-emerald-600 dark:text-emerald-400 w-3.5 h-3.5 shrink-0" />
             <span className="truncate">MongoDB Vault Isolated • Read & Write Policy Active (Live Slack Post Enabled)</span>
           </div>
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white active:scale-95 transition cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-white/10 dark:hover:bg-white/20 text-xs font-semibold text-gray-800 dark:text-white active:scale-95 transition cursor-pointer"
           >
             Close
           </button>
