@@ -669,7 +669,8 @@ const ChatInput = ({
     // Intentionally no-op to prevent auto-listening loop after completion
   }, [autoListenTrigger]);
 
-  const hasText = Boolean((text && text.trim()) || (attachments && attachments.length > 0));
+  // Require text prompt to be typed before enabling send (even if image/PDF attachment is attached)
+  const hasText = Boolean(text && text.trim().length > 0);
   const canSubmit = !isDailyLimitReached && !isGenerating && hasText;
 
   const handleSend = () => {
