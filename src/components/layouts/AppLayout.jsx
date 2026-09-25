@@ -56,6 +56,7 @@ import AgentSidebar from "../sidebar/AgentSidebar";
 import ModeTransitionOverlay from "../sidebar/ModeTransitionOverlay";
 import McpIntegrationsModal from "../mcp/McpIntegrationsModal";
 import NotificationCenter from "../global/NotificationCenter";
+import ApiKeyModal from "../auth/ApiKeyModal";
 
 
 const AppLayout = ({ children }) => {
@@ -118,6 +119,7 @@ const AppLayout = ({ children }) => {
 
   const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -148,13 +150,16 @@ const AppLayout = ({ children }) => {
     const handleOpenModal = () => setIsCreateModalOpen(true);
     const handleOpenMcp = () => setIsMcpModalOpen(true);
     const handleOpenNotifications = () => setIsNotificationCenterOpen(true);
+    const handleOpenApiKey = () => setIsApiKeyModalOpen(true);
     window.addEventListener("open-create-bot-modal", handleOpenModal);
     window.addEventListener("open-mcp-modal", handleOpenMcp);
     window.addEventListener("open-notification-center", handleOpenNotifications);
+    window.addEventListener("open-api-key-modal", handleOpenApiKey);
     return () => {
       window.removeEventListener("open-create-bot-modal", handleOpenModal);
       window.removeEventListener("open-mcp-modal", handleOpenMcp);
       window.removeEventListener("open-notification-center", handleOpenNotifications);
+      window.removeEventListener("open-api-key-modal", handleOpenApiKey);
     };
   }, []);
 
@@ -1697,6 +1702,12 @@ const AppLayout = ({ children }) => {
       <McpIntegrationsModal
         isOpen={isMcpModalOpen}
         onClose={() => setIsMcpModalOpen(false)}
+      />
+
+      {/* Developer API Key Manager Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
       />
     </div>
   );
