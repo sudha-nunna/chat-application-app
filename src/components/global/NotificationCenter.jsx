@@ -458,11 +458,11 @@ const NotificationCenter = ({ isOpen, onClose }) => {
 
     setScheduleForm({
       userQuery: schedule.userQuery || schedule.title || schedule.rawPrompt || "",
-      scheduleType: cfg.scheduleType || (schedule.rate === "one_time" ? "one_time" : "recurring"),
+      scheduleType: cfg.scheduleType || ((schedule.rate || "").toLowerCase() === "one_time" ? "one_time" : "recurring"),
       startDate: cfg.startDate || todayISO,
       deliveryTime: schedule.scheduledTime || schedule.deliveryTime || "08:30",
       timezone: schedule.timezone || systemTimezone,
-      recurringMode: cfg.recurringMode || (schedule.rate !== "one_time" ? schedule.rate : "daily") || "daily",
+      recurringMode: cfg.recurringMode || ((schedule.rate || "").toLowerCase() !== "one_time" ? schedule.rate : "daily") || "daily",
       weeklyDays: cfg.weeklyDays || ["Mon", "Wed", "Fri"],
       monthlyRunOn: cfg.monthlyRunOn || "1st",
       customInterval: cfg.customInterval || 2,
@@ -869,13 +869,28 @@ const NotificationCenter = ({ isOpen, onClose }) => {
                       <div>
                         Next Delivery:{" "}
                         <span className="text-gray-700 dark:text-gray-300 font-medium">
-                          {schedule.nextRunAt ? new Date(schedule.nextRunAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Pending"}
+                          {((schedule.rate || "").toLowerCase() === "one_time" || (schedule.sourceConfig?.scheduleType || "").toLowerCase() === "one_time") &&
+                          (schedule.generationStatus === "completed" || !schedule.nextRunAt)
+                            ? "Completed"
+                            : !schedule.enabled
+                            ? "Disabled"
+                            : schedule.nextRunAt
+                            ? new Date(schedule.nextRunAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            : "Pending"}
                         </span>
                       </div>
                       <div>
                         Status:{" "}
-                        <span className={`font-medium ${schedule.failureCount > 0 ? "text-rose-500" : "text-emerald-500"}`}>
-                          {schedule.lastExecutionStatus || "active"} {schedule.failureCount > 0 && `(${schedule.failureCount} fails)`}
+                        <span className={`font-medium ${
+                          schedule.failureCount > 0
+                            ? "text-rose-500"
+                            : ((schedule.rate || "").toLowerCase() === "one_time" || (schedule.sourceConfig?.scheduleType || "").toLowerCase() === "one_time") && schedule.generationStatus === "completed"
+                            ? "text-emerald-500"
+                            : "text-emerald-500"
+                        }`}>
+                          {((schedule.rate || "").toLowerCase() === "one_time" || (schedule.sourceConfig?.scheduleType || "").toLowerCase() === "one_time") && schedule.generationStatus === "completed"
+                            ? "completed"
+                            : schedule.lastExecutionStatus || "active"} {schedule.failureCount > 0 && `(${schedule.failureCount} fails)`}
                         </span>
                       </div>
                     </div>
